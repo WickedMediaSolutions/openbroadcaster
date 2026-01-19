@@ -8,6 +8,7 @@
         xmlns:streaming="clr-namespace:OpenBroadcaster.Core.Streaming"
         xmlns:converters="clr-namespace:OpenBroadcaster.Converters"
         Title="OpenBroadcaster"
+        Icon="Assets/app-icon.ico"
         WindowState="Maximized"
         mc:Ignorable="d">
     <Window.DataContext>

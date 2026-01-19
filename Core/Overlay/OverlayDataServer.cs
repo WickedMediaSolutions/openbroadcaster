@@ -115,7 +115,18 @@ namespace OpenBroadcaster.Core.Overlay
             _listener = new HttpListener();
             _listener.Prefixes.Add($"http://localhost:{_settings.Port}/");
             _listener.Prefixes.Add($"http://127.0.0.1:{_settings.Port}/");
-            _listener.Start();
+            
+            try
+            {
+                _listener.Start();
+            }
+            catch (HttpListenerException ex)
+            {
+                _logger.LogWarning(ex, "Failed to start overlay server on port {Port} - port may be in use. Overlay features will be unavailable.", _settings.Port);
+                _listener = null;
+                return;
+            }
+            
             _listenerCts = new CancellationTokenSource();
             _listenerTask = Task.Run(() => ListenAsync(_listenerCts.Token));
             _currentPort = _settings.Port;
