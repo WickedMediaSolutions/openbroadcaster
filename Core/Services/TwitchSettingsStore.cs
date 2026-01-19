@@ -12,7 +12,8 @@ namespace OpenBroadcaster.Core.Services
 
         public TwitchSettingsStore(string? filePath = null)
         {
-            _filePath = filePath ?? Path.Combine(AppContext.BaseDirectory, "twitch.settings.json");
+            _filePath = filePath ?? ResolveDefaultPath();
+            TryMigrateLegacySettings();
         }
 
         public TwitchSettings Load()
@@ -49,6 +50,37 @@ namespace OpenBroadcaster.Core.Services
 
             var json = JsonSerializer.Serialize(settings, _options);
             File.WriteAllText(_filePath, json);
+        }
+
+        private static string ResolveDefaultPath()
+        {
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var root = Path.Combine(appData, "OpenBroadcaster");
+            return Path.Combine(root, "twitch.settings.json");
+        }
+
+        private void TryMigrateLegacySettings()
+        {
+            var legacyPath = Path.Combine(AppContext.BaseDirectory, "twitch.settings.json");
+            if (File.Exists(_filePath) || !File.Exists(legacyPath))
+            {
+                return;
+            }
+
+            try
+            {
+                var directory = Path.GetDirectoryName(_filePath);
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                File.Copy(legacyPath, _filePath, overwrite: false);
+            }
+            catch
+            {
+                // If migration fails, a fresh settings file will be created when needed.
+            }
         }
     }
 }
