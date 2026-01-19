@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenBroadcaster Overlay</title>
+    <link rel="stylesheet" href="overlay.css" />
+</head>
+<body>
+    <div class="ob-overlay" id="overlay">
+        <section class="now-playing" id="nowPlaying">
+            <div class="artwork" id="nowPlayingArtwork"></div>
+            <div class="meta">
+                <p class="eyebrow">Now Playing</p>
+                <h1 id="nowPlayingTitle">Waiting for deck...</h1>
+                <p class="artist" id="nowPlayingArtist"></p>
+                <p class="timer" id="nowPlayingTimer"></p>
+                <p class="source" id="nowPlayingSource"></p>
+            </div>
+        </section>
+        <section class="cards">
+            <article class="card" id="nextUp">
+                <p class="eyebrow">Next Up</p>
+                <h2 id="nextTitle">Queue empty</h2>
+                <p class="artist" id="nextArtist"></p>
+            </article>
+            <article class="card" id="requests">
+                <p class="eyebrow">Requests</p>
+                <ul id="requestList"></ul>
+            </article>
+            <article class="card" id="recent">
+                <p class="eyebrow">Recent Spins</p>
+                <ul id="recentList"></ul>
+            </article>
+        </section>
+    </div>
+    <script src="overlay.js"></script>
+</body>
+</html>

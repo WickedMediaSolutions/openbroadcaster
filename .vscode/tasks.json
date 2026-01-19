@@ -1,0 +1,19 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build-openbroadcaster",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"-v",
+				"m"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$msbuild"
+			]
+		}
+	]
+}

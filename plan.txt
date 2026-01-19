@@ -1,0 +1,90 @@
+OpenBroadcaster Remediation & Feature Completion Plan
+====================================================
+
+Phase 0 – Baseline Assessment & Tooling
+---------------------------------------
+1. Inventory existing services, ViewModels, and XAML bindings; document current responsibilities.
+2. Confirm solution builds and existing unit tests pass; capture failing areas for regression tracking.
+3. Enable structured logging (Serilog or existing logger) across playback, automation, Twitch, and encoder components; ensure logs roll per session.
+4. Establish test harnesses (unit + integration stubs) for QueueService, TransportService, Rotation engine, Twitch command handler, encoder manager.
+5. Define acceptance criteria per feature in this plan and sync with user.
+
+Phase 1 – Library Subsystem *(Status: ✅ Completed Jan 14, 2026)*
+---------------------------------------------------------------
+✓ `Track`/`LibraryService` enriched with metadata, path index, and category persistence (TagLib ingestion + tests).
+✓ File/folder imports, duplicate suppression, and metadata reader abstraction wired through UI dialogs.
+✓ Category CRUD + assignment dialog implemented with observable updates + event propagation.
+✓ Main library panel upgraded: search/filter, category dropdown, status indicators, multi-select drag sources.
+✓ Drag/drop from library into queue/decks and queue commands completed, with queue reordering + tests.
+✓ New `LibraryServiceTests` cover import plus category assignment; manual verification via `dotnet test`.
+
+Phase 2 – Queue & History
+-------------------------
+1. **QueueService enhancements** *(Status: ✅ Completed Jan 14, 2026)* ➜ Add `QueueChanged` notifications, insertion helpers (front/after index), remove APIs, and richer metadata flags (`QueueSource` enum + attribution strings).
+2. **UI/ViewModel wiring** *(Status: ✅ Completed Jan 14, 2026)* ➜ MainViewModel should subscribe to queue events instead of manual refresh, expose queue commands (remove, move to top/bottom), and show next-track preview.
+3. **History tracking** *(Status: ✅ Completed Jan 14, 2026)* ➜ Maintain last 5 played items in QueueService (or new HistoryService) and surface via observable collection + UI block.
+4. **Request attribution** *(Status: ✅ Completed Jan 14, 2026)* ➜ Ensure Twitch/AutoDJ insert paths populate requester/source fields, update UI templates to show "Requested by <user>" when present.
+5. **Testing** *(Status: ✅ Completed Jan 14, 2026)* ➜ Extend `QueueServiceTests` (and new history tests) to cover reorder, inserts, priority (manual vs AutoDJ/Twitch), and history trimming.
+
+Phase 3 – Rotation & Clockwheel Engine *(Status: ✅ Completed Jan 14, 2026)*
+--------------------------------------------------------------------------------
+1. Implement category-based rotation engine (SAM-style) honoring artist/title separation and minimum wait times.
+2. Build clockwheel scheduler with time slots mapped to categories or specific tracks; support near-future preview for UI.
+3. Integrate rotation + clockwheel outputs with QueueService, ensuring conflict resolution and predictable ordering.
+4. Provide AutoDJ controller toggling, monitoring deck states, preloading next track, and fallback logic if queue empty.
+5. Surface AutoDJ status/controls in UI with binding and LED indicator.
+
+Phase 4 – Decks, Transport, and Audio Routing
+---------------------------------------------
+1. Review `TransportService` and deck classes (`DeckA`, `DeckB`) to enforce that decks pull tracks exclusively via QueueService. *(Status: ✅ Completed Jan 14, 2026)* – `TransportService` now dequeues and loads internally, while UI commands enqueue manual selections before requesting the next track so no deck can bypass the queue.
+2. Ensure playback metadata, elapsed/remaining time, and deck statuses emit change notifications for UI and Twitch/overlay. *(Status: ✅ Completed Jan 14, 2026)* – `TransportService` now broadcasts periodic deck telemetry so UI/Twitch consumers receive live elapsed/remaining updates.
+3. Implement precise audio routing graph. *(Status: ✅ Completed Jan 14, 2026)* – `AudioRoutingGraph` now governs source→bus mapping with deck/cart sources mirrored to program + encoder buses, mic metering confined to encoder, and a dedicated cue bus driven by the new `CuePreviewPlayer` + UI command for previewing queue items.
+4. Add dependency injection for audio devices, use CoreAudio/WASAPI or NAudio abstractions; support selectable devices from settings. *(Status: ✅ Completed Jan 14, 2026)* – Settings now surface live playback/input device lists via the resolver, persisting selections for decks, cart wall, encoder, mic, and cue buses that `AudioService` applies at runtime.
+5. Build/validate VU meters (main, mic, encoder) with periodic metering callbacks; update UI and logging. *(Status: ✅ Completed Jan 14, 2026)* – `VuMeterService` aggregates routing graph levels, feeds program/encoder/mic meters, and the control rack UI now displays live progress bars.
+
+Phase 5 – Cartwall
+------------------
+1. **Cart pad interactions** *(Status: ✅ Completed Jan 14, 2026)* ➜ Cart wall now binds directly to `CartWallService` pads; pads toggle play/stop on left-click and open a file picker on right-click, with editor bindings tracking the selected pad.
+2. **Cart audio routing & loops** *(Status: ✅ Completed Jan 14, 2026)* ➜ `AudioService`/`CartPlayer` now accept per-pad loop flags, `CartWallService` restarts loop pads until stopped, and cart source routing continues to program + encoder buses.
+3. **Cart pad persistence** *(Status: ✅ Completed Jan 14, 2026)* ➜ Cart pads (label/path/color/hotkey/loop) are stored under `AppSettings.CartWall`, migrating the legacy `cartwall.json` automatically.
+
+Phase 6 – Encoders & Streaming *(Status: ✅ Completed Jan 14, 2026)*
+----------------------------------------------------------------
+✓ `EncoderManager` captures the encoder bus loopback, encodes to MP3 (LAME 256 kbps), and manages concurrent Icecast/Shoutcast sessions with auto-reconnect plus pooled status updates.
+✓ Settings now expose an Encoders tab with profile CRUD, auto-start toggle, validation messaging, and persistence through `AppSettings`.
+✓ Program + mic routing feeds the encoder capture path per AudioService configuration, ensuring every profile streams the mixed program bus.
+✓ Control rack adds encoder toggles, per-target indicators, last-connected hints, error messaging, and logging so ops can start/stop streams from the main surface.
+
+Phase 7 – Twitch Integration & Requests *(Status: ✅ Completed Jan 14, 2026)*
+-----------------------------------------------------------------------------
+✓ Twitch settings expanded (search limits, cooldowns, loyalty awards) with UI bindings, and the IRC bridge now consumes LibraryService for authenticated MP3 bus streaming.
+✓ `TwitchIntegrationService` implements library-backed `!s` search, per-user result sessions with `!1-!9` selects, `!playnext <n>` priority inserts, request cooldown enforcement, and richer help/telemetry output.
+✓ LoyaltyLedger accrues both per-message and idle-session points via the new timer, while queue inserts honor attribution plus priority/front-of-line routing.
+✓ Main control rack surfaces Twitch status plus a live pending-request indicator so operators can monitor chat-driven demand at a glance.
+
+Phase 8 – OBS Overlay & Data API *(Status: ✅ Completed Jan 14, 2026)*
+-------------------------------------------------------------------
+✓ Added `OverlaySettings`, settings-tab controls, and persisted defaults so the feature can be toggled and configured (port, list limits, artwork fallback).
+✓ Implemented `OverlayService` with snapshot factory + `OverlayDataServer` (HTTP + WebSocket) to stream now-playing, next, history, and request data in real time.
+✓ Shipped stylized HTML/CSS/JS overlay assets (copied to output) that connect via WebSocket/polling for OBS browser sources with responsive layout + placeholders.
+
+Phase 9 – Settings & Persistence *(Status: ✅ Completed Jan 14, 2026)*
+-------------------------------------------------------------------
+✓ Settings window now includes Automation (AutoDJ queue depth, clockwheel editor) and Requests tabs, plus overlay artwork file picker with browse support.
+✓ `AppSettings` expanded with Automation/Request/Overlay file path data, version bumped to 1.1, and a migrator normalizes legacy payloads while honoring queue history limits.
+✓ Runtime wiring applies the new sections: queue history limit is configurable, AutoDJ + clockwheel slots load from persisted settings (with optional auto-start), and Twitch request handling enforces max pending/per-user caps before points are deducted.
+
+Phase 10 – QA, Telemetry, and Hardening *(Status: ✅ Completed Jan 14, 2026)*
+----------------------------------------------------------------------------
+✓ Added unit tests covering AutoDjController queue filling, ClockwheelScheduler slot rotation, and SettingsViewModel command flows to provide UI/service smoke coverage.
+✓ Hardened runtime behavior by auto-falling back when audio devices disappear, surfacing encoder start failures through status events, and adding Twitch auto-reconnect with exponential backoff and cache cleanup to avoid leaks.
+✓ Documented the ingest→queue→deck→encoder/Twitch→overlay validation steps in `docs/operator-checklist.md`, giving operators a reproducible quick-start script.
+✓ Verified overlay and encoder pipelines while running `dotnet test` on the expanded suite to ensure regressions are caught before release.
+
+Execution Notes
+---------------
+- Preserve existing architecture; extend services/ViewModels rather than rewriting unless blockers arise.
+- Maintain MVVM boundaries: no direct UI logic in services, no blocking calls on UI thread.
+- Favor dependency injection for services to ease testing.
+- Add succinct comments only for complex logic.
+- Track work in source control with incremental commits per phase.

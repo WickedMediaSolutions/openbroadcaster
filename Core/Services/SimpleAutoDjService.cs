@@ -1,0 +1,447 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using Microsoft.Extensions.Logging;
+using OpenBroadcaster.Core.Diagnostics;
+using OpenBroadcaster.Core.Models;
+using OpenBroadcaster.Core.Services;
+
+namespace OpenBroadcaster.Core.Automation
+{
+    /// <summary>
+    /// AutoDJ service responsible for maintaining queue depth with proper event-driven architecture.
+    /// When enabled, AutoDJ is the single authority for keeping the queue populated.
+    /// </summary>
+    public sealed class SimpleAutoDjService : IDisposable
+    {
+        // CRITICAL CONSTANT: Minimum queue depth AutoDJ must maintain
+        private const int MIN_QUEUE_DEPTH = 5;
+
+        private readonly QueueService _queueService;
+        private readonly LibraryService _libraryService;
+        private readonly List<SimpleRotation> _rotations;
+        private readonly List<SimpleSchedulerEntry> _schedule;
+        private readonly int _targetQueueDepth;
+        private readonly Guid _defaultRotationId;
+        private readonly System.Threading.Timer _timer;
+        private readonly ILogger<SimpleAutoDjService> _logger;
+        private bool _enabled;
+        private string _status = "AutoDJ offline.";
+        private readonly object _lock = new();
+        private bool _isFilling = false;
+
+        // Runtime state for rotation tracking
+        private readonly Dictionary<Guid, int> _rotationSlotPointers = new();
+        private readonly Dictionary<Guid, Queue<Track>> _categoryShuffleBags = new();
+        private readonly Random _rng = new();
+        private Track? _lastAddedTrack = null;
+
+        public event EventHandler<string>? StatusChanged;
+        public event EventHandler? QueueFilled;
+
+        public SimpleAutoDjService(
+            QueueService queueService,
+            LibraryService libraryService,
+            List<SimpleRotation> rotations,
+            List<SimpleSchedulerEntry> schedule,
+            int targetQueueDepth = 5,
+            Guid defaultRotationId = default,
+            ILogger<SimpleAutoDjService>? logger = null)
+        {
+            _queueService = queueService ?? throw new ArgumentNullException(nameof(queueService));
+            _libraryService = libraryService ?? throw new ArgumentNullException(nameof(libraryService));
+            _rotations = rotations ?? new List<SimpleRotation>();
+            _schedule = schedule ?? new List<SimpleSchedulerEntry>();
+            _targetQueueDepth = Math.Max(MIN_QUEUE_DEPTH, targetQueueDepth);
+            _defaultRotationId = defaultRotationId;
+            _timer = new System.Threading.Timer(OnTimer, null, Timeout.Infinite, Timeout.Infinite);
+            _logger = logger ?? AppLogger.CreateLogger<SimpleAutoDjService>();
+
+            // Subscribe to QueueChanged event for event-driven queue filling
+            _queueService.QueueChanged += OnQueueChanged;
+        }
+
+        public bool Enabled
+        {
+            get => _enabled;
+            set
+            {
+                if (_enabled == value) return;
+                _enabled = value;
+                if (_enabled)
+                {
+                    _logger.LogInformation("AutoDJ enabled. Rotations available: {Count}", _rotations?.Count ?? 0);
+                    if (_rotations != null && _rotations.Count > 0)
+                    {
+                        var activeCount = _rotations.Count(r => r.IsActive);
+                        var enabledCount = _rotations.Count(r => r.Enabled);
+                        _logger.LogDebug("Active rotations: {Active}, Enabled rotations: {Enabled}", activeCount, enabledCount);
+                    }
+                    
+                    _timer.Change(0, 5000); // Check every 5 seconds as backup
+                    UpdateStatus("AutoDJ enabled.");
+                    _logger.LogDebug("Starting initial queue fill");
+                    EnsureQueueDepth();
+                }
+                else
+                {
+                    _timer.Change(Timeout.Infinite, Timeout.Infinite);
+                    UpdateStatus("AutoDJ paused.");
+                    _logger.LogInformation("AutoDJ disabled");
+                }
+            }
+        }
+
+        public string Status => _status;
+
+        public void Dispose()
+        {
+            _queueService.QueueChanged -= OnQueueChanged;
+            _timer.Dispose();
+        }
+
+        /// <summary>
+        /// Event handler for QueueChanged event - ensures queue depth is maintained
+        /// Queue is always kept populated regardless of AutoDJ enabled state
+        /// </summary>
+        private void OnQueueChanged(object? sender, EventArgs e)
+        {
+            // Don't refill if we're already filling - prevents recursive calls
+            if (_isFilling)
+            {
+                return;
+            }
+            
+            _logger.LogDebug("Queue changed event received - checking depth");
+            // Run on background thread to avoid UI freezes
+            System.Threading.Tasks.Task.Run(() => EnsureQueueDepth());
+        }
+
+        /// <summary>
+        /// Timer callback - backup mechanism to ensure queue depth
+        /// </summary>
+        private void OnTimer(object? state)
+        {
+            // Always ensure queue depth, regardless of enabled state
+            EnsureQueueDepth();
+        }
+
+        /// <summary>
+        /// Core queue filling logic - ensures queue never drops below MIN_QUEUE_DEPTH
+        /// Thread-safe and prevents concurrent fills
+        /// This ALWAYS works regardless of Enabled state - Enabled only controls automatic refilling
+        /// </summary>
+        public void EnsureQueueDepth()
+        {
+            // Prevent concurrent fills
+            lock (_lock)
+            {
+                if (_isFilling)
+                {
+                    _logger.LogDebug("Queue fill already in progress, skipping");
+                    return;
+                }
+                _isFilling = true;
+            }
+
+            try
+            {
+                var snapshot = _queueService.Snapshot();
+                var currentDepth = snapshot.Count;
+                _logger.LogDebug("Queue depth check: {Current}/{Target} tracks (MIN={Min})", currentDepth, _targetQueueDepth, MIN_QUEUE_DEPTH);
+
+                // Only fill if below target depth
+                while (currentDepth < _targetQueueDepth)
+                {
+                    var track = GetNextTrack();
+                    if (track == null)
+                    {
+                        _logger.LogWarning("Failed to get next track - stopping fill");
+                        break;
+                    }
+
+                    // Get active rotation info for metadata
+                    var activeRotation = GetActiveRotation();
+                    var rotationName = activeRotation?.Name ?? "Unknown";
+                    
+                    // Determine category name from track's first category ID
+                    var categoryName = "Unknown";
+                    if (track.CategoryIds != null && track.CategoryIds.Count > 0)
+                    {
+                        var firstCatId = track.CategoryIds.First();
+                        var category = _libraryService.GetCategories().FirstOrDefault(c => c.Id == firstCatId);
+                        categoryName = category?.Name ?? "Unknown";
+                    }
+
+                    var queueItem = new QueueItem(
+                        track, 
+                        QueueSource.AutoDj, 
+                        "AutoDJ", 
+                        string.Empty,  // No requester for AutoDJ tracks
+                        rotationName,
+                        categoryName
+                    );
+
+                    _queueService.Enqueue(queueItem);
+                    _lastAddedTrack = track;
+                    currentDepth++;
+                    _logger.LogDebug("Added track: {Title} by {Artist} (Category: {Category}, Rotation: {Rotation})", track.Title, track.Artist, categoryName, rotationName);
+                }
+
+                if (currentDepth >= MIN_QUEUE_DEPTH)
+                {
+                    var statusPrefix = _enabled ? "AutoDJ active" : "Queue ready";
+                    UpdateStatus($"{statusPrefix}. Queue: {currentDepth} tracks.");
+                }
+                else
+                {
+                    var statusPrefix = _enabled ? "AutoDJ active" : "Queue";
+                    UpdateStatus($"{statusPrefix}. Queue low: {currentDepth} tracks.");
+                }
+            }
+            finally
+            {
+                lock (_lock)
+                {
+                    _isFilling = false;
+                }
+            }
+
+            QueueFilled?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// Get preview of upcoming tracks without affecting rotation state
+        /// </summary>
+        public List<Track> GetUpcomingPreview(int count)
+        {
+            var result = new List<Track>();
+            // Store current state
+            var savedPointers = new Dictionary<Guid, int>(_rotationSlotPointers);
+            var savedBags = new Dictionary<Guid, Queue<Track>>();
+            foreach (var kvp in _categoryShuffleBags)
+            {
+                savedBags[kvp.Key] = new Queue<Track>(kvp.Value);
+            }
+
+            // Generate preview
+            for (int i = 0; i < count; i++)
+            {
+                var track = GetNextTrack();
+                if (track != null) result.Add(track);
+            }
+
+            // Restore state
+            _rotationSlotPointers.Clear();
+            foreach (var kvp in savedPointers)
+            {
+                _rotationSlotPointers[kvp.Key] = kvp.Value;
+            }
+            _categoryShuffleBags.Clear();
+            foreach (var kvp in savedBags)
+            {
+                _categoryShuffleBags[kvp.Key] = kvp.Value;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Get the next track from the active rotation
+        /// Walks rotation slot-by-slot, prevents back-to-back duplicates
+        /// </summary>
+        private Track? GetNextTrack()
+        {
+            var rotation = GetActiveRotation();
+            if (rotation == null)
+            {
+                _logger.LogWarning("No active rotation found");
+                return null;
+            }
+
+            if (!rotation.Enabled)
+            {
+                _logger.LogWarning("Active rotation '{RotationName}' is disabled", rotation.Name);
+                return null;
+            }
+
+            // Prefer slot-based clockwheel; fall back to legacy category lists
+            var slots = rotation.Slots != null && rotation.Slots.Count > 0
+                ? rotation.Slots
+                : BuildLegacySlots(rotation);
+
+            if (slots.Count == 0)
+            {
+                _logger.LogWarning("Rotation '{RotationName}' has no slots", rotation.Name);
+                return null;
+            }
+
+            // Initialize pointer for rotation
+            if (!_rotationSlotPointers.ContainsKey(rotation.Id))
+            {
+                _rotationSlotPointers[rotation.Id] = 0;
+            }
+
+            var attempts = 0;
+            var maxAttempts = slots.Count * 2; // Try twice around the rotation
+            var slotIndex = _rotationSlotPointers[rotation.Id];
+
+            while (attempts < maxAttempts)
+            {
+                var slot = slots[slotIndex];
+                var track = TryPickTrackForSlot(slot);
+                
+                // Advance pointer for next call
+                slotIndex = (slotIndex + 1) % slots.Count;
+                attempts++;
+
+                if (track != null)
+                {
+                    // Prevent immediate back-to-back repeats
+                    if (_lastAddedTrack != null && track.Id == _lastAddedTrack.Id && attempts < maxAttempts)
+                    {
+                        _logger.LogDebug("Skipping duplicate track: {Title}", track.Title);
+                        continue;
+                    }
+
+                    _rotationSlotPointers[rotation.Id] = slotIndex;
+                    return track;
+                }
+            }
+
+            // No track found after full rotation
+            _logger.LogError("No valid tracks found after full rotation '{RotationName}'", rotation.Name);
+            return null;
+        }
+
+        /// <summary>
+        /// Get the currently active rotation based on schedule or default
+        /// Only returns rotations where IsActive=true
+        /// </summary>
+        private SimpleRotation? GetActiveRotation()
+        {
+            if (_rotations == null || _rotations.Count == 0)
+            {
+                _logger.LogWarning("No rotations available");
+                return null;
+            }
+            
+            // CRITICAL: Only use rotations marked as IsActive
+            var activeRotation = _rotations.FirstOrDefault(r => r.IsActive && r.Enabled);
+            
+            if (activeRotation != null)
+            {
+                return activeRotation;
+            }
+
+            // No active rotation found - try to auto-activate first enabled rotation
+            var firstEnabled = _rotations.FirstOrDefault(r => r.Enabled);
+            if (firstEnabled != null)
+            {
+                _logger.LogWarning("No active rotation found. Auto-activating '{RotationName}'", firstEnabled.Name);
+                firstEnabled.IsActive = true;
+                return firstEnabled;
+            }
+            
+            // Still nothing - try any rotation
+            var anyRotation = _rotations.FirstOrDefault();
+            if (anyRotation != null)
+            {
+                _logger.LogWarning("No enabled rotations. Auto-activating '{RotationName}'", anyRotation.Name);
+                anyRotation.IsActive = true;
+                anyRotation.Enabled = true;
+                return anyRotation;
+            }
+
+            _logger.LogError("No rotations available at all. Please create a rotation in settings.");
+            return null;
+        }
+
+        /// <summary>
+        /// Build legacy slots from CategoryIds or CategoryNames for backward compatibility
+        /// </summary>
+        private List<SimpleRotationSlot> BuildLegacySlots(SimpleRotation rotation)
+        {
+            var slots = new List<SimpleRotationSlot>();
+            if (rotation.CategoryIds != null && rotation.CategoryIds.Count > 0)
+            {
+                foreach (var idString in rotation.CategoryIds)
+                {
+                    if (Guid.TryParse(idString, out var gid))
+                    {
+                        slots.Add(new SimpleRotationSlot { CategoryId = gid });
+                    }
+                }
+            }
+            else if (rotation.CategoryNames != null && rotation.CategoryNames.Count > 0)
+            {
+                foreach (var name in rotation.CategoryNames)
+                {
+                    slots.Add(new SimpleRotationSlot { CategoryId = Guid.Empty, CategoryName = name });
+                }
+            }
+            return slots;
+        }
+
+        /// <summary>
+        /// Try to pick a random track from a slot's category
+        /// Uses shuffle bag pattern to prevent immediate repeats within a category
+        /// </summary>
+        private Track? TryPickTrackForSlot(SimpleRotationSlot slot)
+        {
+            var categoryId = slot.CategoryId;
+
+            // Legacy: resolve category by name if Guid is missing
+            if (categoryId == Guid.Empty && !string.IsNullOrWhiteSpace(slot.CategoryName))
+            {
+                var cat = _libraryService.GetCategories().FirstOrDefault(c => 
+                    string.Equals(c.Name, slot.CategoryName, StringComparison.OrdinalIgnoreCase));
+                if (cat != null)
+                {
+                    categoryId = cat.Id;
+                    slot.CategoryId = cat.Id; // cache for next time
+                }
+                else
+                {
+                    _logger.LogWarning("Category '{CategoryName}' not found in library", slot.CategoryName);
+                    return null;
+                }
+            }
+
+            if (categoryId == Guid.Empty)
+            {
+                _logger.LogWarning("Slot has no valid category ID");
+                return null;
+            }
+
+            // Get or refresh shuffle bag for this category
+            if (!_categoryShuffleBags.TryGetValue(categoryId, out var bag) || bag.Count == 0)
+            {
+                var allTracksInCategory = _libraryService.GetTracksByCategory(categoryId);
+                var fresh = allTracksInCategory
+                    .Where(t => t != null && t.IsEnabled)
+                    .OrderBy(_ => _rng.Next())
+                    .ToList();
+
+                if (fresh.Count == 0)
+                {
+                    _logger.LogWarning("No enabled tracks in category {CategoryId}. Total tracks in category: {TotalTracks}", categoryId, allTracksInCategory?.Count() ?? 0);
+                    return null;
+                }
+
+                bag = new Queue<Track>(fresh);
+                _categoryShuffleBags[categoryId] = bag;
+                _logger.LogDebug("Loaded {Count} tracks for category {CategoryId}", fresh.Count, categoryId);
+            }
+
+            return bag.Dequeue();
+        }
+
+        private void UpdateStatus(string message)
+        {
+            _status = message;
+            StatusChanged?.Invoke(this, message);
+        }
+    }
+}

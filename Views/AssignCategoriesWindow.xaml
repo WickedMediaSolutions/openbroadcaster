@@ -1,0 +1,72 @@
+<Window x:Class="OpenBroadcaster.Views.AssignCategoriesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:OpenBroadcaster.ViewModels"
+        mc:Ignorable="d"
+        Title="Assign Categories"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        MinWidth="420"
+        MinHeight="360">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Vertical" Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock Text="Assign categories to" FontSize="14" Foreground="#FFB8C0D1" />
+            <TextBlock Text="{Binding TrackTitle}" FontSize="20" FontWeight="Bold" />
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                BorderBrush="#FF2F3545"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="10"
+                Background="#FF10131B">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Height="220">
+                <ItemsControl ItemsSource="{Binding Categories}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:CategorySelectionItemViewModel}">
+                            <CheckBox Content="{Binding DisplayName}"
+                                      IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                      Margin="0,4" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,12,0,8">
+            <TextBox Width="180"
+                     Margin="0,0,8,0"
+                     ToolTip="Category name"
+                     Text="{Binding NewCategoryName, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Width="140"
+                     ToolTip="Category type"
+                     Text="{Binding NewCategoryType, UpdateSourceTrigger=PropertyChanged}" />
+            <Button Content="Add"
+                    Width="80"
+                    Margin="12,0,0,0"
+                    Command="{Binding AddCategoryCommand}" />
+        </StackPanel>
+
+        <TextBlock Grid.Row="3"
+               Margin="0,0,0,0"
+                   Foreground="#FFFF8585"
+                   Text="{Binding LastError}"
+                   TextWrapping="Wrap" />
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Cancel" IsCancel="True" Width="96" Margin="0,0,8,0" />
+            <Button Content="Save" Width="120" IsDefault="True" Click="SaveButton_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

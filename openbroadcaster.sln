@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenBroadcaster", "OpenBroadcaster.csproj", "{DF95A2CE-164C-7769-9B20-5134B7EA9FA6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenBroadcaster.Tests", "OpenBroadcaster.Tests\OpenBroadcaster.Tests.csproj", "{D20278F9-8907-FF8A-77AC-1C08318275D8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DF95A2CE-164C-7769-9B20-5134B7EA9FA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF95A2CE-164C-7769-9B20-5134B7EA9FA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF95A2CE-164C-7769-9B20-5134B7EA9FA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF95A2CE-164C-7769-9B20-5134B7EA9FA6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D20278F9-8907-FF8A-77AC-1C08318275D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D20278F9-8907-FF8A-77AC-1C08318275D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D20278F9-8907-FF8A-77AC-1C08318275D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D20278F9-8907-FF8A-77AC-1C08318275D8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D1AC2110-7946-4B8F-9C28-132EB8DF94A8}
+	EndGlobalSection
+EndGlobal

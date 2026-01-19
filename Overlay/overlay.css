@@ -1,0 +1,130 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap');
+
+:root {
+    --ob-bg: radial-gradient(circle at top right, #2b70ff 0%, #0c1020 55%, #05060b 100%);
+    --ob-card: rgba(8, 12, 24, 0.75);
+    --ob-text: #f8fbff;
+    --ob-muted: #b4c8ff;
+    --ob-accent: #5bffb0;
+    --ob-danger: #ff6b7b;
+    --ob-border: rgba(255, 255, 255, 0.08);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+    color: var(--ob-text);
+    background: transparent;
+}
+
+.ob-overlay {
+    width: 100vw;
+    height: 100vh;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    background-image: var(--ob-bg);
+    backdrop-filter: blur(40px);
+}
+
+.now-playing {
+    display: grid;
+    grid-template-columns: 200px auto;
+    gap: 24px;
+    padding: 24px;
+    border-radius: 28px;
+    background: linear-gradient(120deg, rgba(23, 32, 56, 0.92), rgba(12, 20, 42, 0.85));
+    border: 1px solid var(--ob-border);
+    box-shadow: 0 20px 80px rgba(3, 4, 12, 0.6);
+}
+
+.now-playing .artwork {
+    width: 200px;
+    height: 200px;
+    border-radius: 24px;
+    background: url('assets/artwork-placeholder.svg') center/cover no-repeat;
+    border: 1px solid var(--ob-border);
+}
+
+.now-playing .meta h1 {
+    margin: 8px 0 4px;
+    font-size: clamp(32px, 4vw, 54px);
+}
+
+.eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    font-size: 12px;
+    color: var(--ob-muted);
+    margin: 0;
+}
+
+.now-playing .artist,
+.now-playing .timer,
+.now-playing .source {
+    margin: 4px 0;
+    font-size: 18px;
+    color: var(--ob-muted);
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+}
+
+.card {
+    padding: 20px;
+    border-radius: 20px;
+    background: var(--ob-card);
+    border: 1px solid var(--ob-border);
+    min-height: 180px;
+}
+
+.card h2 {
+    margin: 8px 0;
+    font-size: 26px;
+}
+
+.card .artist {
+    margin: 0;
+    color: var(--ob-muted);
+}
+
+.card ul {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.card li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 6px;
+}
+
+.card li span {
+    color: var(--ob-muted);
+}
+
+@media (max-width: 800px) {
+    .now-playing {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .now-playing .artwork {
+        margin: 0 auto;
+    }
+}
