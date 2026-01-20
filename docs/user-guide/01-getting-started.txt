@@ -1,0 +1,131 @@
+================================================================================
+                    OPENBROADCASTER - GETTING STARTED
+================================================================================
+
+Welcome to OpenBroadcaster! This guide will help you get up and running with
+your radio automation software.
+
+--------------------------------------------------------------------------------
+SYSTEM REQUIREMENTS
+--------------------------------------------------------------------------------
+
+- Windows 10 or Windows 11 (64-bit)
+- 4 GB RAM minimum (8 GB recommended)
+- 500 MB free disk space for the application
+- Additional space for your music library
+- Sound card with audio output
+- Internet connection (for streaming features)
+
+--------------------------------------------------------------------------------
+INSTALLATION
+--------------------------------------------------------------------------------
+
+1. Run the OpenBroadcaster installer (OpenBroadcaster-Setup.exe)
+2. Follow the installation wizard prompts
+3. Choose your installation directory (default: C:\Program Files\OpenBroadcaster)
+4. Click Install and wait for completion
+5. Launch OpenBroadcaster from the Start Menu or Desktop shortcut
+
+--------------------------------------------------------------------------------
+FIRST RUN SETUP
+--------------------------------------------------------------------------------
+
+When you first launch OpenBroadcaster, you'll want to configure a few things:
+
+1. AUDIO DEVICES
+   - Go to Settings (gear icon in top right)
+   - Under "Audio Devices", select your output devices:
+     * Deck A Output: Your main audio output
+     * Deck B Output: Usually the same as Deck A
+     * Cart Wall Output: For sound effects/jingles
+     * Encoder Input: The audio source for streaming
+
+2. ADD YOUR MUSIC
+   - Click "Library" in the left sidebar
+   - Click "Add Folder" and select your music folder(s)
+   - Wait for the library scan to complete
+   - Your tracks will appear in the library browser
+
+3. BASIC PLAYBACK TEST
+   - Double-click any track in the library to load it to Deck A
+   - Press the Play button or press Spacebar
+   - You should hear audio through your selected output
+
+--------------------------------------------------------------------------------
+INTERFACE OVERVIEW
+--------------------------------------------------------------------------------
+
+The main window is divided into several areas:
+
++------------------------------------------------------------------+
+|  TOOLBAR (top)                                                    |
+|  - Library, Queue, Settings, Twitch buttons                       |
++------------------------------------------------------------------+
+|                                |                                  |
+|  LIBRARY / QUEUE PANEL         |  DECK AREA                       |
+|  (left side)                   |  (center)                        |
+|                                |                                  |
+|  - Browse your music           |  - Deck A (top)                  |
+|  - Manage playback queue       |  - Deck B (bottom)               |
+|  - Search tracks               |  - Waveform displays             |
+|                                |  - Transport controls            |
++--------------------------------+----------------------------------+
+|                                                                   |
+|  CART WALL / SOUNDBOARD (bottom)                                 |
+|  - Quick-access sound effects and jingles                        |
+|                                                                   |
++------------------------------------------------------------------+
+
+--------------------------------------------------------------------------------
+QUICK START WORKFLOW
+--------------------------------------------------------------------------------
+
+1. BUILD A QUEUE
+   - Browse your library on the left
+   - Right-click tracks and select "Add to Queue"
+   - Or drag tracks directly to the queue
+
+2. START PLAYBACK
+   - Click Play on Deck A to start the first track
+   - Enable "Auto Advance" in Queue settings to automatically
+     load the next track when one finishes
+
+3. USE AUTODJ (Optional)
+   - Go to Settings > AutoDJ
+   - Create a rotation with your preferred categories
+   - Enable AutoDJ to automatically fill the queue
+
+4. START STREAMING (Optional)
+   - Go to Settings > Encoder
+   - Configure your Icecast/Shoutcast server details
+   - Click "Start Encoding" to begin streaming
+
+--------------------------------------------------------------------------------
+KEYBOARD SHORTCUTS
+--------------------------------------------------------------------------------
+
+Spacebar        - Play/Pause Deck A
+Shift+Space     - Play/Pause Deck B
+Q               - Add selected track to queue
+Delete          - Remove selected item from queue
+Ctrl+F          - Focus search box
+F1-F12          - Trigger Cart Wall pads (configurable)
+
+--------------------------------------------------------------------------------
+NEXT STEPS
+--------------------------------------------------------------------------------
+
+Now that you're set up, explore these guides for more features:
+
+- 02-library-management.txt   - Organizing your music collection
+- 03-playback-decks.txt       - Advanced deck controls
+- 04-queue-management.txt     - Managing your playlist
+- 05-autodj-automation.txt    - Automatic playlist generation
+- 06-cart-wall.txt            - Sound effects and jingles
+- 07-streaming-encoding.txt   - Broadcasting to the internet
+- 08-twitch-integration.txt   - Twitch chat commands and requests
+- 09-web-integration.txt      - WordPress plugin and web access
+- 10-settings-reference.txt   - All configuration options
+- 11-troubleshooting.txt      - Common issues and solutions
+
+================================================================================

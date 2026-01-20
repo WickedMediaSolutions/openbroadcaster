@@ -1,0 +1,254 @@
+================================================================================
+                    OPENBROADCASTER - AUTODJ & AUTOMATION
+================================================================================
+
+AutoDJ is OpenBroadcaster's automatic playlist generation system. It fills your
+queue with music based on rules you define, perfect for unattended operation.
+
+--------------------------------------------------------------------------------
+AUTODJ OVERVIEW
+--------------------------------------------------------------------------------
+
+AutoDJ works by:
+1. Monitoring your queue depth
+2. When the queue falls below the target, it adds tracks
+3. Track selection follows your rotation rules
+4. Respects separation rules to maintain variety
+
+--------------------------------------------------------------------------------
+ENABLING AUTODJ
+--------------------------------------------------------------------------------
+
+QUICK ENABLE:
+- Click the "AutoDJ" toggle button in the toolbar
+- The button lights up when AutoDJ is active
+
+FROM SETTINGS:
+1. Go to Settings > AutoDJ
+2. Check "Enable AutoDJ"
+3. Configure your rotation (see below)
+4. Click Save
+
+AUTO-START OPTION:
+- "Start AutoDJ on launch" - AutoDJ enables when you open the app
+- Useful for fully automated stations
+
+--------------------------------------------------------------------------------
+TARGET QUEUE DEPTH
+--------------------------------------------------------------------------------
+
+This setting controls how many tracks AutoDJ keeps in the queue:
+
+SETTING THE DEPTH:
+1. Go to Settings > AutoDJ
+2. Set "Target Queue Depth" (default: 5)
+3. AutoDJ adds tracks when queue falls below this number
+
+RECOMMENDATIONS:
+- Live shows: 2-3 (more DJ control)
+- Automated: 5-10 (buffer for stability)
+- Unattended: 10-15 (maximum safety buffer)
+
+--------------------------------------------------------------------------------
+ROTATIONS
+--------------------------------------------------------------------------------
+
+A rotation defines the pattern of music categories that AutoDJ follows.
+
+CREATING A ROTATION:
+1. Go to Settings > AutoDJ > Rotations
+2. Click "Add Rotation"
+3. Give it a name (e.g., "Daytime Mix", "Night Slow")
+4. Add slots to define the pattern
+
+ROTATION SLOTS:
+Each slot specifies what type of track to play:
+
+  [Rock]           - Play a track from the "Rock" category
+  [Current Hits]   - Play from "Current Hits"
+  [Jingle]         - Play a jingle/station ID
+  [Any Music]      - Play from any music category
+
+EXAMPLE ROTATION (Hot AC Format):
+  1. Current Hit
+  2. Recurrent
+  3. Current Hit
+  4. Gold (80s-90s)
+  5. Current Hit
+  6. Station Jingle
+  (repeat)
+
+ADDING SLOTS:
+1. Click "Add Slot" in the rotation editor
+2. Select a category from the dropdown
+3. Optionally set a specific track (for jingles/IDs)
+4. Repeat to build your rotation pattern
+
+--------------------------------------------------------------------------------
+SCHEDULING ROTATIONS
+--------------------------------------------------------------------------------
+
+Different rotations can be scheduled for different times:
+
+SETTING UP A SCHEDULE:
+1. Go to Settings > AutoDJ > Schedule
+2. Click "Add Schedule Entry"
+3. Select:
+   - Day of week (or "Every Day")
+   - Start time
+   - Rotation to use
+
+EXAMPLE SCHEDULE:
+  Monday-Friday:
+    06:00 - Morning Drive (high energy)
+    10:00 - Midday Mix (balanced)
+    15:00 - Afternoon Drive (high energy)
+    19:00 - Evening (slower)
+    00:00 - Overnight (automated mix)
+  
+  Saturday-Sunday:
+    06:00 - Weekend Mix
+    22:00 - Late Night
+
+DEFAULT ROTATION:
+- Set a default rotation for unscheduled times
+- AutoDJ falls back to this when no schedule matches
+
+--------------------------------------------------------------------------------
+TOP-OF-HOUR ELEMENTS
+--------------------------------------------------------------------------------
+
+Configure elements that play at the top of each hour:
+
+SETTING UP TOH:
+1. Go to Settings > AutoDJ > Top of Hour
+2. Add slots for TOH elements:
+   - Legal ID (required for broadcast stations)
+   - Station jingle
+   - Weather/time announcement
+   - Sponsored break
+
+TOH TIMING:
+- Elements trigger when the system clock reaches :00
+- Current track fades/stops to accommodate
+- TOH elements play in the order specified
+- Regular programming resumes after
+
+SEQUENTIAL VS. RANDOM:
+- Sequential: Plays through your TOH list in order
+- Random: Picks randomly from your TOH elements
+
+--------------------------------------------------------------------------------
+SEPARATION RULES
+--------------------------------------------------------------------------------
+
+Separation rules prevent repetition and maintain variety:
+
+ARTIST SEPARATION:
+- Minimum time before the same artist plays again
+- Default: 60 minutes
+- Prevents "too much Beatles in a row"
+
+TITLE SEPARATION:
+- Minimum time before the exact same song plays
+- Default: 180 minutes (3 hours)
+- Ensures variety throughout the day
+
+CATEGORY SEPARATION:
+- Configure per-category separation
+- E.g., Play "Power Gold" tracks no more than once per hour
+
+CONFIGURING SEPARATION:
+1. Go to Settings > AutoDJ > Separation Rules
+2. Set Artist Separation (minutes)
+3. Set Title Separation (minutes)
+4. Add category-specific rules as needed
+
+--------------------------------------------------------------------------------
+SIMPLE AUTODJ MODE
+--------------------------------------------------------------------------------
+
+For simpler setups, OpenBroadcaster offers a Simple AutoDJ mode:
+
+FEATURES:
+- Single rotation definition
+- Basic category selection
+- No complex scheduling
+- Great for small stations or background music
+
+USING SIMPLE MODE:
+1. Go to Settings > AutoDJ
+2. Select "Simple Mode"
+3. Add categories to include in rotation
+4. Set weights for each category (how often it plays)
+5. Enable AutoDJ
+
+--------------------------------------------------------------------------------
+MONITORING AUTODJ
+--------------------------------------------------------------------------------
+
+QUEUE INDICATORS:
+- [AutoDJ] label shows which tracks were auto-added
+- Queue shows upcoming selections
+
+LOG VIEW:
+- View > AutoDJ Log
+- Shows decisions made by AutoDJ
+- Helpful for troubleshooting rotation issues
+
+ALERTS:
+- Warning if a category is empty
+- Warning if separation rules can't be satisfied
+- Error if no valid tracks available
+
+--------------------------------------------------------------------------------
+TROUBLESHOOTING AUTODJ
+--------------------------------------------------------------------------------
+
+AUTODJ NOT ADDING TRACKS:
+1. Check that AutoDJ is enabled
+2. Verify queue depth setting
+3. Ensure categories have tracks assigned
+4. Check separation rules aren't too strict
+
+SAME SONGS PLAYING TOO OFTEN:
+1. Increase separation time settings
+2. Add more tracks to your library
+3. Check category assignments
+
+ROTATION NOT FOLLOWING PATTERN:
+1. Verify the rotation is active (scheduled)
+2. Check if categories have available tracks
+3. Review the AutoDJ log for skip reasons
+
+WRONG ROTATION PLAYING:
+1. Check the schedule configuration
+2. Verify system clock is correct
+3. Check default rotation setting
+
+--------------------------------------------------------------------------------
+BEST PRACTICES
+--------------------------------------------------------------------------------
+
+1. START SIMPLE
+   - Begin with a basic rotation
+   - Add complexity as you learn
+
+2. ENSURE ADEQUATE LIBRARY
+   - Each category should have 50+ tracks
+   - More tracks = better variety
+
+3. TEST YOUR ROTATIONS
+   - Let AutoDJ run for a few hours
+   - Review the log and adjust
+
+4. USE SENSIBLE SEPARATION
+   - Too strict = AutoDJ can't find tracks
+   - Too loose = repetitive programming
+
+5. SCHEDULE MAINTENANCE
+   - Regularly add new music
+   - Update rotations seasonally
+   - Remove outdated content
+
+================================================================================

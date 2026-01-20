@@ -1,0 +1,294 @@
+================================================================================
+                    OPENBROADCASTER - TWITCH INTEGRATION
+================================================================================
+
+OpenBroadcaster integrates with Twitch to display chat messages and accept
+song requests from your Twitch viewers.
+
+--------------------------------------------------------------------------------
+FEATURES
+--------------------------------------------------------------------------------
+
+- Display Twitch chat messages in OpenBroadcaster
+- Accept !request commands for song requests
+- Customizable command prefix and cooldowns
+- User-based request limits
+- Overlay integration for stream display
+
+--------------------------------------------------------------------------------
+CONNECTING TO TWITCH
+--------------------------------------------------------------------------------
+
+1. Go to Settings > Twitch
+2. Click "Connect to Twitch"
+3. A browser window opens for Twitch authorization
+4. Log in to your Twitch account (or the bot account)
+5. Click "Authorize" to grant permissions
+6. Return to OpenBroadcaster - you should see "Connected"
+
+PERMISSIONS REQUIRED:
+- Read chat messages
+- Send chat messages (for responses)
+- No moderation or channel management needed
+
+USING A BOT ACCOUNT:
+- You can connect using a dedicated bot account
+- Bot appears as the responder in chat
+- Your main account stays separate
+
+--------------------------------------------------------------------------------
+TWITCH SETTINGS
+--------------------------------------------------------------------------------
+
+CHANNEL:
+- The Twitch channel to join
+- Usually your channel name
+- Case-insensitive
+
+ENABLE CHAT DISPLAY:
+- Shows Twitch chat in OpenBroadcaster
+- Useful for monitoring without browser
+
+ENABLE SONG REQUESTS:
+- Allows viewers to request songs via chat
+- Uses !request command by default
+
+REQUEST COMMAND:
+- The chat command to trigger requests
+- Default: !request (or !sr)
+- Customizable to any word
+
+--------------------------------------------------------------------------------
+SONG REQUEST SYSTEM
+--------------------------------------------------------------------------------
+
+HOW IT WORKS:
+
+1. Viewer types: !request Artist - Song Title
+2. OpenBroadcaster searches your library
+3. If found, track is added to the request queue
+4. Bot responds with confirmation or error
+5. Requests play according to your queue settings
+
+EXAMPLE COMMANDS:
+  !request Bohemian Rhapsody
+  !request Queen - We Will Rock You
+  !sr Never Gonna Give You Up
+  !request rick astley
+
+SEARCH BEHAVIOR:
+- Searches title, artist, and album
+- Partial matches allowed
+- Returns best match if unique
+- Asks for clarification if multiple matches
+
+--------------------------------------------------------------------------------
+REQUEST LIMITS AND COOLDOWNS
+--------------------------------------------------------------------------------
+
+MAX REQUESTS PER USER:
+- Limits how many requests one user can have pending
+- Default: 3 requests
+- Prevents queue domination by one viewer
+
+COOLDOWN BETWEEN REQUESTS:
+- Time user must wait between requests
+- Default: 300 seconds (5 minutes)
+- Per-user cooldown
+
+GLOBAL REQUEST LIMIT:
+- Maximum pending requests total
+- Default: 25 requests
+- Prevents request overload
+
+DUPLICATE PREVENTION:
+- Same song can't be requested twice
+- Checks against current queue
+- Can configure time-based separation
+
+--------------------------------------------------------------------------------
+CONFIGURING REQUEST SETTINGS
+--------------------------------------------------------------------------------
+
+1. Go to Settings > Requests (or Settings > Twitch)
+2. Configure:
+
+MAX PENDING REQUESTS:
+  How many requests can be queued (1-100)
+
+MAX REQUESTS PER USER:
+  Requests allowed per viewer (1-10)
+
+REQUEST COOLDOWN:
+  Seconds between user requests (0-3600)
+
+SOURCE LABEL:
+  Label shown in queue (default: "Twitch Chat")
+
+--------------------------------------------------------------------------------
+CHAT RESPONSES
+--------------------------------------------------------------------------------
+
+OpenBroadcaster responds to requests in chat:
+
+SUCCESS:
+  "@viewer Your request for 'Song Title - Artist' has been added to the queue!"
+
+NOT FOUND:
+  "@viewer Sorry, I couldn't find that song in the library."
+
+MULTIPLE MATCHES:
+  "@viewer Multiple matches found. Try being more specific."
+
+COOLDOWN:
+  "@viewer Please wait X minutes before requesting again."
+
+LIMIT REACHED:
+  "@viewer You've reached the maximum number of pending requests."
+
+QUEUE FULL:
+  "@viewer The request queue is full. Please try again later."
+
+--------------------------------------------------------------------------------
+MODERATOR COMMANDS
+--------------------------------------------------------------------------------
+
+Channel moderators and the broadcaster can use additional commands:
+
+!skip
+  Skip the current song (if it's a request)
+
+!clear-requests
+  Clear all pending requests
+
+!request-on / !request-off
+  Enable/disable song requests
+
+!volume [0-100]
+  Adjust playback volume
+
+These commands require moderator status in the channel.
+
+--------------------------------------------------------------------------------
+CHAT DISPLAY
+--------------------------------------------------------------------------------
+
+The Twitch Chat panel shows messages from your channel:
+
+VIEWING CHAT:
+- Click "Twitch" in the toolbar
+- Chat panel shows recent messages
+- Auto-scrolls with new messages
+
+MESSAGE FORMAT:
+  [Badge] Username: Message
+
+BADGES:
+  🎙️ Broadcaster
+  ⚔️ Moderator
+  ⭐ VIP
+  📺 Subscriber
+  💎 Prime
+
+COLOR CODING:
+- Usernames show in their Twitch color
+- Helps identify regulars
+
+--------------------------------------------------------------------------------
+OVERLAY INTEGRATION
+--------------------------------------------------------------------------------
+
+If using the overlay system, Twitch requests appear in the overlay:
+
+REQUEST DISPLAY:
+- Shows requester name
+- Displays on "Now Playing" if it's a request
+- "Requested by: @username"
+
+CONFIGURING:
+1. Go to Settings > Overlay
+2. Enable "Show Requester Name"
+3. Requests display the username on overlay
+
+--------------------------------------------------------------------------------
+TROUBLESHOOTING
+--------------------------------------------------------------------------------
+
+CAN'T CONNECT TO TWITCH:
+1. Check internet connection
+2. Clear browser cookies and retry authorization
+3. Verify Twitch account is in good standing
+4. Try disconnecting and reconnecting
+
+COMMANDS NOT WORKING:
+1. Verify request system is enabled
+2. Check the command prefix setting
+3. Ensure bot has chat permissions
+4. Check if user has hit limits
+
+SONG NOT FOUND:
+1. Search may be too specific
+2. Check song is in your library
+3. Verify metadata (title/artist) is correct
+4. Try different search terms
+
+BOT NOT RESPONDING:
+1. Check connection status
+2. Verify bot has permission to chat
+3. Check if you're rate-limited
+4. Ensure chat display is enabled
+
+REQUESTS NOT PLAYING:
+1. Check queue isn't paused
+2. Verify request queue isn't full
+3. Confirm requests are enabled
+4. Check queue management settings
+
+--------------------------------------------------------------------------------
+BEST PRACTICES
+--------------------------------------------------------------------------------
+
+1. SET REASONABLE LIMITS
+   - Balance viewer participation with control
+   - 3 requests per user is usually good
+   - 5-minute cooldowns prevent spam
+
+2. CURATE YOUR LIBRARY
+   - Only include appropriate music
+   - Remove explicit content if needed
+   - Ensure good metadata for search
+
+3. MANAGE EXPECTATIONS
+   - Tell viewers about limits
+   - Explain request rules in channel info
+   - Consider a !requesthelp command
+
+4. MONITOR THE QUEUE
+   - Watch for inappropriate requests
+   - Remove problematic tracks
+   - Keep requests balanced with rotation
+
+5. INTERACT WITH REQUESTERS
+   - Acknowledge requests on air
+   - Thank viewers for participating
+   - Create engagement around requests
+
+--------------------------------------------------------------------------------
+ADVANCED: CUSTOM BOT INTEGRATION
+--------------------------------------------------------------------------------
+
+For advanced users with custom Twitch bots:
+
+OpenBroadcaster can accept requests via its API:
+
+POST /api/requests
+{
+  "track_id": "guid-of-track",
+  "requester_name": "viewer_name",
+  "message": "optional message"
+}
+
+This allows custom bots to integrate with OpenBroadcaster's request system
+while providing their own chat interfaces and commands.
+
+================================================================================

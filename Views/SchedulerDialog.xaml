@@ -9,53 +9,63 @@
         MinWidth="460"
         MinHeight="260"
         mc:Ignorable="d">
-    <StackPanel Margin="18" Width="430">
-        <TextBlock Text="Schedule Entry" FontWeight="Bold" FontSize="16" Margin="0,0,0,12" />
-
-        <Grid Margin="0,0,0,12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="120" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-
-            <TextBlock Text="Rotation" VerticalAlignment="Center" />
-            <ComboBox Grid.Column="1"
-                      ItemsSource="{Binding RotationOptions}"
-                      DisplayMemberPath="Name"
-                      SelectedItem="{Binding SelectedRotation, Mode=TwoWay}"
-                      MinWidth="220" />
-
-            <TextBlock Grid.Row="1" Text="Day" VerticalAlignment="Center" Margin="0,8,0,0" />
-            <ComboBox Grid.Row="1" Grid.Column="1"
-                      ItemsSource="{Binding DayOptions}"
-                      SelectedValuePath="Value"
-                      DisplayMemberPath="Label"
-                      SelectedValue="{Binding SelectedDay, Mode=TwoWay}"
-                      Margin="0,8,0,0"
-                      MinWidth="160" />
-
-            <TextBlock Grid.Row="2" Text="Start (HH:mm)" VerticalAlignment="Center" Margin="0,8,0,0" />
-            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding StartTimeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Margin="0,8,0,0" />
-
-            <TextBlock Grid.Row="3" Text="End (HH:mm)" VerticalAlignment="Center" Margin="0,8,0,0" />
-            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding EndTimeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Margin="0,8,0,0" />
-        </Grid>
-
-        <CheckBox Content="Enabled" IsChecked="{Binding Enabled, Mode=TwoWay}" Margin="0,0,0,12" />
-
-        <TextBlock Text="Choose which rotation to start automatically, the day (or every day), and the exact start/end time."
-                   Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
-                   Margin="0,0,0,12" />
-
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-            <Button Content="Save" Width="90" Margin="0,0,8,0" IsDefault="True" Click="OnSaveClick" />
-            <Button Content="Cancel" Width="90" IsCancel="True" Click="OnCancelClick" />
+    <DockPanel Margin="12">
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Bottom" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="Save" Width="110" Margin="0,0,8,0" IsDefault="True" Click="OnSaveClick" />
+            <Button Content="Cancel" Width="110" IsCancel="True" Click="OnCancelClick" />
         </StackPanel>
-    </StackPanel>
+
+        <Border Style="{StaticResource StudioPanelBorderStyle}">
+            <StackPanel Width="430">
+                <TextBlock Text="Schedule Entry"
+                           FontWeight="Bold"
+                           FontSize="16"
+                           Margin="0,0,0,12" />
+
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="130" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Rotation" VerticalAlignment="Center" />
+                    <ComboBox Grid.Column="1"
+                              ItemsSource="{Binding RotationOptions}"
+                              DisplayMemberPath="Name"
+                              SelectedItem="{Binding SelectedRotation, Mode=TwoWay}"
+                              MinWidth="220" />
+
+                    <TextBlock Grid.Row="1" Text="Day" VerticalAlignment="Center" Margin="0,8,0,0" />
+                    <ComboBox Grid.Row="1" Grid.Column="1"
+                              ItemsSource="{Binding DayOptions}"
+                              SelectedValuePath="Value"
+                              DisplayMemberPath="Label"
+                              SelectedValue="{Binding SelectedDay, Mode=TwoWay}"
+                              Margin="0,8,0,0"
+                              MinWidth="160" />
+
+                    <TextBlock Grid.Row="2" Text="Start time (HH:mm)" VerticalAlignment="Center" Margin="0,8,0,0" />
+                    <TextBox Grid.Row="2" Grid.Column="1"
+                             Text="{Binding StartTimeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Width="120"
+                             Margin="0,8,0,0" />
+                </Grid>
+
+                <CheckBox Content="Enabled" IsChecked="{Binding Enabled, Mode=TwoWay}" Margin="0,0,0,12" />
+
+                <TextBlock Text="Pick a rotation, optional day (or every day), and the exact time it should start. At that time AutoDJ will switch to the rotation, clear the queue, and refill from it."
+                           Foreground="{StaticResource StudioMutedTextBrush}"
+                           FontSize="12"
+                           Margin="0,0,0,4" />
+                <TextBlock Text="Times use 24-hour format (HH:mm)."
+                           Foreground="{StaticResource StudioMutedTextBrush}"
+                           FontSize="11" />
+            </StackPanel>
+        </Border>
+    </DockPanel>
 </Window>

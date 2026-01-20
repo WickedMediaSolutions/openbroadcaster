@@ -19,6 +19,7 @@ namespace OpenBroadcaster.Core.Models
         public OverlaySettings Overlay { get; set; } = new OverlaySettings();
         public AutomationSettings Automation { get; set; } = new AutomationSettings();
         public RequestSettings Requests { get; set; } = new RequestSettings();
+        public DirectServerSettings DirectServer { get; set; } = new DirectServerSettings();
 
         public void ApplyDefaults()
         {
@@ -50,6 +51,7 @@ namespace OpenBroadcaster.Core.Models
                 });
             }
             Requests ??= new RequestSettings();
+            DirectServer ??= new DirectServerSettings();
         }
     }
 
@@ -104,6 +106,16 @@ namespace OpenBroadcaster.Core.Models
         public string ArtworkFallbackUrl { get; set; } = "/assets/artwork-placeholder.svg";
         public string ArtworkFallbackFilePath { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Username for WordPress plugin API authentication. Leave blank to disable authentication.
+        /// </summary>
+        public string ApiUsername { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Password for WordPress plugin API authentication.
+        /// </summary>
+        public string ApiPassword { get; set; } = string.Empty;
+
         public OverlaySettings Clone()
         {
             return new OverlaySettings
@@ -113,7 +125,9 @@ namespace OpenBroadcaster.Core.Models
                 RequestListLimit = RequestListLimit,
                 RecentListLimit = RecentListLimit,
                 ArtworkFallbackUrl = ArtworkFallbackUrl,
-                ArtworkFallbackFilePath = ArtworkFallbackFilePath
+                ArtworkFallbackFilePath = ArtworkFallbackFilePath,
+                ApiUsername = ApiUsername,
+                ApiPassword = ApiPassword
             };
         }
     }
@@ -225,6 +239,55 @@ namespace OpenBroadcaster.Core.Models
                 MaxPendingRequests = MaxPendingRequests,
                 MaxRequestsPerUser = MaxRequestsPerUser,
                 SourceLabel = SourceLabel
+            };
+        }
+    }
+
+    /// <summary>
+    /// Settings for the built-in Direct HTTP Server that allows WordPress to connect directly.
+    /// </summary>
+    public sealed class DirectServerSettings
+    {
+        /// <summary>
+        /// Whether the Direct Server is enabled.
+        /// </summary>
+        public bool Enabled { get; set; }
+
+        /// <summary>
+        /// The port to listen on. Default is 8585.
+        /// </summary>
+        public int Port { get; set; } = 8585;
+
+        /// <summary>
+        /// Whether to allow connections from remote machines (not just localhost).
+        /// </summary>
+        public bool AllowRemoteConnections { get; set; } = true;
+
+        /// <summary>
+        /// Optional API key for authentication. Leave blank to disable authentication.
+        /// </summary>
+        public string ApiKey { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Whether to enable CORS for cross-origin requests.
+        /// </summary>
+        public bool EnableCors { get; set; } = true;
+
+        /// <summary>
+        /// Allowed CORS origins (comma-separated). Use * for all origins.
+        /// </summary>
+        public string CorsOrigins { get; set; } = "*";
+
+        public DirectServerSettings Clone()
+        {
+            return new DirectServerSettings
+            {
+                Enabled = Enabled,
+                Port = Port,
+                AllowRemoteConnections = AllowRemoteConnections,
+                ApiKey = ApiKey,
+                EnableCors = EnableCors,
+                CorsOrigins = CorsOrigins
             };
         }
     }

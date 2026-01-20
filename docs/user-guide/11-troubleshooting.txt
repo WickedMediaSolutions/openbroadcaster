@@ -1,0 +1,394 @@
+================================================================================
+                    OPENBROADCASTER - TROUBLESHOOTING & FAQ
+================================================================================
+
+Common issues and their solutions, plus frequently asked questions.
+
+================================================================================
+AUDIO ISSUES
+================================================================================
+
+NO SOUND OUTPUT
+---------------
+1. Check Windows volume mixer
+   - Right-click speaker icon > Open Volume Mixer
+   - Ensure OpenBroadcaster isn't muted
+
+2. Verify audio device selection
+   - Settings > Audio
+   - Check Deck A/B output devices are correct
+   - Try selecting a different device
+
+3. Check master and deck volumes
+   - Master volume slider (toolbar)
+   - Individual deck volumes (deck panels)
+
+4. Test with Windows sounds
+   - If Windows sounds work, device is fine
+   - Issue may be with file or routing
+
+5. Restart audio
+   - Close and reopen OpenBroadcaster
+   - Restart Windows Audio service if needed
+
+AUDIO CRACKLING/STUTTERING
+--------------------------
+1. Increase buffer size
+   - Settings > Audio > Buffer Size
+   - Try 1024 or 2048 samples
+
+2. Close other applications
+   - Other audio apps may conflict
+   - Check CPU usage
+
+3. Update audio drivers
+   - Get latest from manufacturer
+
+4. Disable audio enhancements
+   - Control Panel > Sound > Playback
+   - Properties > Enhancements > Disable all
+
+5. Check disk speed
+   - Slow HDDs may cause stuttering
+   - Consider SSD for audio files
+
+TRACKS WON'T PLAY
+-----------------
+1. Check file format
+   - Supported: MP3, WAV, FLAC, OGG, M4A
+   - Unsupported formats won't play
+
+2. Verify file isn't corrupted
+   - Try playing in another application
+   - Re-download or re-rip if necessary
+
+3. Check file path
+   - File may have been moved/deleted
+   - Rescan library to update paths
+
+4. Check file permissions
+   - Ensure OpenBroadcaster can read the file
+   - Run as administrator if needed
+
+================================================================================
+LIBRARY ISSUES
+================================================================================
+
+LIBRARY SCAN STUCK/SLOW
+-----------------------
+1. Large libraries take time
+   - 10,000 tracks: 1-5 minutes
+   - 100,000 tracks: 10-30 minutes
+
+2. Network drives are slower
+   - Local drives scan faster
+   - Consider copying files locally
+
+3. Antivirus may interfere
+   - Add OpenBroadcaster to exclusions
+   - Add library folders to exclusions
+
+TRACKS NOT APPEARING
+--------------------
+1. Check file format is supported
+   - MP3, WAV, FLAC, OGG, M4A, AAC, WMA
+
+2. Verify folder is added
+   - Settings > Library > Watch Folders
+   - Add folder if missing
+
+3. Rescan the library
+   - Right-click library > Rescan Library
+
+4. Check for hidden files
+   - Some files may be hidden by Windows
+
+WRONG METADATA SHOWING
+----------------------
+1. Metadata comes from file tags
+   - Use MP3Tag or similar to edit tags
+   - Re-scan library after editing
+
+2. Missing tags use filename
+   - Filename should be: Artist - Title.mp3
+   - Or edit tags properly
+
+================================================================================
+AUTODJ ISSUES
+================================================================================
+
+AUTODJ NOT ADDING TRACKS
+------------------------
+1. Check AutoDJ is enabled
+   - Click AutoDJ button in toolbar
+   - Should be highlighted when active
+
+2. Verify queue depth setting
+   - Settings > AutoDJ > Target Queue Depth
+   - AutoDJ adds when queue is below this
+
+3. Check rotation has slots
+   - Settings > AutoDJ > Rotations
+   - Rotation needs defined slots
+
+4. Verify categories have tracks
+   - Categories in rotation must have assigned tracks
+   - Check library category assignments
+
+5. Review separation rules
+   - Rules too strict = no valid tracks
+   - Temporarily disable to test
+
+AUTODJ PLAYING WRONG MUSIC
+--------------------------
+1. Check active rotation
+   - Verify correct rotation is scheduled
+
+2. Review schedule configuration
+   - Settings > AutoDJ > Schedule
+   - Check times and days
+
+3. Check system clock
+   - Wrong time = wrong rotation
+   - Sync with internet time
+
+SAME SONGS PLAYING TOO OFTEN
+----------------------------
+1. Increase separation times
+   - Artist separation: 60+ minutes
+   - Title separation: 180+ minutes
+
+2. Add more tracks to categories
+   - Small categories = repetition
+   - Aim for 50+ tracks per category
+
+3. Use more diverse rotations
+   - Add variety to rotation slots
+   - Mix different categories
+
+================================================================================
+STREAMING ISSUES
+================================================================================
+
+CAN'T CONNECT TO SERVER
+-----------------------
+1. Verify server address and port
+   - Double-check for typos
+   - Test: telnet server.com 8000
+
+2. Check password
+   - Passwords are case-sensitive
+   - Copy/paste to avoid errors
+
+3. Check mount point (Icecast)
+   - Should start with /
+   - Example: /live or /stream
+
+4. Verify server is running
+   - Contact hosting provider
+   - Check server status page
+
+5. Check firewall
+   - Allow outbound connections
+   - Port typically 8000
+
+STREAM DROPS FREQUENTLY
+-----------------------
+1. Check internet stability
+   - Run speed test
+   - Look for packet loss
+
+2. Reduce bitrate
+   - Lower bitrate = less bandwidth needed
+   - Try 128kbps instead of 256kbps
+
+3. Check server capacity
+   - Server may be overloaded
+   - Contact provider
+
+4. Enable auto-reconnect
+   - Settings > Encoder
+   - Enable automatic reconnection
+
+NO AUDIO IN STREAM
+------------------
+1. Verify encoder input
+   - Settings > Audio > Encoder Input
+   - Should capture main output
+
+2. Check audio is playing
+   - Something must be playing to stream
+   - Test with local playback first
+
+3. Listen to your own stream
+   - Open stream URL in media player
+   - Verify it's your station
+
+METADATA NOT UPDATING
+---------------------
+1. Check metadata is enabled
+   - Encoder profile settings
+   - Enable "Send Now Playing"
+
+2. Server must support metadata
+   - Icecast and Shoutcast support it
+   - Check server configuration
+
+3. Player may cache metadata
+   - Try different player
+   - Wait for cache to expire
+
+================================================================================
+TWITCH ISSUES
+================================================================================
+
+CAN'T CONNECT TO TWITCH
+-----------------------
+1. Re-authorize the connection
+   - Settings > Twitch > Disconnect
+   - Then Connect again
+   - Complete authorization in browser
+
+2. Check internet connection
+   - Twitch requires stable connection
+
+3. Verify account status
+   - Account must be in good standing
+   - No chat bans
+
+REQUESTS NOT WORKING
+--------------------
+1. Verify requests are enabled
+   - Settings > Twitch > Enable Requests
+
+2. Check command format
+   - Default: !request Song Name
+   - Check custom command setting
+
+3. Verify track exists
+   - Song must be in library
+   - Search must find a match
+
+4. Check user limits
+   - User may have hit request limit
+   - Check cooldown period
+
+================================================================================
+WEB INTEGRATION ISSUES
+================================================================================
+
+WORDPRESS PLUGIN NOT CONNECTING
+-------------------------------
+1. Verify Direct Server is running
+   - Settings > Web Server
+   - Enable and check port
+
+2. Check URL is correct
+   - Include port: http://ip:8585
+   - Test URL in browser
+
+3. Verify network access
+   - Port forwarding configured
+   - Firewall allows connection
+
+4. Check API key matches
+   - Same key in app and plugin
+
+5. Test with simple browser request
+   - Visit: http://your-ip:8585/api/status
+   - Should return JSON response
+
+================================================================================
+PERFORMANCE ISSUES
+================================================================================
+
+APPLICATION RUNNING SLOW
+------------------------
+1. Check CPU usage
+   - Task Manager > Details
+   - High CPU = performance issue
+
+2. Large library impact
+   - Very large libraries use more memory
+   - Consider splitting into folders
+
+3. Disable unused features
+   - Turn off Twitch if not using
+   - Disable overlay if not needed
+
+4. Update graphics drivers
+   - UI rendering uses GPU
+
+HIGH CPU USAGE
+--------------
+1. Check waveform rendering
+   - Disable waveforms if not needed
+
+2. Reduce refresh rates
+   - Overlay refresh interval
+   - VU meter update rate
+
+3. Close other applications
+   - Free up system resources
+
+================================================================================
+FREQUENTLY ASKED QUESTIONS
+================================================================================
+
+Q: Can I run OpenBroadcaster on Mac or Linux?
+A: Currently Windows only. A cross-platform version may come in the future.
+
+Q: How many tracks can the library hold?
+A: No hard limit. Libraries with 100,000+ tracks work but scan times increase.
+
+Q: Can I use two sound cards for split output?
+A: Yes! Configure different devices for Deck A, Deck B, and Cart Wall in
+   Settings > Audio.
+
+Q: Does OpenBroadcaster support video?
+A: No, it's audio-only. For video streaming, use OBS with the overlay.
+
+Q: Can multiple DJs use it remotely?
+A: Not directly. Each instance runs locally. Use remote desktop or the web
+   interface for remote song requests.
+
+Q: How do I backup my settings?
+A: Copy the folder: %AppData%/OpenBroadcaster/
+
+Q: Can I import playlists from iTunes/other software?
+A: M3U, PLS, and XSPF playlists can be imported via File > Import Playlist.
+
+Q: Is there a mobile app?
+A: No native app, but the WordPress plugin is mobile-responsive for listener
+   interaction.
+
+Q: How do I update OpenBroadcaster?
+A: Download the latest installer and run it. Settings are preserved.
+
+Q: Can I run it as a Windows service?
+A: Not currently. It's designed as a desktop application with UI.
+
+================================================================================
+GETTING HELP
+================================================================================
+
+If you can't resolve an issue:
+
+1. Check the GitHub repository
+   https://github.com/mcdorgle/openbroadcaster
+
+2. Search existing issues
+   Someone may have had the same problem
+
+3. Open a new issue
+   Include:
+   - OpenBroadcaster version
+   - Windows version
+   - Steps to reproduce
+   - Error messages
+   - Log files if relevant
+
+4. Logs are located at:
+   %AppData%/OpenBroadcaster/logs/
+
+================================================================================

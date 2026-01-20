@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenBroadcaster", "OpenBroa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenBroadcaster.Tests", "OpenBroadcaster.Tests\OpenBroadcaster.Tests.csproj", "{D20278F9-8907-FF8A-77AC-1C08318275D8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenBroadcaster.RelayService", "OpenBroadcaster.RelayService\OpenBroadcaster.RelayService.csproj", "{A7B8C9D0-E1F2-3456-7890-ABCDEF123456}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,6 +22,10 @@ Global
 		{D20278F9-8907-FF8A-77AC-1C08318275D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D20278F9-8907-FF8A-77AC-1C08318275D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D20278F9-8907-FF8A-77AC-1C08318275D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7B8C9D0-E1F2-3456-7890-ABCDEF123456}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7B8C9D0-E1F2-3456-7890-ABCDEF123456}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7B8C9D0-E1F2-3456-7890-ABCDEF123456}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7B8C9D0-E1F2-3456-7890-ABCDEF123456}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

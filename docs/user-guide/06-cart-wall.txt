@@ -1,0 +1,260 @@
+================================================================================
+                    OPENBROADCASTER - CART WALL / SOUNDBOARD
+================================================================================
+
+The Cart Wall (also called Soundboard or Hot Keys) provides instant access to
+sound effects, jingles, station IDs, and other frequently-used audio.
+
+--------------------------------------------------------------------------------
+CART WALL OVERVIEW
+--------------------------------------------------------------------------------
+
+The Cart Wall is a grid of buttons (pads) at the bottom of the screen:
+
++------------------------------------------------------------------+
+|  [Jingle 1]  [Jingle 2]  [Applause]  [Airhorn]  [Rimshot]        |
+|  [Station ID] [Outro]   [News Bed]  [Weather]  [Traffic]         |
+|  [Bumper 1]  [Bumper 2] [Laugh]     [Boo]      [Ding]            |
++------------------------------------------------------------------+
+
+Each pad can be:
+- Assigned to an audio file
+- Given a custom label
+- Color-coded for easy identification
+- Triggered by mouse click or keyboard shortcut
+
+--------------------------------------------------------------------------------
+CONFIGURING CART PADS
+--------------------------------------------------------------------------------
+
+TO SET UP A PAD:
+
+1. Right-click on any cart pad
+2. Select "Edit Pad" from the menu
+3. Configure the following:
+
+   LABEL:
+   - Display name shown on the pad
+   - Keep it short (8-10 characters max)
+   - Examples: "Jingle", "Applause", "Station ID"
+
+   FILE:
+   - Click "Browse" to select an audio file
+   - Supports MP3, WAV, FLAC, OGG
+   - File plays from beginning when triggered
+
+   COLOR:
+   - Click the color swatch to choose a color
+   - Use colors to organize by type:
+     * Blue = Station IDs/Jingles
+     * Green = Music beds
+     * Yellow = Sound effects
+     * Red = Important/Emergency
+
+   HOTKEY:
+   - Assign a keyboard shortcut
+   - Default: F1-F12, Numpad keys
+   - Can also use letter combinations
+
+   LOOP:
+   - Enable to loop the audio continuously
+   - Useful for music beds and background audio
+   - Click again to stop
+
+4. Click "Save" to apply changes
+
+--------------------------------------------------------------------------------
+USING CART PADS
+--------------------------------------------------------------------------------
+
+TRIGGERING A PAD:
+
+By Mouse:
+- Simply click the pad
+- Audio plays immediately
+
+By Keyboard:
+- Press the assigned hotkey
+- Works even when focus is elsewhere
+
+STOPPING PLAYBACK:
+- Click the pad again while playing
+- Or press the hotkey again
+- Or click the stop button (if visible)
+
+VISUAL FEEDBACK:
+- Pad lights up/animates while playing
+- Progress indicator may show remaining time
+
+--------------------------------------------------------------------------------
+CART WALL OUTPUT
+--------------------------------------------------------------------------------
+
+The Cart Wall has its own audio output, separate from the main decks:
+
+CONFIGURING OUTPUT:
+1. Go to Settings > Audio
+2. Find "Cart Wall Device"
+3. Select your preferred output device
+
+USE CASES:
+- Same as main output: All audio through one channel
+- Separate output: Route to a mixer for level control
+- Headphone preview: Monitor carts before airing
+
+VOLUME CONTROL:
+- Cart Wall has its own volume slider
+- Adjust in Settings > Audio > Cart Wall Volume
+- Or use the volume control in the cart wall panel
+
+--------------------------------------------------------------------------------
+ORGANIZING YOUR CARTS
+--------------------------------------------------------------------------------
+
+GRID SIZE:
+- Default: 5 columns x 3 rows (15 pads)
+- Adjustable in Settings > Cart Wall
+- Options: 4x2, 5x3, 6x4, 8x4, etc.
+
+PAGES:
+- Create multiple pages for more carts
+- Click page tabs or use Page Up/Down
+- Organize by show, type, or frequency of use
+
+RECOMMENDED ORGANIZATION:
+
+Page 1 - Main Jingles:
+  Station IDs, main jingles, show intros
+
+Page 2 - Sound Effects:
+  Applause, laughs, horns, bells, etc.
+
+Page 3 - Music Beds:
+  Background music for talk segments
+
+Page 4 - Show-Specific:
+  Carts for specific shows or segments
+
+--------------------------------------------------------------------------------
+CART PLAYBACK MODES
+--------------------------------------------------------------------------------
+
+INSTANT (Default):
+- Audio plays immediately when triggered
+- Plays from the beginning each time
+- Best for short sound effects
+
+TOGGLE:
+- First click plays, second click stops
+- Useful for music beds
+- Enable per-pad in pad settings
+
+LOOP:
+- Audio repeats continuously
+- Click again to stop
+- Great for background beds
+
+EXCLUSIVE:
+- Only one pad plays at a time
+- Triggering a new pad stops the current one
+- Enable in Settings > Cart Wall
+
+--------------------------------------------------------------------------------
+IMPORTING/EXPORTING CART LAYOUTS
+--------------------------------------------------------------------------------
+
+EXPORT LAYOUT:
+1. Go to Settings > Cart Wall
+2. Click "Export Layout"
+3. Save the .json file
+4. Includes all pad configurations
+
+IMPORT LAYOUT:
+1. Go to Settings > Cart Wall
+2. Click "Import Layout"
+3. Select a previously exported file
+4. Pads are restored with all settings
+
+NOTE: Audio files must still exist at the same paths. If you move to a new
+computer, you may need to update file paths.
+
+--------------------------------------------------------------------------------
+CART WALL HOTKEYS
+--------------------------------------------------------------------------------
+
+DEFAULT HOTKEY ASSIGNMENTS:
+  F1-F12       - First 12 pads
+  Numpad 0-9   - Additional pads
+  Ctrl+1-9     - Page selection
+
+CUSTOMIZING HOTKEYS:
+1. Right-click pad > Edit Pad
+2. Click in the Hotkey field
+3. Press your desired key combination
+4. Click Save
+
+AVOIDING CONFLICTS:
+- Don't use keys needed for other functions
+- Avoid Ctrl, Alt, Shift alone
+- Test hotkeys work from different panels
+
+--------------------------------------------------------------------------------
+TIPS AND BEST PRACTICES
+--------------------------------------------------------------------------------
+
+1. KEEP FILES ORGANIZED
+   - Store cart audio in a dedicated folder
+   - Use clear file naming
+   - Back up your cart audio files
+
+2. NORMALIZE AUDIO LEVELS
+   - All carts should be similar volume
+   - Process files to consistent loudness
+   - Test levels before going live
+
+3. USE SHORT FILES
+   - Carts should be 5-30 seconds typically
+   - Longer content belongs in the library
+
+4. COLOR CODE CONSISTENTLY
+   - Develop a color system and stick to it
+   - Train all DJs on the color meanings
+
+5. PREPARE FOR SHOWS
+   - Set up show-specific cart pages
+   - Test all carts before going live
+   - Have backup carts for technical issues
+
+6. LEGAL CONSIDERATIONS
+   - Station IDs required for broadcast
+   - Keep legal ID carts prominent
+   - Play legal ID at top of hour
+
+--------------------------------------------------------------------------------
+TROUBLESHOOTING
+--------------------------------------------------------------------------------
+
+CART WON'T PLAY:
+1. Check the file path is still valid
+2. Verify the audio file isn't corrupted
+3. Check Cart Wall volume isn't at zero
+4. Verify correct output device is selected
+
+AUDIO PLAYS THROUGH WRONG OUTPUT:
+1. Go to Settings > Audio
+2. Check Cart Wall Device setting
+3. Ensure the correct device is selected
+
+HOTKEY NOT WORKING:
+1. Check for hotkey conflicts
+2. Verify the pad has a hotkey assigned
+3. Try reassigning the hotkey
+4. Some keys may be reserved by Windows
+
+CART PLAYING BUT NO SOUND:
+1. Check Cart Wall volume
+2. Check Windows volume mixer
+3. Verify output device is working
+4. Test with another audio file
+
+================================================================================

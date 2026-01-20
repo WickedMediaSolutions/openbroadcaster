@@ -9,6 +9,7 @@ namespace OpenBroadcaster.Core.Models
         Twitch = 4,
         Cart = 5,
         System = 6,
-        TopOfHour = 7
+        TopOfHour = 7,
+        WebRequest = 8
     }
 }

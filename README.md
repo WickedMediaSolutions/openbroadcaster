@@ -101,6 +101,11 @@ OpenBroadcaster is a full-featured radio automation system designed for internet
 - **Ready-to-use HTML/CSS/JS**: Included overlay templates for OBS browser sources
 - **Low Latency**: ≤250ms data refresh
 
+### 🌐 Web & WordPress Integration
+- **Built-in HTTP API**: Direct Server exposes JSON endpoints for now playing, queue, library search, and requests
+- **Official WordPress Plugin**: `wordpress-plugin-v2` provides now playing widgets, full-page views, library browser, requests, and queue display
+- **Direct or Relay Modes**: Connect WordPress directly to the desktop app or via the Relay Service for NAT-safe setups
+
 ### ⚙️ Settings & Configuration
 - **Tabbed Settings Window**:
   - Audio device selection
@@ -131,6 +136,13 @@ OpenBroadcaster is a full-featured radio automation system designed for internet
 ### Prerequisites
 
 1. Install the [.NET 8.0 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)
+
+### Using the Windows Installer
+
+1. Download the latest `OpenBroadcaster-Setup.exe` from the GitHub Releases page
+2. Run the installer and follow the prompts
+3. Launch **OpenBroadcaster** from the Start Menu or desktop shortcut
+4. Open **Settings → Audio** on first launch to verify devices
 
 ### Building from Source
 

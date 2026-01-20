@@ -1,0 +1,355 @@
+================================================================================
+                    OPENBROADCASTER - WEB INTEGRATION
+================================================================================
+
+OpenBroadcaster provides web integration features that allow you to display
+now playing information, accept song requests, and more through your website.
+
+--------------------------------------------------------------------------------
+OVERVIEW
+--------------------------------------------------------------------------------
+
+There are two ways to connect your website to OpenBroadcaster:
+
+1. DIRECT MODE (Recommended for most users)
+   - Built-in web server in OpenBroadcaster
+   - Simple setup with port forwarding
+   - No additional services required
+
+2. RELAY MODE (NAT-safe / Advanced)
+   - Uses a separate relay service
+   - Works behind strict NATs
+   - Requires hosting a relay server
+
+--------------------------------------------------------------------------------
+WORDPRESS PLUGIN
+--------------------------------------------------------------------------------
+
+OpenBroadcaster includes a WordPress plugin that provides:
+
+- Now Playing widget/shortcode
+- Music library browser
+- Song request form
+- Queue display
+- Full-page tabbed interface
+
+INSTALLING THE PLUGIN:
+
+1. Locate the plugin folder:
+   - In your OpenBroadcaster installation: wordpress-plugin-v2/
+   - Or download from the GitHub repository
+
+2. Upload to WordPress:
+   - Copy the folder to wp-content/plugins/openbroadcaster-web/
+   - Or zip the folder and upload via Plugins > Add New > Upload
+
+3. Activate the plugin:
+   - Go to Plugins in WordPress admin
+   - Find "OpenBroadcaster Web" and click Activate
+
+4. Configure the plugin:
+   - Go to Settings > OpenBroadcaster
+   - Choose your connection mode and enter settings
+
+STREAMING AUDIO PLAYER:
+- In the plugin settings under Display, set the **Stream URL** to your live Shoutcast/Icecast stream
+- The `[ob_now_playing]` and `[ob_now_playing_extended]` shortcodes will then include an HTML5 audio player
+- If **Stream URL** is left empty, no player is shown and only metadata is displayed
+
+--------------------------------------------------------------------------------
+DIRECT MODE SETUP
+--------------------------------------------------------------------------------
+
+Direct Mode runs a web server inside OpenBroadcaster that your website
+connects to directly.
+
+STEP 1: Enable Direct Server in OpenBroadcaster
+
+1. Go to Settings > Web Server (or Direct Server)
+2. Enable "Direct Server"
+3. Configure settings:
+   
+   PORT:
+   - Default: 8585
+   - Change if port is already in use
+   
+   ALLOW REMOTE CONNECTIONS:
+   - Enable this to allow connections from outside your PC
+   - Required for your website to connect
+   
+   API KEY (Optional):
+   - Set a key for authentication
+   - Must match in WordPress settings
+   
+   ENABLE CORS:
+   - Usually leave enabled
+   - Required for web browser access
+
+4. Click Save
+
+STEP 2: Configure Network Access
+
+For your website to reach OpenBroadcaster, you need one of:
+
+OPTION A - Same Network:
+- Website and OpenBroadcaster on same local network
+- Use internal IP: http://192.168.1.100:8585
+
+OPTION B - Port Forwarding:
+1. Log into your router
+2. Forward external port 8585 to your PC's internal IP
+3. Use your public IP or dynamic DNS
+4. Example: http://yourstation.ddns.net:8585
+
+OPTION C - VPN/Tunnel:
+- Use a VPN to connect your server to your network
+- Or use a tunnel service like ngrok
+
+STEP 3: Configure WordPress Plugin
+
+1. In WordPress, go to Settings > OpenBroadcaster
+2. Select "Direct" connection mode
+3. Enter your OpenBroadcaster URL:
+   - Local: http://192.168.1.100:8585
+   - Public: http://yourstation.ddns.net:8585
+4. Enter API key (if you set one)
+5. Click "Test Connection" to verify
+6. Save settings
+
+--------------------------------------------------------------------------------
+RELAY MODE SETUP
+--------------------------------------------------------------------------------
+
+Relay Mode uses a hosted service that both OpenBroadcaster and your website
+connect to. This works when your OpenBroadcaster PC can't accept incoming
+connections.
+
+STEP 1: Deploy the Relay Service
+
+The relay service is included with OpenBroadcaster:
+  OpenBroadcaster.RelayService/
+
+Deploy options:
+- Your own VPS (DigitalOcean, Linode, etc.)
+- Cloud platform (Azure, AWS, etc.)
+- Docker container
+
+See the relay service documentation for deployment instructions.
+
+STEP 2: Configure OpenBroadcaster
+
+1. Go to Settings > Relay
+2. Enter:
+   - Relay URL: https://relay.yourdomain.com
+   - Station ID: Your unique station identifier
+   - API Key: Your relay authentication key
+3. Enable "Connect to Relay"
+4. Verify connection status shows "Connected"
+
+STEP 3: Configure WordPress Plugin
+
+1. In WordPress, go to Settings > OpenBroadcaster
+2. Select "Relay" connection mode
+3. Enter:
+   - Relay URL: https://relay.yourdomain.com
+   - Station ID: Your station identifier
+4. Save settings
+
+--------------------------------------------------------------------------------
+WORDPRESS SHORTCODES
+--------------------------------------------------------------------------------
+
+Use these shortcodes to add OpenBroadcaster content to your pages:
+
+[ob_now_playing]
+  Displays the currently playing track with:
+  - Album artwork
+  - Title and artist
+  - Progress bar (optional)
+  - Requester name (if a request)
+
+[ob_library]
+  Shows a searchable music library:
+  - Search box
+  - Paginated results
+  - Click to view track details
+  - Request button (if enabled)
+
+[ob_request]
+  Song request form:
+  - Search for songs
+  - Enter your name
+  - Optional message
+  - Submit request
+
+[ob_queue]
+  Shows upcoming tracks:
+  - Next tracks in queue
+  - Request indicators
+  - Duration information
+
+[ob_full_page]
+  Complete tabbed interface:
+  - Combines all features
+  - Tabbed navigation
+  - Perfect for a dedicated "Listen" page
+
+--------------------------------------------------------------------------------
+WORDPRESS WIDGET
+--------------------------------------------------------------------------------
+
+A sidebar widget is also available:
+
+1. Go to Appearance > Widgets
+2. Find "OpenBroadcaster Now Playing"
+3. Drag to your desired sidebar
+4. Configure options:
+   - Title
+   - Show artwork
+   - Show progress bar
+   - Compact mode
+
+--------------------------------------------------------------------------------
+PLUGIN APPEARANCE SETTINGS
+--------------------------------------------------------------------------------
+
+Customize the look of the plugin:
+
+THEME:
+- Dark (default): Dark background, light text
+- Light: Light background, dark text
+- Matches your website theme
+
+ACCENT COLOR:
+- Primary color for buttons and highlights
+- Use your brand color
+
+CUSTOM CSS:
+- Add your own CSS rules
+- Override default styles
+- Match your site's design
+
+--------------------------------------------------------------------------------
+API ENDPOINTS (DIRECT MODE)
+--------------------------------------------------------------------------------
+
+For developers, the Direct Server provides these REST endpoints:
+
+GET /api/status
+  Returns server status and version
+
+GET /api/now-playing
+  Returns currently playing track information
+  {
+    "title": "Song Title",
+    "artist": "Artist Name",
+    "album": "Album Name",
+    "duration": 240,
+    "position": 120,
+    "is_playing": true,
+    "requested_by": "username"
+  }
+
+GET /api/queue
+  Returns upcoming tracks in the queue
+  {
+    "items": [...],
+    "total_count": 5
+  }
+
+GET /api/library/search?q=searchterm
+  Searches the music library
+  {
+    "items": [...],
+    "total_items": 100,
+    "page": 1,
+    "per_page": 20
+  }
+
+POST /api/requests
+  Submits a song request
+  Body: {
+    "track_id": "guid",
+    "requester_name": "Name",
+    "message": "Optional message"
+  }
+
+--------------------------------------------------------------------------------
+OVERLAY SYSTEM
+--------------------------------------------------------------------------------
+
+OpenBroadcaster also includes an overlay system for OBS/streaming:
+
+ENABLING OVERLAY:
+1. Go to Settings > Overlay
+2. Enable "Overlay Server"
+3. Note the URL (usually http://localhost:9750)
+
+ADDING TO OBS:
+1. In OBS, add a Browser Source
+2. Enter the overlay URL
+3. Set size to match your needs
+4. Position in your scene
+
+OVERLAY SHOWS:
+- Now playing track info
+- Album artwork
+- Recent tracks
+- Current requests
+
+--------------------------------------------------------------------------------
+TROUBLESHOOTING WEB INTEGRATION
+--------------------------------------------------------------------------------
+
+CAN'T CONNECT (DIRECT MODE):
+1. Verify Direct Server is enabled and running
+2. Check firewall allows the port
+3. Verify port forwarding is configured
+4. Test URL in browser first
+5. Check API key matches
+
+CAN'T CONNECT (RELAY MODE):
+1. Verify relay service is running
+2. Check OpenBroadcaster shows "Connected"
+3. Verify station ID is correct
+4. Check relay service logs
+
+NO DATA SHOWING:
+1. Verify music is playing in OpenBroadcaster
+2. Check browser developer console for errors
+3. Verify CORS is enabled
+4. Test API endpoints directly
+
+REQUESTS NOT WORKING:
+1. Verify requests are enabled in settings
+2. Check request limits aren't reached
+3. Verify track exists in library
+4. Check error messages in response
+
+SLOW UPDATES:
+1. Check refresh interval setting
+2. Verify network latency
+3. Increase polling interval if needed
+
+--------------------------------------------------------------------------------
+SECURITY CONSIDERATIONS
+--------------------------------------------------------------------------------
+
+1. USE API KEYS
+   - Set an API key in OpenBroadcaster
+   - Configure same key in WordPress
+   - Prevents unauthorized access
+
+2. USE HTTPS FOR RELAY
+   - Deploy relay service with SSL
+   - Protects data in transit
+
+3. FIREWALL RULES
+   - Only open necessary ports
+   - Restrict access by IP if possible
+
+4. MONITOR ACCESS
+   - Check logs for unusual activity
+   - Rate limiting prevents abuse
+
+================================================================================

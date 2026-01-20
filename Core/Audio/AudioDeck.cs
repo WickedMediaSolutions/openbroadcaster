@@ -18,6 +18,8 @@ namespace OpenBroadcaster.Core.Audio
         private MeteringSampleProvider? _meteringProvider;
         private int _deviceNumber;
         private float _volume = 1f;
+        // When true, suppress raising PlaybackStopped for internal resets (cueing new tracks)
+        private bool _suppressPlaybackStopped;
         private WaveFormat? _encoderTapFormat;
         private AudioSampleBlockHandler? _encoderSampleTap;
 
@@ -119,6 +121,22 @@ namespace OpenBroadcaster.Core.Audio
             }
         }
 
+        public void Pause()
+        {
+            lock (_sync)
+            {
+                try
+                {
+                    _elapsedTimer.Stop();
+                    _waveOut?.Pause();
+                }
+                catch (Exception)
+                {
+                    // Swallow exceptions during pause to prevent crashes
+                }
+            }
+        }
+
         public void SelectOutputDevice(int deviceNumber)
         {
             lock (_sync)
@@ -172,7 +190,16 @@ namespace OpenBroadcaster.Core.Audio
             _elapsedTimer.Stop();
             if (_waveOut != null)
             {
-                _waveOut.Stop();
+                // Stop and dispose the current output without publishing a playback-completed event
+                _suppressPlaybackStopped = true;
+                try
+                {
+                    _waveOut.Stop();
+                }
+                finally
+                {
+                    _suppressPlaybackStopped = false;
+                }
                 _waveOut.PlaybackStopped -= OnPlaybackStopped;
                 _waveOut.Dispose();
                 _waveOut = null;
@@ -244,6 +271,10 @@ namespace OpenBroadcaster.Core.Audio
         private void OnPlaybackStopped(object? sender, StoppedEventArgs e)
         {
             _elapsedTimer.Stop();
+            if (_suppressPlaybackStopped)
+            {
+                return;
+            }
             PlaybackStopped?.Invoke();
             LevelChanged?.Invoke(0);
         }

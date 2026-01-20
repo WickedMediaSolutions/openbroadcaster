@@ -13,7 +13,7 @@ namespace OpenBroadcaster.Views
         public SettingsWindow()
         {
             InitializeComponent();
-            DataContextChanged += (_, __) => SyncOAuthPassword();
+            DataContextChanged += (_, __) => { SyncOAuthPassword(); SyncApiPassword(); };
         }
 
         private SettingsViewModel? ViewModel => DataContext as SettingsViewModel;
@@ -45,6 +45,7 @@ namespace OpenBroadcaster.Views
         private void OnWindowLoaded(object sender, RoutedEventArgs e)
         {
             SyncOAuthPassword();
+            SyncApiPassword();
         }
 
         private void OnOAuthPasswordChanged(object sender, RoutedEventArgs e)
@@ -73,6 +74,35 @@ namespace OpenBroadcaster.Views
             if (!string.Equals(OAuthTokenBox.Password, token, StringComparison.Ordinal))
             {
                 OAuthTokenBox.Password = token;
+            }
+        }
+
+        private void OnApiPasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (sender is not PasswordBox box || ViewModel?.Settings?.Overlay == null)
+            {
+                return;
+            }
+
+            var current = ViewModel.Settings.Overlay.ApiPassword ?? string.Empty;
+            if (!string.Equals(current, box.Password, StringComparison.Ordinal))
+            {
+                ViewModel.Settings.Overlay.ApiPassword = box.Password;
+                ViewModel.NotifySettingsModified();
+            }
+        }
+
+        private void SyncApiPassword()
+        {
+            if (ApiPasswordBox == null || ViewModel?.Settings?.Overlay == null)
+            {
+                return;
+            }
+
+            var password = ViewModel.Settings.Overlay.ApiPassword ?? string.Empty;
+            if (!string.Equals(ApiPasswordBox.Password, password, StringComparison.Ordinal))
+            {
+                ApiPasswordBox.Password = password;
             }
         }
 

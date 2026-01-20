@@ -43,6 +43,7 @@ namespace OpenBroadcaster.ViewModels
         private readonly EncoderManager _encoderManager;
         private readonly SharedEncoderAudioSource _sharedEncoderSource;
         private readonly OverlayService _overlayService;
+        private Core.Services.DirectServer.DirectHttpServer? _directServer;
         private AppSettings _appSettings;
         private TwitchSettings _twitchSettings;
         private CancellationTokenSource? _twitchCts;
@@ -57,6 +58,7 @@ namespace OpenBroadcaster.ViewModels
         private readonly object _libraryCacheLock = new();
         private List<Track> _libraryTrackCache = new();
         private Dictionary<Guid, LibraryCategory> _libraryCategoryLookup = new();
+        private SimpleRotation? _selectedLiveAssistRotation;
         private bool _suspendLibraryFilter;
         private bool _clockwheelConfigured;
         private bool _encodersEnabled;
@@ -65,10 +67,11 @@ namespace OpenBroadcaster.ViewModels
         private bool _suppressDeckVolumePersistence;
         private DeckStateChangedEvent? _deckAState;
         private DeckStateChangedEvent? _deckBState;
-        private Guid? _lastAnnouncedDeckATrackId;
-        private Guid? _lastAnnouncedDeckBTrackId;
+        private Guid? _lastAnnouncedTrackId;
+        private DateTime _lastAnnouncementTime = DateTime.MinValue;
         private readonly System.Windows.Threading.DispatcherTimer _clockTimer;
         private string _currentTime = "00:00:00";
+        private bool _use24HourClock = true;
 
         public DeckViewModel DeckA { get; }
         public DeckViewModel DeckB { get; }
@@ -89,6 +92,23 @@ namespace OpenBroadcaster.ViewModels
         {
             get => _currentTime;
             private set => SetProperty(ref _currentTime, value);
+        }
+
+        /// <summary>
+        /// Controls whether the control rack clock uses 24-hour (true)
+        /// or 12-hour (false) format.
+        /// </summary>
+        public bool Use24HourClock
+        {
+            get => _use24HourClock;
+            set
+            {
+                if (SetProperty(ref _use24HourClock, value))
+                {
+                    // Update immediately when toggled
+                    UpdateCurrentTime();
+                }
+            }
         }
 
         public ICommand OpenTwitchSettingsCommand { get; }
@@ -272,6 +292,25 @@ namespace OpenBroadcaster.ViewModels
             private set => SetProperty(ref _encoderStatusMessage, value);
         }
 
+        public IReadOnlyList<SimpleRotation> LiveAssistRotations => _simpleAutoDjService.Rotations;
+
+        public SimpleRotation? SelectedLiveAssistRotation
+        {
+            get => _selectedLiveAssistRotation;
+            set
+            {
+                if (SetProperty(ref _selectedLiveAssistRotation, value))
+                {
+                    if (value != null)
+                    {
+                        _simpleAutoDjService.SetManualActiveRotation(value.Id);
+                    }
+                }
+            }
+        }
+
+        public bool IsLiveAssistRotationSelectionEnabled => !_autoDjEnabled;
+
         private bool _autoDjEnabled;
         public bool AutoDjEnabled
         {
@@ -283,29 +322,45 @@ namespace OpenBroadcaster.ViewModels
                     _simpleAutoDjService.Enabled = value;
                     _tohSchedulerService.IsAutoDjRunning = value;
                     SyncAutoDjPreview();
+                    OnPropertyChanged(nameof(IsLiveAssistRotationSelectionEnabled));
                     
-                    // Auto-play on Deck A when AutoDJ is enabled
-                    if (value && DeckA != null)
+                    if (value)
                     {
-                        var deckA = _transportService.DeckA;
-                        if (deckA.CurrentQueueItem == null || deckA.Status == DeckStatus.Empty)
+                        // AutoDJ only uses Deck A - stop Deck B if it's playing
+                        var deckB = _transportService.DeckB;
+                        if (deckB.Status == DeckStatus.Playing || deckB.Status == DeckStatus.Paused)
                         {
-                            // Load and play from queue
-                            System.Threading.Tasks.Task.Run(() =>
-                            {
-                                System.Threading.Thread.Sleep(500); // Small delay to ensure queue is populated
-                                RunOnUiThread(() =>
-                                {
-                                    if (_autoDjEnabled) // Check again in case it was toggled off
-                                    {
-                                        _transportService.Play(DeckIdentifier.A);
-                                    }
-                                });
-                            });
+                            _transportService.Stop(DeckIdentifier.B);
+                            _logger.LogInformation("AutoDJ started - stopped Deck B");
                         }
-                        else if (deckA.Status != DeckStatus.Playing)
+                        
+                        // Clear Deck B state to prevent stale data from being used
+                        _deckBState = null;
+                        _lastAnnouncedTrackId = null;
+                        
+                        // Auto-play on Deck A when AutoDJ is enabled
+                        if (DeckA != null)
                         {
-                            _transportService.Play(DeckIdentifier.A);
+                            var deckA = _transportService.DeckA;
+                            if (deckA.CurrentQueueItem == null || deckA.Status == DeckStatus.Empty)
+                            {
+                                // Load and play from queue
+                                System.Threading.Tasks.Task.Run(() =>
+                                {
+                                    System.Threading.Thread.Sleep(500); // Small delay to ensure queue is populated
+                                    RunOnUiThread(() =>
+                                    {
+                                        if (_autoDjEnabled) // Check again in case it was toggled off
+                                        {
+                                            _transportService.Play(DeckIdentifier.A);
+                                        }
+                                    });
+                                });
+                            }
+                            else if (deckA.Status != DeckStatus.Playing)
+                            {
+                                _transportService.Play(DeckIdentifier.A);
+                            }
                         }
                     }
                 }
@@ -457,6 +512,7 @@ namespace OpenBroadcaster.ViewModels
             _audioService.AttachEncoderTap(_sharedEncoderSource);
             _encoderManager = new EncoderManager(new RouterEncoderAudioSourceFactory(_sharedEncoderSource));
             _overlayService = new OverlayService(_queueService, _eventBus);
+            _overlayService.SetLibraryService(_libraryService);
             _encoderManager.StatusChanged += OnEncoderStatusChanged;
             _appSettings = _appSettingsStore.Load();
             _audioService.ApplyAudioSettings(_appSettings.Audio);
@@ -501,11 +557,23 @@ namespace OpenBroadcaster.ViewModels
             InitializeLibrary();
             // SeedQueue(); // REMOVED - Let AutoDJ populate queue from active rotation instead
             SeedChat();
+
+            // Initialize live-assist rotation selection to the currently active rotation, if any
+            var activeRotation = _simpleAutoDjService.Rotations.FirstOrDefault(r => r.IsActive) 
+                                 ?? _simpleAutoDjService.Rotations.FirstOrDefault();
+            if (activeRotation != null)
+            {
+                _selectedLiveAssistRotation = activeRotation;
+                OnPropertyChanged(nameof(SelectedLiveAssistRotation));
+            }
             InitializeCartWall();
             UpdateEncoderConfiguration(_appSettings);
             _overlayService.UpdateSettings(_appSettings.Overlay);
             ApplyRequestSettings(_appSettings.Requests);
             ApplyAutomationSettings(_appSettings.Automation);
+            
+            // Start Direct Server if enabled
+            InitializeDirectServer();
             
             // Start TOH scheduler (runs in background monitoring time)
             _tohSchedulerService.Start();
@@ -543,9 +611,15 @@ namespace OpenBroadcaster.ViewModels
             {
                 Interval = TimeSpan.FromMilliseconds(100)
             };
-            _clockTimer.Tick += (_, _) => CurrentTime = DateTime.Now.ToString("HH:mm:ss");
+            _clockTimer.Tick += (_, _) => UpdateCurrentTime();
             _clockTimer.Start();
-            CurrentTime = DateTime.Now.ToString("HH:mm:ss");
+            UpdateCurrentTime();
+        }
+
+        private void UpdateCurrentTime()
+        {
+            var format = Use24HourClock ? "HH:mm:ss" : "hh:mm:ss tt";
+            CurrentTime = DateTime.Now.ToString(format);
         }
 
         private void InitializeLibrary()
@@ -554,6 +628,131 @@ namespace OpenBroadcaster.ViewModels
             RefreshCategorySnapshot();
             RefreshLibrarySnapshot();
             SyncRotationSources();
+        }
+
+        private void InitializeDirectServer()
+        {
+            var settings = _appSettings.DirectServer;
+            if (settings == null || !settings.Enabled)
+            {
+                _logger.LogInformation("Direct Server is disabled");
+                return;
+            }
+
+            try
+            {
+                _directServer = new Core.Services.DirectServer.DirectHttpServer(
+                    settings,
+                    getSnapshot: GetDirectServerSnapshot,
+                    searchLibrary: SearchLibraryForDirectServer,
+                    onSongRequest: HandleDirectServerSongRequest,
+                    getStationName: () => _appSettings.Overlay?.ApiUsername ?? "OpenBroadcaster"
+                );
+
+                _directServer.ServerStarted += (_, _) => 
+                    _logger.LogInformation("Direct Server started on port {Port}", settings.Port);
+                _directServer.ServerStopped += (_, _) => 
+                    _logger.LogInformation("Direct Server stopped");
+                _directServer.RequestReceived += (_, endpoint) => 
+                    _logger.LogDebug("Direct Server request: {Endpoint}", endpoint);
+
+                _directServer.Start();
+                _logger.LogInformation("Direct Server initialized and listening on http://localhost:{Port}/", settings.Port);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to start Direct Server");
+            }
+        }
+
+        private Core.Services.DirectServer.DirectServerSnapshot GetDirectServerSnapshot()
+        {
+            var snapshot = new Core.Services.DirectServer.DirectServerSnapshot();
+            
+            // Get now playing from deck state
+            var deckState = _deckAState ?? _deckBState;
+            if (deckState?.QueueItem != null)
+            {
+                var item = deckState.QueueItem;
+                snapshot.NowPlaying = new Core.Services.DirectServer.DirectServerDtos.NowPlayingResponse
+                {
+                    TrackId = item.Track?.Id.ToString(),
+                    Title = item.Track?.Title ?? "Unknown",
+                    Artist = item.Track?.Artist ?? "Unknown",
+                    Album = item.Track?.Album ?? "",
+                    Duration = (int)(item.Track?.Duration.TotalSeconds ?? 0),
+                    Position = (int)(deckState.Elapsed.TotalSeconds),
+                    IsPlaying = deckState.IsPlaying,
+                    RequestedBy = item.Source,
+                    Type = "track"
+                };
+            }
+
+            // Get queue items
+            var queueItems = _queueService.Snapshot();
+            snapshot.Queue = queueItems.Select(q => new Core.Services.DirectServer.DirectServerDtos.QueueItem
+            {
+                Id = q.Track?.Id.ToString(),
+                Title = q.Track?.Title ?? "Unknown",
+                Artist = q.Track?.Artist ?? "Unknown",
+                Album = q.Track?.Album ?? "",
+                Duration = (int)(q.Track?.Duration.TotalSeconds ?? 0),
+                RequestedBy = q.Source,
+                Type = "track"
+            }).ToList();
+
+            return snapshot;
+        }
+
+        private IEnumerable<Core.Services.DirectServer.DirectServerLibraryItem> SearchLibraryForDirectServer(
+            string query, int page, int perPage)
+        {
+            var tracks = _libraryService.GetTracks();
+            var filtered = tracks
+                .Where(t =>
+                    string.IsNullOrWhiteSpace(query)
+                        || (t.Title?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
+                        || (t.Artist?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
+                        || (t.Album?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false))
+                .OrderBy(t => t.Title ?? string.Empty)
+                .Skip((page - 1) * perPage)
+                .Take(perPage);
+
+            return filtered.Select(t => new Core.Services.DirectServer.DirectServerLibraryItem
+            {
+                Id = t.Id,
+                Title = t.Title,
+                Artist = t.Artist,
+                Album = t.Album,
+                Duration = t.Duration,
+                FilePath = t.FilePath
+            });
+        }
+
+        private void HandleDirectServerSongRequest(Core.Services.DirectServer.SongRequest request)
+        {
+            _logger.LogInformation("Song request received via Direct Server: {TrackId} from {Requester}",
+                request.TrackId, request.RequesterName);
+
+            // Find the track in the library
+            var track = _libraryService.GetTracks().FirstOrDefault(t => t.Id == request.TrackId);
+            if (track != null)
+            {
+                var queueItem = new QueueItem(
+                    track,
+                    QueueSource.WebRequest,
+                    "Website Request",
+                    request.RequesterName ?? "Website",
+                    rotationName: null,
+                    categoryName: null,
+                    requestMessage: request.Message);
+                _queueService.Enqueue(queueItem);
+                _logger.LogInformation("Added request to queue: {Title} by {Artist}", track.Title, track.Artist);
+            }
+            else
+            {
+                _logger.LogWarning("Track not found for request: {TrackId}", request.TrackId);
+            }
         }
 
         private void EnsureDefaultLibraryTracks()
@@ -910,6 +1109,13 @@ namespace OpenBroadcaster.ViewModels
 
         private void OnDeckPlaybackCompleted(object? sender, DeckIdentifier deckId)
         {
+            // Skip auto-advance if a manual skip is in progress (Next button pressed)
+            if (_transportService.IsSkipping)
+            {
+                _logger.LogDebug("Ignoring playback completed for deck {DeckId} - manual skip in progress", deckId);
+                return;
+            }
+            
             _logger.LogInformation("Deck {DeckId} playback completed, advancing to next track", deckId);
             
             // Update deck state to stopped
@@ -922,8 +1128,8 @@ namespace OpenBroadcaster.ViewModels
                 _logger.LogInformation("Auto-advancing deck {DeckId} to: {Title} by {Artist}", deckId, next.Track?.Title, next.Track?.Artist);
                 _transportService.Play(deckId);
                 
-                // Announce to Twitch if connected
-                _twitchService?.AnnounceNowPlaying(next);
+                // Note: Twitch announcement is handled by OnDeckStateChangedForEncoderMetadata
+                // when the deck state changes to playing with the new track
             }
             else
             {
@@ -1424,15 +1630,7 @@ namespace OpenBroadcaster.ViewModels
 
         private void ShuffleQueue()
         {
-            var snapshot = _queueService.Snapshot();
-            if (snapshot.Count <= 1) return;
-
-            var shuffled = snapshot.OrderBy(_ => Guid.NewGuid()).ToList();
-            _queueService.Clear();
-            foreach (var item in shuffled)
-            {
-                _queueService.Enqueue(item);
-            }
+            _queueService.Shuffle();
         }
 
         private void MoveSelectedQueueItemToTop()
@@ -1682,8 +1880,9 @@ namespace OpenBroadcaster.ViewModels
             EventHandler<AppSettings>? handler = null;
             handler = (_, updated) =>
             {
+                var previous = _appSettings ?? new AppSettings();
                 _appSettings = updated ?? new AppSettings();
-                ApplyAppSettings(_appSettings);
+                ApplyAppSettings(previous, _appSettings);
             };
 
             settingsVm.SettingsChanged += handler;
@@ -1691,7 +1890,7 @@ namespace OpenBroadcaster.ViewModels
             settingsVm.SettingsChanged -= handler;
         }
 
-        private void ApplyAppSettings(AppSettings? settings)
+        private void ApplyAppSettings(AppSettings? previous, AppSettings? settings)
         {
             if (settings == null)
             {
@@ -1700,21 +1899,58 @@ namespace OpenBroadcaster.ViewModels
 
             settings.ApplyDefaults();
             _appSettingsStore.Save(settings);
-            _audioService.ApplyAudioSettings(settings.Audio);
-            if (settings.Audio != null)
+
+            // Only re-apply audio pipeline (devices + volumes) if audio
+            // settings actually changed. This prevents Apply from nudging
+            // output levels when the user didn't touch audio.
+            var audioChanged = previous == null
+                || !AreAudioSettingsEqual(previous.Audio, settings.Audio);
+
+            if (audioChanged)
             {
-                var deckAVolume = Math.Clamp(settings.Audio.DeckAVolumePercent, 0, 100);
-                var deckBVolume = Math.Clamp(settings.Audio.DeckBVolumePercent, 0, 100);
-                _suppressDeckVolumePersistence = true;
-                DeckA?.SyncVolumeFromEngine(deckAVolume);
-                DeckB?.SyncVolumeFromEngine(deckBVolume);
-                _suppressDeckVolumePersistence = false;
+                _audioService.ApplyAudioSettings(settings.Audio);
+                if (settings.Audio != null)
+                {
+                    var deckAVolume = Math.Clamp(settings.Audio.DeckAVolumePercent, 0, 100);
+                    var deckBVolume = Math.Clamp(settings.Audio.DeckBVolumePercent, 0, 100);
+                    _suppressDeckVolumePersistence = true;
+                    DeckA?.SyncVolumeFromEngine(deckAVolume);
+                    DeckB?.SyncVolumeFromEngine(deckBVolume);
+                    _suppressDeckVolumePersistence = false;
+                }
             }
+
             UpdateEncoderConfiguration(settings);
             _overlayService.UpdateSettings(settings.Overlay);
             ApplyRequestSettings(settings.Requests);
             ApplyQueueSettings(settings.Queue);
             ApplyAutomationSettings(settings.Automation);
+
+            // Keep Simple AutoDJ runtime configuration in sync with settings so
+            // rotation and schedule changes take effect without restarting.
+            if (settings.Automation != null)
+            {
+                var simpleRotations = (settings.Automation.SimpleRotations ?? new()).ToList();
+                var simpleSchedule = (settings.Automation.SimpleSchedule ?? new()).ToList();
+
+                var defaultRotationId = Guid.Empty;
+                if (!string.IsNullOrWhiteSpace(settings.Automation.DefaultRotationName))
+                {
+                    var byName = simpleRotations
+                        .FirstOrDefault(r => string.Equals(r.Name, settings.Automation.DefaultRotationName, StringComparison.OrdinalIgnoreCase));
+                    if (byName != null)
+                    {
+                        defaultRotationId = byName.Id;
+                    }
+                }
+
+                if (defaultRotationId == Guid.Empty && simpleRotations.Count > 0)
+                {
+                    defaultRotationId = simpleRotations[0].Id;
+                }
+
+                _simpleAutoDjService.UpdateConfiguration(simpleRotations, simpleSchedule, defaultRotationId);
+            }
 
             if (settings.Twitch != null)
             {
@@ -1728,6 +1964,12 @@ namespace OpenBroadcaster.ViewModels
                     _ = StartTwitchBridgeAsync();
                 }
             }
+
+            // Reconfigure Direct Server based on updated settings so URL/port
+            // changes apply immediately without requiring an app restart.
+            _directServer?.Dispose();
+            _directServer = null;
+            InitializeDirectServer();
         }
 
         private void ApplyQueueSettings(QueueSettings? settings)
@@ -1882,6 +2124,7 @@ namespace OpenBroadcaster.ViewModels
         private void ApplyRequestSettings(RequestSettings? settings)
         {
             _twitchService.UpdateRequestSettings(settings ?? new RequestSettings());
+            _overlayService.SetRequestSettings(settings, new Core.Requests.RequestPolicyEvaluator());
         }
 
         private void UpdateEncoderConfiguration(AppSettings? settings)
@@ -1944,32 +2187,31 @@ namespace OpenBroadcaster.ViewModels
 
         private void OnDeckStateChangedForEncoderMetadata(DeckStateChangedEvent payload)
         {
-            // Check if this is a new track starting to play
-            var currentTrackId = payload.QueueItem?.Track?.Id;
-            
+            // Track latest deck states
             if (payload.DeckId == DeckIdentifier.A)
             {
-                var lastTrackId = _lastAnnouncedDeckATrackId;
                 _deckAState = payload;
-                
-                // Announce all new tracks to Twitch chat
-                if (payload.IsPlaying && currentTrackId.HasValue && currentTrackId != lastTrackId)
-                {
-                    _lastAnnouncedDeckATrackId = currentTrackId;
-                    _twitchService.AnnounceNowPlaying(payload.QueueItem);
-                }
             }
             else if (payload.DeckId == DeckIdentifier.B)
             {
-                var lastTrackId = _lastAnnouncedDeckBTrackId;
                 _deckBState = payload;
-                
-                // Announce all new tracks to Twitch chat
-                if (payload.IsPlaying && currentTrackId.HasValue && currentTrackId != lastTrackId)
-                {
-                    _lastAnnouncedDeckBTrackId = currentTrackId;
-                    _twitchService.AnnounceNowPlaying(payload.QueueItem);
-                }
+            }
+
+            // Choose a single encoder candidate deck and announce based on that,
+            // so we never send duplicate announcements when both decks change.
+            var candidate = SelectEncoderDeckCandidate();
+            var currentTrackId = candidate?.QueueItem?.Track?.Id;
+            var now = DateTime.UtcNow;
+
+            // Debounce: Don't announce if we just announced within the last 2 seconds
+            var timeSinceLastAnnouncement = (now - _lastAnnouncementTime).TotalSeconds;
+
+            if (_twitchChatEnabled && candidate != null && candidate.IsPlaying && currentTrackId.HasValue &&
+                currentTrackId != _lastAnnouncedTrackId && timeSinceLastAnnouncement > 2.0)
+            {
+                _lastAnnouncedTrackId = currentTrackId;
+                _lastAnnouncementTime = now;
+                _twitchService.AnnounceNowPlaying(candidate.QueueItem);
             }
 
             UpdateEncoderMetadataFromDecks();
@@ -2164,6 +2406,30 @@ namespace OpenBroadcaster.ViewModels
             return appliedPercent;
         }
 
+        private static bool AreAudioSettingsEqual(AudioSettings? a, AudioSettings? b)
+        {
+            if (a == null && b == null)
+            {
+                return true;
+            }
+
+            if (a == null || b == null)
+            {
+                return false;
+            }
+
+            return a.MasterVolumePercent == b.MasterVolumePercent
+                   && a.DeckADeviceId == b.DeckADeviceId
+                   && a.DeckBDeviceId == b.DeckBDeviceId
+                   && a.DeckAVolumePercent == b.DeckAVolumePercent
+                   && a.DeckBVolumePercent == b.DeckBVolumePercent
+                   && a.CartWallDeviceId == b.CartWallDeviceId
+                   && a.CartWallVolumePercent == b.CartWallVolumePercent
+                   && a.MicVolumePercent == b.MicVolumePercent
+                   && a.EncoderDeviceId == b.EncoderDeviceId
+                   && a.MicInputDeviceId == b.MicInputDeviceId;
+        }
+
         private static bool IsTwitchSettingsValid(TwitchSettings settings)
         {
             if (settings == null)
@@ -2181,6 +2447,7 @@ namespace OpenBroadcaster.ViewModels
             _clockTimer.Stop();
             ForceDisableEncoders();
             StopTwitchBridge();
+            _directServer?.Dispose();
             _twitchCts?.Dispose();
             _twitchService.Dispose();
             _tohSchedulerService.Dispose();
@@ -2221,8 +2488,8 @@ namespace OpenBroadcaster.ViewModels
                 ?? throw new ArgumentNullException(nameof(eventBus));
             _applyVolume = applyVolume;
 
-            PlayCommand = new RelayCommand(_ => _transportService.Play(_deckId));
-            StopCommand = new RelayCommand(_ => _transportService.Stop(_deckId));
+            PlayCommand = new RelayCommand(_ => TogglePlayPause());
+            StopCommand = new RelayCommand(_ => StopDeck());
             NextCommand = new RelayCommand(_ => LoadNextFromQueue());
 
             Title = $"{name} Ready";
@@ -2345,16 +2612,51 @@ namespace OpenBroadcaster.ViewModels
             private set => SetProperty(ref _pulseBorderActive, value);
         }
 
-        private void LoadNextFromQueue()
+        private void StopDeck()
         {
-            var next = _transportService.RequestNextFromQueue(_deckId);
-            if (next == null)
+            // Set flag to prevent OnDeckPlaybackCompleted from auto-advancing
+            _transportService.IsSkipping = true;
+            try
             {
                 _transportService.Stop(_deckId);
-                return;
             }
+            finally
+            {
+                _transportService.IsSkipping = false;
+            }
+        }
 
-            _transportService.Play(_deckId);
+        private void TogglePlayPause()
+        {
+            if (IsPlaying)
+            {
+                _transportService.Pause(_deckId);
+            }
+            else
+            {
+                _transportService.Play(_deckId);
+            }
+        }
+
+        private void LoadNextFromQueue()
+        {
+            // Set flag to prevent OnDeckPlaybackCompleted from double-advancing
+            _transportService.IsSkipping = true;
+            try
+            {
+                var next = _transportService.RequestNextFromQueue(_deckId);
+                if (next == null)
+                {
+                    _transportService.Stop(_deckId);
+                    return;
+                }
+
+                _transportService.Play(_deckId);
+            }
+            finally
+            {
+                _transportService.IsSkipping = false;
+            }
         }
 
         private void OnDeckStateChanged(DeckStateChangedEvent payload)
@@ -2470,11 +2772,17 @@ namespace OpenBroadcaster.ViewModels
         public string Source => string.IsNullOrWhiteSpace(Item.Source) ? Item.SourceType.ToString() : Item.Source;
         public string RequestedBy => Item.RequestedBy;
         public bool HasRequester => Item.HasRequester;
+        public bool HasRequestMessage => !string.IsNullOrWhiteSpace(Item.RequestMessage);
         
         /// <summary>
         /// True if this track was requested via Twitch chat
         /// </summary>
         public bool IsTwitchRequest => Item.SourceType == QueueSource.Twitch && Item.HasRequester;
+
+        /// <summary>
+        /// True if this track was requested via the website / web API.
+        /// </summary>
+        public bool IsWebRequest => Item.SourceType == QueueSource.WebRequest && Item.HasRequester;
         
         /// <summary>
         /// True if this track is a Top-of-the-Hour item
@@ -2485,14 +2793,37 @@ namespace OpenBroadcaster.ViewModels
         /// Display text for Twitch requests: "Requested by username"
         /// </summary>
         public string RequestedByDisplay => IsTwitchRequest ? $"Requested by {Item.RequestedBy}" : string.Empty;
+
+        /// <summary>
+        /// Display text for website requests, including optional listener message.
+        /// Example: "Requested by Alice — play this for my friend".
+        /// </summary>
+        public string WebRequestDisplay
+        {
+            get
+            {
+                if (!IsWebRequest)
+                {
+                    return string.Empty;
+                }
+
+                var baseText = $"Requested by {Item.RequestedBy}";
+                if (!string.IsNullOrWhiteSpace(Item.RequestMessage))
+                {
+                    return $"{baseText} — {Item.RequestMessage}";
+                }
+
+                return baseText;
+            }
+        }
         
         public string RequestSummary
         {
             get
             {
                 // Don't show summary for Twitch requests (handled separately with green border)
-                // and don't show for AutoDJ or TopOfHour (they show via Source label)
-                if (IsTwitchRequest || Item.SourceType == QueueSource.AutoDj || Item.SourceType == QueueSource.TopOfHour)
+                // and don't show for AutoDJ, TopOfHour, or WebRequest (they show via Source label / highlight)
+                if (IsTwitchRequest || IsWebRequest || Item.SourceType == QueueSource.AutoDj || Item.SourceType == QueueSource.TopOfHour)
                 {
                     return string.Empty;
                 }

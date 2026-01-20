@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -26,6 +27,7 @@ namespace OpenBroadcaster
         public MainWindow()
         {
             InitializeComponent();
+            Loaded += MainWindow_Loaded;
         }
 
         private MainViewModel? ViewModel => DataContext as MainViewModel;
@@ -43,6 +45,96 @@ namespace OpenBroadcaster
         private void OnExitClick(object sender, RoutedEventArgs e)
         {
             Close();
+        }
+
+        private void TitleBarBorder_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            // If the user clicked on one of the caption buttons, let the button handle it
+            if (e.OriginalSource is DependencyObject origin)
+            {
+                var button = FindAncestor<System.Windows.Controls.Button>(origin);
+                if (button != null)
+                {
+                    return;
+                }
+
+                // Also allow clicks on the main menu and its items
+                var menu = FindAncestor<System.Windows.Controls.Menu>(origin);
+                if (menu != null)
+                {
+                    return;
+                }
+
+                var menuItem = FindAncestor<System.Windows.Controls.MenuItem>(origin);
+                if (menuItem != null)
+                {
+                    return;
+                }
+            }
+
+            if (e.ChangedButton == MouseButton.Left)
+            {
+                if (e.ClickCount == 2)
+                {
+                    ToggleMaximizeRestore();
+                }
+                else
+                {
+                    try
+                    {
+                        DragMove();
+                    }
+                    catch
+                    {
+                        // Ignore drag exceptions (e.g. during window state changes)
+                    }
+                }
+            }
+        }
+
+        private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+        {
+            WindowState = WindowState.Minimized;
+        }
+
+        private void MaximizeRestoreButton_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleMaximizeRestore();
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
+        private void ToggleMaximizeRestore()
+        {
+            WindowState = WindowState == WindowState.Maximized
+                ? WindowState.Normal
+                : WindowState.Maximized;
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel?.ChatMessages is INotifyCollectionChanged observable)
+            {
+                observable.CollectionChanged += ChatMessages_CollectionChanged;
+            }
+        }
+
+        private void ChatMessages_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            // Always keep Twitch chat scrolled to the newest message
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (TwitchChatListBox == null || TwitchChatListBox.Items.Count == 0)
+                {
+                    return;
+                }
+
+                var lastItem = TwitchChatListBox.Items[TwitchChatListBox.Items.Count - 1];
+                TwitchChatListBox.ScrollIntoView(lastItem);
+            }));
         }
 
         private void LibraryListView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)

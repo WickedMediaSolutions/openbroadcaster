@@ -191,6 +191,12 @@ namespace OpenBroadcaster.Core.Services
             ResolveDeck(deckId).Stop();
         }
 
+        public void PauseDeck(DeckIdentifier deckId)
+        {
+            _logger.LogInformation($"PauseDeck called for deck {deckId}");
+            ResolveDeck(deckId).Pause();
+        }
+
         public void SelectDeckOutputDevice(DeckIdentifier deckId, int deviceNumber)
         {
             _logger.LogInformation("Assigning deck {DeckId} to output device {Device}", deckId, deviceNumber);

@@ -1,0 +1,95 @@
+================================================================================
+                    OPENBROADCASTER USER GUIDE - INDEX
+================================================================================
+
+Welcome to the OpenBroadcaster documentation. This folder contains
+comprehensive guides for using all features of the application.
+
+================================================================================
+DOCUMENTATION FILES
+================================================================================
+
+01-getting-started.txt
+    System requirements, installation, first run setup, interface overview,
+    keyboard shortcuts, and next steps.
+
+02-library-management.txt
+    Adding music, library browser, searching, categories, track properties,
+    library maintenance, and importing playlists.
+
+03-playback-decks.txt
+    Deck overview, transport controls, loading tracks, volume control,
+    cue points, crossfading, and intro/outro detection.
+
+04-queue-management.txt
+    Queue panel, adding/removing/reordering tracks, auto advance,
+    queue source labels, history, and queue strategies.
+
+05-autodj-automation.txt
+    AutoDJ overview, rotations, scheduling, top-of-hour elements,
+    separation rules, and troubleshooting automation.
+
+06-cart-wall.txt
+    Soundboard overview, configuring pads, hotkeys, playback modes,
+    organizing carts, and tips for live shows.
+
+07-streaming-encoding.txt
+    Streaming overview, server types, encoder profiles, audio formats,
+    metadata, and troubleshooting stream issues.
+
+08-twitch-integration.txt
+    Connecting to Twitch, song requests, chat display, moderator commands,
+    overlay integration, and Twitch troubleshooting.
+
+09-web-integration.txt
+    Direct mode setup, relay mode setup, WordPress plugin installation,
+    shortcodes, widgets, API endpoints, and security.
+
+10-settings-reference.txt
+    Complete reference for all settings: audio, queue, AutoDJ, cart wall,
+    encoder, overlay, Twitch, library, and advanced options.
+
+11-troubleshooting.txt
+    Common issues and solutions for audio, library, AutoDJ, streaming,
+    Twitch, web integration, performance, and FAQ.
+
+================================================================================
+QUICK START CHECKLIST
+================================================================================
+
+[ ] Install OpenBroadcaster
+[ ] Configure audio devices (Settings > Audio)
+[ ] Add music folders to library (Library > Add Folder)
+[ ] Wait for library scan to complete
+[ ] Load a track and test playback
+[ ] Configure AutoDJ rotation (optional)
+[ ] Set up streaming encoder (optional)
+[ ] Configure cart wall pads (optional)
+[ ] Connect Twitch integration (optional)
+[ ] Set up web integration (optional)
+
+================================================================================
+SUPPORT
+================================================================================
+
+GitHub Repository:
+  https://github.com/mcdorgle/openbroadcaster
+
+Issues & Bug Reports:
+  https://github.com/mcdorgle/openbroadcaster/issues
+
+Log Files Location:
+  %AppData%/OpenBroadcaster/logs/
+
+Configuration Files:
+  %AppData%/OpenBroadcaster/
+
+================================================================================
+VERSION INFORMATION
+================================================================================
+
+This documentation is for OpenBroadcaster version 1.3.0
+
+Last updated: January 2026
+
+================================================================================

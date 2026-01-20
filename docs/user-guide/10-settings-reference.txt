@@ -1,0 +1,366 @@
+================================================================================
+                    OPENBROADCASTER - SETTINGS REFERENCE
+================================================================================
+
+Complete reference for all OpenBroadcaster configuration options.
+Access Settings via the gear icon in the toolbar or File > Settings.
+
+================================================================================
+AUDIO SETTINGS
+================================================================================
+
+DECK A OUTPUT DEVICE
+  The audio device used for Deck A playback
+  Default: System default output
+
+DECK B OUTPUT DEVICE
+  The audio device used for Deck B playback
+  Default: System default output
+  Tip: Usually same as Deck A unless using split outputs
+
+CART WALL OUTPUT DEVICE
+  The audio device for cart/soundboard playback
+  Default: System default output
+  Tip: Can route to separate output for mixer control
+
+ENCODER INPUT DEVICE
+  Audio source for the streaming encoder
+  Default: Internal routing
+  Options: Internal, or any audio input device
+
+MICROPHONE INPUT DEVICE
+  Input device for microphone/voice
+  Default: System default input
+
+MASTER VOLUME
+  Overall output volume (0-100%)
+  Default: 85%
+  Affects all audio output
+
+DECK A VOLUME
+  Individual volume for Deck A (0-100%)
+  Default: 100%
+
+DECK B VOLUME
+  Individual volume for Deck B (0-100%)
+  Default: 100%
+
+CART WALL VOLUME
+  Volume for cart/soundboard playback (0-100%)
+  Default: 100%
+
+MIC VOLUME
+  Microphone input level (0-100%)
+  Default: 100%
+
+================================================================================
+QUEUE SETTINGS
+================================================================================
+
+AUTO ADVANCE
+  Automatically play next track when current finishes
+  Default: Enabled
+  Disable for manual DJ control
+
+MAX HISTORY ITEMS
+  Number of played tracks to remember
+  Default: 100
+  Range: 1-500
+
+DEFAULT SOURCE LABEL
+  Label for manually added tracks
+  Default: "Studio"
+  Shown in queue source column
+
+================================================================================
+AUTODJ SETTINGS
+================================================================================
+
+ENABLE AUTODJ
+  Master switch for AutoDJ system
+  Default: Disabled
+
+AUTO-START AUTODJ ON LAUNCH
+  Start AutoDJ when application opens
+  Default: Disabled
+  Useful for automated stations
+
+TARGET QUEUE DEPTH
+  Minimum tracks to maintain in queue
+  Default: 5
+  Range: 1-50
+  AutoDJ adds tracks when queue falls below this
+
+ARTIST SEPARATION (Minutes)
+  Minimum time before same artist plays again
+  Default: 60
+  Range: 0-1440 (0 = disabled)
+
+TITLE SEPARATION (Minutes)
+  Minimum time before same song plays again
+  Default: 180
+  Range: 0-1440 (0 = disabled)
+
+DEFAULT ROTATION
+  Rotation used when no schedule matches
+  Select from your defined rotations
+
+================================================================================
+TOP-OF-HOUR SETTINGS
+================================================================================
+
+ENABLE TOP-OF-HOUR
+  Play scheduled elements at :00 each hour
+  Default: Disabled
+
+TOH MODE
+  How to select from TOH elements
+  Options: Sequential, Random
+
+TOH SLOTS
+  List of elements to play at top of hour
+  Add jingles, legal IDs, etc.
+
+================================================================================
+CART WALL SETTINGS
+================================================================================
+
+GRID COLUMNS
+  Number of columns in cart grid
+  Default: 5
+  Range: 2-10
+
+GRID ROWS
+  Number of rows in cart grid
+  Default: 3
+  Range: 1-8
+
+EXCLUSIVE MODE
+  Only one cart plays at a time
+  Default: Disabled
+  When enabled, starting a cart stops others
+
+================================================================================
+ENCODER SETTINGS
+================================================================================
+
+AUTO-START ENCODING
+  Begin streaming when application opens
+  Default: Disabled
+
+ENCODER PROFILES
+  List of configured streaming profiles
+  Each profile contains:
+  
+  - Profile Name
+  - Server Type (Icecast/Shoutcast)
+  - Server Address
+  - Port
+  - Mount Point (Icecast)
+  - Password
+  - Format (MP3/OGG/Opus)
+  - Bitrate
+  - Sample Rate
+  - Channels
+
+================================================================================
+OVERLAY SETTINGS
+================================================================================
+
+ENABLE OVERLAY SERVER
+  Run the overlay HTTP server
+  Default: Disabled
+
+OVERLAY PORT
+  Port for overlay server
+  Default: 9750
+
+REQUEST LIST LIMIT
+  Max requests to show in overlay
+  Default: 5
+  Range: 1-20
+
+RECENT LIST LIMIT
+  Max recent tracks in overlay
+  Default: 5
+  Range: 1-20
+
+ARTWORK FALLBACK URL
+  Image to show when no artwork available
+  Default: /assets/artwork-placeholder.svg
+
+================================================================================
+DIRECT SERVER SETTINGS (WEB INTEGRATION)
+================================================================================
+
+ENABLE DIRECT SERVER
+  Run the built-in REST API server
+  Default: Disabled
+
+PORT
+  Port for the direct server
+  Default: 8585
+
+ALLOW REMOTE CONNECTIONS
+  Accept connections from other machines
+  Default: Disabled
+  Enable for external website access
+
+API KEY
+  Authentication key for API requests
+  Default: (empty/none)
+  Set to require authentication
+
+ENABLE CORS
+  Allow cross-origin requests
+  Default: Enabled
+  Required for web browser access
+
+CORS ORIGINS
+  Allowed origins for CORS
+  Default: * (all)
+  Can restrict to specific domains
+
+================================================================================
+REQUEST SETTINGS
+================================================================================
+
+MAX PENDING REQUESTS
+  Maximum song requests in queue
+  Default: 25
+  Range: 1-100
+
+MAX REQUESTS PER USER
+  Requests allowed per person
+  Default: 3
+  Range: 1-10
+
+SOURCE LABEL
+  Label for request queue items
+  Default: "Twitch Chat"
+
+================================================================================
+TWITCH SETTINGS
+================================================================================
+
+ENABLE TWITCH INTEGRATION
+  Connect to Twitch chat
+  Default: Disabled
+
+TWITCH CHANNEL
+  Channel to join
+  Your Twitch username
+
+ENABLE CHAT DISPLAY
+  Show Twitch chat in app
+  Default: Enabled when connected
+
+ENABLE SONG REQUESTS
+  Allow !request commands
+  Default: Enabled
+
+REQUEST COMMAND
+  Chat command for requests
+  Default: !request
+  Also accepts: !sr
+
+================================================================================
+LIBRARY SETTINGS
+================================================================================
+
+WATCH FOLDERS
+  List of folders to scan for music
+  Add/remove folders as needed
+
+AUTO-RESCAN INTERVAL
+  How often to check for new files
+  Default: Never (manual only)
+  Options: Never, Hourly, Daily, Weekly
+
+CATEGORIES
+  List of custom categories
+  Each category has:
+  - Name
+  - Color (optional)
+
+================================================================================
+APPEARANCE SETTINGS
+================================================================================
+
+THEME
+  Application color scheme
+  Options: Dark, Light
+
+ACCENT COLOR
+  Primary highlight color
+  Default: #5bffb0
+
+SHOW WAVEFORMS
+  Display audio waveforms on decks
+  Default: Enabled
+
+SHOW VU METERS
+  Display volume level meters
+  Default: Enabled
+
+================================================================================
+KEYBOARD SHORTCUTS
+================================================================================
+
+These can be viewed and customized:
+
+Spacebar          Play/Pause Deck A
+Shift+Space       Play/Pause Deck B
+Q                 Add to Queue
+Delete            Remove from Queue
+Ctrl+F            Focus Search
+F1-F12            Cart Wall Pads
+1-5               Cue Points (playback)
+Ctrl+1-5          Set Cue Points
+Left/Right        Seek 5 seconds
+Ctrl+Left/Right   Seek 30 seconds
+Home              Jump to Start
+End               Jump to End
+
+================================================================================
+ADVANCED SETTINGS
+================================================================================
+
+LOG LEVEL
+  Detail level for application logs
+  Options: Error, Warning, Info, Debug
+  Default: Info
+
+LOG FILE LOCATION
+  Where log files are stored
+  Default: %AppData%/OpenBroadcaster/logs/
+
+DATA FOLDER
+  Location for settings and database
+  Default: %AppData%/OpenBroadcaster/
+
+RESET TO DEFAULTS
+  Restore all settings to default values
+  Warning: This cannot be undone
+
+================================================================================
+CONFIGURATION FILES
+================================================================================
+
+Settings are stored in:
+  %AppData%/OpenBroadcaster/settings.json
+
+Library database:
+  %AppData%/OpenBroadcaster/library.db
+
+Cart pad configurations:
+  Stored within settings.json
+
+Encoder profiles:
+  Stored within settings.json
+
+BACKUP:
+To backup your configuration, copy the entire OpenBroadcaster folder from
+%AppData%. To restore, copy it back.
+
+================================================================================

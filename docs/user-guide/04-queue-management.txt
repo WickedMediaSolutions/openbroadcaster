@@ -1,0 +1,234 @@
+================================================================================
+                    OPENBROADCASTER - QUEUE MANAGEMENT
+================================================================================
+
+The Queue is your playlist - the list of tracks that will play in order.
+Managing your queue effectively is key to a smooth broadcast.
+
+--------------------------------------------------------------------------------
+QUEUE PANEL OVERVIEW
+--------------------------------------------------------------------------------
+
+The Queue panel (accessible via the "Queue" button) shows:
+
++----------------------------------+
+|  QUEUE                    [Auto] |
++----------------------------------+
+|  1. Currently Playing            |
+|     Track A - Artist A    3:45   |
+|  --------------------------------|
+|  2. Up Next                      |
+|     Track B - Artist B    4:12   |
+|  3. Track C - Artist C    3:30   |
+|  4. Track D - Artist D    5:01   |
+|  ...                             |
++----------------------------------+
+|  Total: 4 tracks | 16:28         |
++----------------------------------+
+
+KEY ELEMENTS:
+- Currently playing track is highlighted
+- Remaining tracks shown in order
+- Total count and duration at the bottom
+- [Auto] indicator shows if Auto Advance is enabled
+
+--------------------------------------------------------------------------------
+ADDING TRACKS TO THE QUEUE
+--------------------------------------------------------------------------------
+
+METHOD 1: Right-Click Menu
+1. Select track(s) in the library
+2. Right-click and choose "Add to Queue"
+3. Tracks are added to the end of the queue
+
+METHOD 2: Drag and Drop
+- Drag track(s) from the library to the queue panel
+- Drop at a specific position to insert there
+- Drop at the bottom to append
+
+METHOD 3: Keyboard Shortcut
+- Select track(s) in the library
+- Press 'Q' to add to queue
+
+METHOD 4: Double-Click (with setting)
+- In Settings, enable "Double-click adds to queue"
+- Double-clicking a track adds it to the queue instead of loading to deck
+
+--------------------------------------------------------------------------------
+REORDERING THE QUEUE
+--------------------------------------------------------------------------------
+
+DRAG AND DROP:
+- Click and drag any queue item
+- Drop it at the desired position
+- Other items shift to accommodate
+
+MOVE BUTTONS:
+- Select a queue item
+- Use the Up/Down arrow buttons to move it
+- Or use Ctrl+Up / Ctrl+Down keyboard shortcuts
+
+MOVE TO TOP/BOTTOM:
+- Right-click a queue item
+- Select "Move to Top" or "Move to Bottom"
+
+--------------------------------------------------------------------------------
+REMOVING TRACKS FROM THE QUEUE
+--------------------------------------------------------------------------------
+
+SINGLE TRACK:
+- Select the track and press Delete
+- Or right-click and select "Remove from Queue"
+
+MULTIPLE TRACKS:
+- Ctrl+Click to select multiple tracks
+- Press Delete or right-click > "Remove Selected"
+
+CLEAR ENTIRE QUEUE:
+- Right-click anywhere in the queue
+- Select "Clear Queue"
+- Confirm the action
+
+NOTE: Removing the currently playing track will stop playback unless another
+track is available to auto-advance to.
+
+--------------------------------------------------------------------------------
+AUTO ADVANCE
+--------------------------------------------------------------------------------
+
+Auto Advance automatically loads and plays the next track when one finishes.
+
+ENABLING/DISABLING:
+- Click the [Auto] toggle in the queue panel header
+- Or go to Settings > Queue > Auto Advance
+
+BEHAVIOR:
+- When enabled: Next track loads and plays automatically
+- When disabled: Playback stops at end of each track
+
+USE CASES:
+- Enable for unattended automation
+- Disable for live shows where you control each transition
+
+--------------------------------------------------------------------------------
+QUEUE SOURCE LABELS
+--------------------------------------------------------------------------------
+
+Each queue item shows where it came from:
+
+  [Manual]    - Added manually by the DJ
+  [AutoDJ]    - Added by the AutoDJ system
+  [Request]   - Song request from a listener
+  [Twitch]    - Request from Twitch chat
+  [Schedule]  - Added by a scheduled event
+
+This helps you track why each song is in the queue.
+
+--------------------------------------------------------------------------------
+HISTORY
+--------------------------------------------------------------------------------
+
+The History tab shows recently played tracks:
+
+VIEWING HISTORY:
+- Click the "History" tab next to the Queue tab
+- Shows tracks in reverse chronological order (most recent first)
+
+HISTORY INFORMATION:
+- Track title and artist
+- Time played
+- Duration
+
+REPLAY FROM HISTORY:
+- Right-click a history item
+- Select "Add to Queue" to play it again
+- Or drag it back to the queue
+
+HISTORY LIMIT:
+- By default, the last 100 tracks are kept
+- Configurable in Settings > Queue > Max History Items
+
+--------------------------------------------------------------------------------
+QUEUE SETTINGS
+--------------------------------------------------------------------------------
+
+Access via Settings > Queue:
+
+AUTO ADVANCE:
+  Default state for the auto advance toggle
+
+MAX HISTORY ITEMS:
+  How many played tracks to remember (1-500)
+
+DEFAULT SOURCE LABEL:
+  Label shown for manually added tracks (default: "Studio")
+
+DUPLICATE PREVENTION:
+  Prevents the same track from being queued twice
+  Options: Off, Within Queue, Within Time Period
+
+MINIMUM TRACK SEPARATION:
+  For duplicate prevention by time (e.g., same song not within 2 hours)
+
+--------------------------------------------------------------------------------
+QUEUE FILE OPERATIONS
+--------------------------------------------------------------------------------
+
+SAVE QUEUE:
+1. Right-click the queue panel
+2. Select "Save Queue As..."
+3. Choose a location and filename
+4. Queue is saved as an M3U playlist
+
+LOAD QUEUE:
+1. Right-click the queue panel
+2. Select "Load Queue..."
+3. Browse to a saved playlist file
+4. Tracks are added to the current queue
+
+EXPORT FOR LOGGING:
+1. Right-click > "Export Play Log"
+2. Choose date range and format
+3. Saves a log of played tracks for reporting
+
+--------------------------------------------------------------------------------
+QUEUE STRATEGIES
+--------------------------------------------------------------------------------
+
+FOR LIVE SHOWS:
+- Pre-load your queue with the show's planned tracks
+- Keep 2-3 tracks ahead at all times
+- Disable AutoDJ to maintain full control
+
+FOR AUTOMATED OPERATION:
+- Enable AutoDJ to automatically fill the queue
+- Set a target queue depth (e.g., always keep 5 tracks queued)
+- AutoDJ respects your rotation rules
+
+FOR REQUEST SHOWS:
+- Keep base music in rotation via AutoDJ
+- Requests automatically insert into the queue
+- Set request priority (play next vs. add to end)
+
+--------------------------------------------------------------------------------
+TIPS AND BEST PRACTICES
+--------------------------------------------------------------------------------
+
+1. NEVER LET THE QUEUE EMPTY
+   - Always keep at least 2-3 tracks queued
+   - Enable AutoDJ as a safety net
+
+2. BALANCE REQUESTS AND ROTATION
+   - Don't let requests dominate the queue
+   - Set limits on pending requests
+   - Intersperse requests with rotation music
+
+3. USE HISTORY FOR VARIETY
+   - Check history before adding tracks
+   - Avoid playing the same song too soon
+
+4. ORGANIZE BY SHOW SEGMENTS
+   - Save queue templates for recurring shows
+   - Pre-build queues for specific hours
+
+================================================================================

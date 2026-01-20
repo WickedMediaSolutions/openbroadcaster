@@ -1,0 +1,196 @@
+================================================================================
+                    OPENBROADCASTER - PLAYBACK & DECKS
+================================================================================
+
+OpenBroadcaster features two main playback decks (Deck A and Deck B) that allow
+for professional radio-style mixing and seamless transitions between tracks.
+
+--------------------------------------------------------------------------------
+DECK OVERVIEW
+--------------------------------------------------------------------------------
+
+Each deck displays:
+
++------------------------------------------------------------------+
+|  DECK A                                              [Now Playing] |
++------------------------------------------------------------------+
+|                                                                    |
+|  Track Title - Artist Name                                        |
+|  Album Name                                                       |
+|                                                                    |
+|  [====================================            ]  03:24 / 04:15 |
+|                            Waveform Display                        |
+|                                                                    |
+|  [|<] [<<]  [PLAY]  [>>]  [>|]     Volume: [=======    ]          |
+|                                                                    |
++------------------------------------------------------------------+
+
+WAVEFORM DISPLAY:
+- Shows the audio waveform of the loaded track
+- Playhead (vertical line) shows current position
+- Click anywhere on the waveform to seek to that position
+- Darker regions indicate quieter parts, brighter = louder
+
+--------------------------------------------------------------------------------
+TRANSPORT CONTROLS
+--------------------------------------------------------------------------------
+
+Each deck has standard transport controls:
+
+  [|<]  PREVIOUS    - Jump to beginning of track (or previous in queue)
+  [<<]  REWIND      - Seek backward (hold for continuous)
+  [PLAY/PAUSE]      - Toggle playback
+  [>>]  FAST FWD    - Seek forward (hold for continuous)
+  [>|]  NEXT        - Skip to next track in queue
+
+KEYBOARD SHORTCUTS:
+  Spacebar          - Play/Pause Deck A
+  Shift+Spacebar    - Play/Pause Deck B
+  Left Arrow        - Seek back 5 seconds (focused deck)
+  Right Arrow       - Seek forward 5 seconds (focused deck)
+  Home              - Jump to beginning of track
+  End               - Jump to end of track (useful for previewing outros)
+
+--------------------------------------------------------------------------------
+LOADING TRACKS
+--------------------------------------------------------------------------------
+
+There are several ways to load a track onto a deck:
+
+1. DOUBLE-CLICK
+   - Double-click any track in the library to load it to the next available deck
+
+2. DRAG AND DROP
+   - Drag a track from the library and drop it on a specific deck
+
+3. FROM QUEUE
+   - When a track finishes, the next queued track auto-loads (if Auto Advance on)
+   - Right-click a queue item and select "Load to Deck A/B"
+
+4. RIGHT-CLICK MENU
+   - Right-click a track in the library
+   - Select "Load to Deck A" or "Load to Deck B"
+
+--------------------------------------------------------------------------------
+VOLUME CONTROL
+--------------------------------------------------------------------------------
+
+Each deck has its own volume slider:
+
+DECK VOLUME:
+- Adjusts the output level of that specific deck
+- 0% = silent, 100% = full volume
+- Does not affect the master output
+
+MASTER VOLUME:
+- Located in the toolbar area
+- Controls the overall output level
+- Affects all audio (both decks and cart wall)
+
+RECOMMENDED LEVELS:
+- Keep deck volumes at 100% for consistent levels
+- Use master volume for overall adjustments
+- Watch for clipping (red indicators) and reduce if needed
+
+--------------------------------------------------------------------------------
+CUE POINTS
+--------------------------------------------------------------------------------
+
+Cue points let you mark and jump to specific positions in a track:
+
+SETTING A CUE POINT:
+1. Seek to the desired position
+2. Press Ctrl+1 through Ctrl+5 to set cue points 1-5
+   Or right-click the waveform and select "Set Cue Point"
+
+JUMPING TO A CUE POINT:
+- Press 1-5 to jump to the corresponding cue point
+- Or click the cue point markers on the waveform
+
+USES FOR CUE POINTS:
+- Mark the vocal start (skip long intros)
+- Mark the outro start for smooth transitions
+- Mark key moments in longer tracks
+
+--------------------------------------------------------------------------------
+CROSSFADING
+--------------------------------------------------------------------------------
+
+OpenBroadcaster supports automatic crossfading between decks:
+
+ENABLING CROSSFADE:
+1. Go to Settings > Audio
+2. Enable "Auto Crossfade"
+3. Set the crossfade duration (default: 3 seconds)
+
+HOW IT WORKS:
+- When a track approaches its end, the next track begins playing
+- The outgoing track fades out while the incoming track fades in
+- Creates smooth, professional transitions
+
+MANUAL CROSSFADE:
+- Use the crossfader slider (if visible) to manually blend between decks
+- Left = Deck A only, Right = Deck B only, Center = both
+
+--------------------------------------------------------------------------------
+INTRO/OUTRO DETECTION
+--------------------------------------------------------------------------------
+
+OpenBroadcaster can detect intro and outro points automatically:
+
+AUTOMATIC DETECTION:
+- When a track is loaded, intro/outro points are calculated
+- Based on audio analysis (silence detection, level changes)
+
+MANUAL ADJUSTMENT:
+1. Right-click a track and select "Edit Intro/Outro"
+2. Set the intro end time (where vocals typically start)
+3. Set the outro start time (where the song winds down)
+
+USING INTRO/OUTRO:
+- AutoDJ uses these points for better mixing
+- Display shows "Intro: 0:15" countdown during intros
+- Helps DJs know when to talk over intros
+
+--------------------------------------------------------------------------------
+DECK STATUS INDICATORS
+--------------------------------------------------------------------------------
+
+Visual indicators show the deck state:
+
+  [PLAYING]     - Green, track is playing
+  [PAUSED]      - Yellow, track is paused
+  [STOPPED]     - Gray, no track loaded or stopped
+  [CUEING]      - Blue, track is cued and ready
+
+TIME DISPLAY:
+- Elapsed time / Total duration
+- Click to toggle between elapsed and remaining time
+
+PROGRESS BAR:
+- Shows playback progress
+- Color may change near the end to warn of upcoming finish
+
+--------------------------------------------------------------------------------
+TIPS FOR SMOOTH PLAYBACK
+--------------------------------------------------------------------------------
+
+1. ALWAYS HAVE SOMETHING QUEUED
+   - Keep at least 2-3 tracks in the queue
+   - Enable AutoDJ to automatically refill
+
+2. WATCH YOUR LEVELS
+   - Keep an eye on the VU meters
+   - Avoid clipping (going into the red)
+
+3. USE BOTH DECKS FOR MIXING
+   - Load the next track to the idle deck
+   - Preview and cue before the current track ends
+   - Use crossfade for professional transitions
+
+4. PREPARE YOUR TRANSITIONS
+   - Know your intro/outro points
+   - Use cue points for consistent mix points
+   - Practice timing with the countdown display
+
+================================================================================

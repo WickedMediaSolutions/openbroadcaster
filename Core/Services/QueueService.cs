@@ -140,6 +140,35 @@ namespace OpenBroadcaster.Core.Services
             }
         }
 
+        public void Shuffle()
+        {
+            var changed = false;
+            lock (_sync)
+            {
+                if (_items.Count <= 1)
+                {
+                    return;
+                }
+
+                // Fisher-Yates shuffle
+                var rng = new Random();
+                var n = _items.Count;
+                while (n > 1)
+                {
+                    n--;
+                    var k = rng.Next(n + 1);
+                    (_items[k], _items[n]) = (_items[n], _items[k]);
+                }
+                changed = true;
+                _logger.LogInformation("Shuffled queue ({Count} items)", _items.Count);
+            }
+
+            if (changed)
+            {
+                OnQueueChanged();
+            }
+        }
+
         public QueueItem? Dequeue()
         {
             QueueItem? item = null;

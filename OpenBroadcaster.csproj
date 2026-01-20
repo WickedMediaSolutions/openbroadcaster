@@ -26,6 +26,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="OpenBroadcaster.RelayService\**\*.cs" />
+    <EmbeddedResource Remove="OpenBroadcaster.RelayService\**\*" />
+    <None Remove="OpenBroadcaster.RelayService\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="Inspector\**\*.cs" />
     <EmbeddedResource Remove="Inspector\**\*" />
     <None Remove="Inspector\**\*" />

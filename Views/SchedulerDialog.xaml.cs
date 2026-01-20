@@ -46,7 +46,6 @@ namespace OpenBroadcaster.Views
     internal sealed class SchedulerDialogViewModel : INotifyPropertyChanged
     {
         private string _startTime;
-        private string _endTime;
         private bool _enabled;
         private SimpleRotation? _selectedRotation;
         private DayOfWeek? _selectedDay;
@@ -54,7 +53,6 @@ namespace OpenBroadcaster.Views
         public SchedulerDialogViewModel(SimpleSchedulerEntry entry, IReadOnlyList<SimpleRotation> rotations)
         {
             _startTime = entry?.StartTimeString ?? "00:00";
-            _endTime = entry?.EndTimeString ?? "24:00";
             _enabled = entry?.Enabled ?? true;
             RotationOptions = rotations ?? Array.Empty<SimpleRotation>();
             _selectedRotation = RotationOptions.FirstOrDefault(r => r.Name == entry?.RotationName) ?? RotationOptions.FirstOrDefault();
@@ -107,19 +105,6 @@ namespace OpenBroadcaster.Views
             }
         }
 
-        public string EndTimeText
-        {
-            get => _endTime;
-            set
-            {
-                if (!string.Equals(_endTime, value, StringComparison.Ordinal))
-                {
-                    _endTime = value ?? string.Empty;
-                    OnPropertyChanged(nameof(EndTimeText));
-                }
-            }
-        }
-
         public bool Enabled
         {
             get => _enabled;
@@ -154,16 +139,13 @@ namespace OpenBroadcaster.Views
                 return false;
             }
 
-            if (!TryParseTime(EndTimeText, out var end))
-            {
-                error = "End time must be HH:mm (24-hour).";
-                return false;
-            }
-
             entry.RotationId = SelectedRotation.Id;
             entry.RotationName = SelectedRotation.Name ?? string.Empty;
             entry.StartTime = start;
-            entry.EndTime = end;
+            // Schedules are start-only: each entry is active from its start
+            // time through the rest of the day. The runtime scheduler will
+            // pick the latest started entry at or before "now".
+            entry.EndTime = TimeSpan.FromHours(24);
             entry.Enabled = Enabled;
             entry.Day = SelectedDay;
 

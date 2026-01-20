@@ -2,7 +2,7 @@
 ; Requires Inno Setup 6.0 or later (https://jrsoftware.org/isinfo.php)
 
 #define MyAppName "OpenBroadcaster"
-#define MyAppVersion "1.2.0"
+#define MyAppVersion "1.4.2"
 #define MyAppPublisher "mcdorgle"
 #define MyAppURL "https://github.com/mcdorgle/openbroadcaster"
 #define MyAppExeName "OpenBroadcaster.exe"

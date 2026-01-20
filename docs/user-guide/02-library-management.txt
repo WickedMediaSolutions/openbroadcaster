@@ -1,0 +1,182 @@
+================================================================================
+                    OPENBROADCASTER - LIBRARY MANAGEMENT
+================================================================================
+
+The Library is where all your music is organized and accessible. OpenBroadcaster
+scans your music folders and extracts metadata for easy browsing and searching.
+
+--------------------------------------------------------------------------------
+ADDING MUSIC TO YOUR LIBRARY
+--------------------------------------------------------------------------------
+
+METHOD 1: Add Folder
+1. Click "Library" in the left sidebar
+2. Click the "Add Folder" button (folder icon with +)
+3. Browse to your music folder
+4. Click "Select Folder"
+5. OpenBroadcaster will scan all audio files in that folder and subfolders
+
+METHOD 2: Drag and Drop
+- Drag a folder from Windows Explorer directly into the library panel
+- The folder will be added and scanned automatically
+
+SUPPORTED FORMATS:
+- MP3 (.mp3)
+- WAV (.wav)
+- FLAC (.flac)
+- OGG Vorbis (.ogg)
+- AAC/M4A (.aac, .m4a)
+- WMA (.wma)
+
+--------------------------------------------------------------------------------
+LIBRARY BROWSER
+--------------------------------------------------------------------------------
+
+The library panel shows your tracks in a list with columns:
+
+  Title       - Track title from metadata (or filename if no metadata)
+  Artist      - Artist name
+  Album       - Album name
+  Duration    - Track length (MM:SS)
+  BPM         - Beats per minute (if detected)
+  Genre       - Music genre
+
+SORTING:
+- Click any column header to sort by that column
+- Click again to reverse the sort order
+- A small arrow indicates the current sort direction
+
+--------------------------------------------------------------------------------
+SEARCHING YOUR LIBRARY
+--------------------------------------------------------------------------------
+
+The search box at the top of the library panel lets you find tracks quickly:
+
+BASIC SEARCH:
+- Type any text to search across title, artist, and album
+- Results update as you type
+- Press Enter or click the search icon to execute
+
+SEARCH TIPS:
+- Search is case-insensitive
+- Partial matches work (e.g., "beat" finds "Beatles")
+- Search multiple words: "beatles yesterday" finds tracks matching both
+
+CLEARING SEARCH:
+- Click the X button in the search box
+- Or select all text and press Delete
+- The full library will be displayed again
+
+--------------------------------------------------------------------------------
+CATEGORIES
+--------------------------------------------------------------------------------
+
+Categories help organize your library for AutoDJ rotations and quick access.
+
+ASSIGNING CATEGORIES:
+1. Select one or more tracks in the library
+2. Right-click and select "Assign Categories"
+3. Check the categories you want to assign
+4. Click OK
+
+CREATING CATEGORIES:
+1. Go to Settings > Library
+2. Under "Categories", click "Add Category"
+3. Enter a name (e.g., "Rock", "Jingles", "Promos")
+4. Optionally set a color for visual identification
+
+SUGGESTED CATEGORY STRUCTURE:
+- Music Genres: Rock, Pop, Country, Hip-Hop, etc.
+- Content Types: Music, Jingles, Promos, IDs, Sweepers
+- Energy Levels: High Energy, Medium, Slow/Ballads
+- Decades: 80s, 90s, 2000s, 2010s, Current
+
+FILTERING BY CATEGORY:
+- Use the category dropdown above the library list
+- Select a category to show only tracks in that category
+- Select "All" to show the entire library
+
+--------------------------------------------------------------------------------
+TRACK PROPERTIES
+--------------------------------------------------------------------------------
+
+To view or edit track information:
+
+1. Right-click a track and select "Properties"
+   Or select a track and press Enter
+
+2. The Track Properties dialog shows:
+   - Title, Artist, Album, Genre
+   - Duration and file path
+   - Assigned categories
+   - Play count and last played date
+   - Custom notes
+
+3. Edit any field and click Save
+
+BATCH EDITING:
+- Select multiple tracks (Ctrl+Click or Shift+Click)
+- Right-click and select "Edit Selected"
+- Changes apply to all selected tracks
+
+--------------------------------------------------------------------------------
+LIBRARY MAINTENANCE
+--------------------------------------------------------------------------------
+
+RESCANNING:
+If you've added new files to your music folders:
+1. Right-click the library panel
+2. Select "Rescan Library"
+3. New files will be added, missing files flagged
+
+REMOVING FOLDERS:
+1. Go to Settings > Library
+2. Under "Watch Folders", select the folder to remove
+3. Click "Remove"
+4. Tracks from that folder will be removed from the library
+
+CLEANING UP MISSING FILES:
+1. Go to Settings > Library
+2. Click "Clean Missing Files"
+3. Tracks whose files no longer exist will be removed
+
+--------------------------------------------------------------------------------
+IMPORTING PLAYLISTS
+--------------------------------------------------------------------------------
+
+OpenBroadcaster can import playlists from other software:
+
+SUPPORTED FORMATS:
+- M3U/M3U8 playlists
+- PLS playlists
+- XSPF playlists
+
+TO IMPORT:
+1. Click "File" > "Import Playlist"
+2. Select the playlist file
+3. Tracks will be added to your queue (and library if not already present)
+
+--------------------------------------------------------------------------------
+TIPS AND BEST PRACTICES
+--------------------------------------------------------------------------------
+
+1. ORGANIZE YOUR FILES
+   - Keep your music organized in folders by artist or genre
+   - Use consistent file naming
+   - Ensure metadata (ID3 tags) is complete
+
+2. USE CATEGORIES STRATEGICALLY
+   - Create categories that match your format clock
+   - Assign multiple categories to versatile tracks
+   - Keep jingles and music in separate categories
+
+3. REGULAR MAINTENANCE
+   - Periodically rescan to catch new additions
+   - Clean up missing files after reorganizing
+   - Back up your library database
+
+4. PERFORMANCE
+   - Very large libraries (100,000+ tracks) may take longer to load
+   - Consider using multiple smaller folders for better organization
+
+================================================================================

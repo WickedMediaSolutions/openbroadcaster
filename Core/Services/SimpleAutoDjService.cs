@@ -23,7 +23,7 @@ namespace OpenBroadcaster.Core.Automation
         private readonly List<SimpleRotation> _rotations;
         private readonly List<SimpleSchedulerEntry> _schedule;
         private readonly int _targetQueueDepth;
-        private readonly Guid _defaultRotationId;
+        private Guid _defaultRotationId;
         private readonly System.Threading.Timer _timer;
         private readonly ILogger<SimpleAutoDjService> _logger;
         private bool _enabled;
@@ -36,9 +36,12 @@ namespace OpenBroadcaster.Core.Automation
         private readonly Dictionary<Guid, Queue<Track>> _categoryShuffleBags = new();
         private readonly Random _rng = new();
         private Track? _lastAddedTrack = null;
+        private Guid? _currentRotationId = null;
 
         public event EventHandler<string>? StatusChanged;
         public event EventHandler? QueueFilled;
+
+        public IReadOnlyList<SimpleRotation> Rotations => _rotations;
 
         public SimpleAutoDjService(
             QueueService queueService,
@@ -78,7 +81,10 @@ namespace OpenBroadcaster.Core.Automation
                         var enabledCount = _rotations.Count(r => r.Enabled);
                         _logger.LogDebug("Active rotations: {Active}, Enabled rotations: {Enabled}", activeCount, enabledCount);
                     }
-                    
+
+                    // Ensure the correct rotation is active before filling the queue
+                    UpdateActiveRotationIfNeeded();
+
                     _timer.Change(0, 5000); // Check every 5 seconds as backup
                     UpdateStatus("AutoDJ enabled.");
                     _logger.LogDebug("Starting initial queue fill");
@@ -123,8 +129,245 @@ namespace OpenBroadcaster.Core.Automation
         /// </summary>
         private void OnTimer(object? state)
         {
+            // When AutoDJ is running, keep the active rotation in sync with the schedule
+            if (_enabled)
+            {
+                UpdateActiveRotationIfNeeded();
+            }
+
             // Always ensure queue depth, regardless of enabled state
             EnsureQueueDepth();
+        }
+
+        /// <summary>
+        /// Updates the active rotation based on the current schedule/defaults.
+        /// If the active rotation changes while AutoDJ is running, the queue is
+        /// cleared and repopulated from the new rotation.
+        /// </summary>
+        public void UpdateActiveRotationIfNeeded()
+        {
+            SimpleRotation? newRotation = null;
+            Guid? newRotationId = null;
+
+            lock (_lock)
+            {
+                if (_rotations == null || _rotations.Count == 0)
+                {
+                    return;
+                }
+
+                var now = DateTime.Now;
+                var scheduledId = GetScheduledRotationId(now);
+
+                // Log scheduler evaluation details at debug level so we can
+                // diagnose why a configured schedule might not be taking
+                // effect at runtime.
+                _logger.LogDebug(
+                    "[AutoDJ] Schedule check at {NowTime} (entries={EntryCount}, scheduledRotationId={ScheduledId})",
+                    now.ToString("HH:mm:ss"),
+                    _schedule?.Count ?? 0,
+                    scheduledId.HasValue && scheduledId.Value != Guid.Empty ? scheduledId.Value : null);
+
+                // Selection precedence:
+                //  1. Matching schedule entry (if any)
+                //  2. Currently active rotation (if still valid)
+                //  3. Default rotation from settings (if valid)
+                //  4. First enabled rotation, or the first rotation.
+                if (scheduledId.HasValue && scheduledId.Value != Guid.Empty)
+                {
+                    newRotationId = scheduledId.Value;
+                }
+                else if (_currentRotationId.HasValue && _rotations.Exists(r => r.Id == _currentRotationId.Value))
+                {
+                    newRotationId = _currentRotationId.Value;
+                }
+                else if (_defaultRotationId != Guid.Empty && _rotations.Exists(r => r.Id == _defaultRotationId))
+                {
+                    newRotationId = _defaultRotationId;
+                }
+                else
+                {
+                    var enabled = _rotations.Find(r => r.Enabled);
+                    newRotationId = (enabled ?? _rotations[0]).Id;
+                }
+
+                if (_currentRotationId.HasValue && _currentRotationId.Value == newRotationId.Value)
+                {
+                    // No change in active rotation
+                    _logger.LogDebug(
+                        "[AutoDJ] Active rotation unchanged after schedule check (RotationId={RotationId})",
+                        newRotationId);
+                    return;
+                }
+
+                _currentRotationId = newRotationId;
+
+                foreach (var rotation in _rotations)
+                {
+                    rotation.IsActive = rotation.Id == newRotationId.Value;
+                }
+
+                // Reset rotation state so the new rotation starts cleanly
+                _rotationSlotPointers.Clear();
+                _categoryShuffleBags.Clear();
+                _lastAddedTrack = null;
+
+                newRotation = _rotations.Find(r => r.Id == newRotationId.Value);
+                _logger.LogInformation("Active AutoDJ rotation switched to '{RotationName}' (Id={RotationId})",
+                    newRotation?.Name ?? "Unknown", newRotationId);
+            }
+
+            // Outside the lock: clear and refill the queue so that
+            // the new rotation takes effect immediately.
+            if (_enabled)
+            {
+                _queueService.Clear();
+                EnsureQueueDepth();
+            }
+        }
+
+        /// <summary>
+        /// Replaces the in-memory rotations, schedule, and default rotation used
+        /// by this AutoDJ service. This is called when settings are applied so
+        /// that changes take effect without restarting the app.
+        /// </summary>
+        public void UpdateConfiguration(System.Collections.Generic.List<SimpleRotation> rotations,
+                                         System.Collections.Generic.List<SimpleSchedulerEntry> schedule,
+                                         Guid defaultRotationId)
+        {
+            if (rotations == null) throw new ArgumentNullException(nameof(rotations));
+            if (schedule == null) throw new ArgumentNullException(nameof(schedule));
+
+            lock (_lock)
+            {
+                _rotations.Clear();
+                _rotations.AddRange(rotations);
+
+                _schedule.Clear();
+                _schedule.AddRange(schedule);
+
+                _defaultRotationId = defaultRotationId;
+
+                // Reset runtime rotation state so new configuration starts clean
+                _rotationSlotPointers.Clear();
+                _categoryShuffleBags.Clear();
+                _lastAddedTrack = null;
+            }
+
+            // Re-evaluate active rotation with the new configuration
+            UpdateActiveRotationIfNeeded();
+        }
+
+        /// <summary>
+        /// Manually sets the active rotation used for queue filling.
+        /// Intended for live-assist use when AutoDJ is not enabled.
+        /// Does not clear the existing queue; new fills will use the
+        /// selected rotation going forward.
+        /// </summary>
+        public void SetManualActiveRotation(Guid rotationId)
+        {
+            lock (_lock)
+            {
+                if (_rotations == null || _rotations.Count == 0)
+                {
+                    return;
+                }
+
+                var rotation = _rotations.FirstOrDefault(r => r.Id == rotationId);
+                if (rotation == null)
+                {
+                    return;
+                }
+
+                foreach (var r in _rotations)
+                {
+                    r.IsActive = r.Id == rotationId;
+                }
+
+                _currentRotationId = rotationId;
+                _rotationSlotPointers.Clear();
+                _categoryShuffleBags.Clear();
+                _lastAddedTrack = null;
+
+                _logger.LogInformation("Manual live-assist rotation set to '{RotationName}' (Id={RotationId})",
+                    rotation.Name, rotationId);
+            }
+        }
+
+        /// <summary>
+        /// Determines which rotation should be active at the specified time
+        /// using the simple schedule entries. Returns null when no schedule
+        /// entry matches, allowing callers to fall back to defaults.
+        /// </summary>
+        private Guid? GetScheduledRotationId(DateTime now)
+        {
+            if (_schedule == null || _schedule.Count == 0)
+            {
+                return null;
+            }
+
+            var timeOfDay = now.TimeOfDay;
+            var today = now.DayOfWeek;
+            SimpleSchedulerEntry? best = null;
+
+            foreach (var entry in _schedule)
+            {
+                if (entry == null || !entry.Enabled)
+                {
+                    continue;
+                }
+
+                if (entry.Day.HasValue && entry.Day.Value != today)
+                {
+                    continue;
+                }
+
+                var start = entry.StartTime;
+                var end = entry.EndTime;
+
+                bool inRange;
+                if (end <= start)
+                {
+                    // Overnight slot (e.g., 22:00–02:00)
+                    inRange = timeOfDay >= start || timeOfDay < end;
+                }
+                else
+                {
+                    inRange = timeOfDay >= start && timeOfDay < end;
+                }
+
+                if (!inRange)
+                {
+                    continue;
+                }
+
+                if (best == null || entry.StartTime > best.StartTime)
+                {
+                    best = entry;
+                }
+            }
+
+            if (best == null)
+            {
+                return null;
+            }
+
+            // Prefer explicit RotationId; fall back to matching by name
+            if (best.RotationId != Guid.Empty && _rotations.Exists(r => r.Id == best.RotationId))
+            {
+                return best.RotationId;
+            }
+
+            if (!string.IsNullOrWhiteSpace(best.RotationName))
+            {
+                var byName = _rotations.Find(r => string.Equals(r.Name, best.RotationName, StringComparison.OrdinalIgnoreCase));
+                if (byName != null)
+                {
+                    return byName.Id;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -216,35 +459,44 @@ namespace OpenBroadcaster.Core.Automation
         /// </summary>
         public List<Track> GetUpcomingPreview(int count)
         {
-            var result = new List<Track>();
-            // Store current state
-            var savedPointers = new Dictionary<Guid, int>(_rotationSlotPointers);
-            var savedBags = new Dictionary<Guid, Queue<Track>>();
-            foreach (var kvp in _categoryShuffleBags)
+            lock (_lock)
             {
-                savedBags[kvp.Key] = new Queue<Track>(kvp.Value);
-            }
+                var result = new List<Track>();
 
-            // Generate preview
-            for (int i = 0; i < count; i++)
-            {
-                var track = GetNextTrack();
-                if (track != null) result.Add(track);
-            }
+                // Store current state for rotation pointers and shuffle bags
+                var savedPointers = new Dictionary<Guid, int>(_rotationSlotPointers);
+                var savedBags = new Dictionary<Guid, Queue<Track>>();
+                foreach (var kvp in _categoryShuffleBags)
+                {
+                    // Clone each shuffle bag so we can simulate draws safely
+                    savedBags[kvp.Key] = new Queue<Track>(kvp.Value);
+                }
 
-            // Restore state
-            _rotationSlotPointers.Clear();
-            foreach (var kvp in savedPointers)
-            {
-                _rotationSlotPointers[kvp.Key] = kvp.Value;
-            }
-            _categoryShuffleBags.Clear();
-            foreach (var kvp in savedBags)
-            {
-                _categoryShuffleBags[kvp.Key] = kvp.Value;
-            }
+                // Generate preview using the same rotation/shuffle logic
+                for (int i = 0; i < count; i++)
+                {
+                    var track = GetNextTrack();
+                    if (track != null)
+                    {
+                        result.Add(track);
+                    }
+                }
 
-            return result;
+                // Restore runtime state exactly as it was
+                _rotationSlotPointers.Clear();
+                foreach (var kvp in savedPointers)
+                {
+                    _rotationSlotPointers[kvp.Key] = kvp.Value;
+                }
+
+                _categoryShuffleBags.Clear();
+                foreach (var kvp in savedBags)
+                {
+                    _categoryShuffleBags[kvp.Key] = kvp.Value;
+                }
+
+                return result;
+            }
         }
 
         /// <summary>
@@ -253,66 +505,69 @@ namespace OpenBroadcaster.Core.Automation
         /// </summary>
         private Track? GetNextTrack()
         {
-            var rotation = GetActiveRotation();
-            if (rotation == null)
+            lock (_lock)
             {
-                _logger.LogWarning("No active rotation found");
-                return null;
-            }
-
-            if (!rotation.Enabled)
-            {
-                _logger.LogWarning("Active rotation '{RotationName}' is disabled", rotation.Name);
-                return null;
-            }
-
-            // Prefer slot-based clockwheel; fall back to legacy category lists
-            var slots = rotation.Slots != null && rotation.Slots.Count > 0
-                ? rotation.Slots
-                : BuildLegacySlots(rotation);
-
-            if (slots.Count == 0)
-            {
-                _logger.LogWarning("Rotation '{RotationName}' has no slots", rotation.Name);
-                return null;
-            }
-
-            // Initialize pointer for rotation
-            if (!_rotationSlotPointers.ContainsKey(rotation.Id))
-            {
-                _rotationSlotPointers[rotation.Id] = 0;
-            }
-
-            var attempts = 0;
-            var maxAttempts = slots.Count * 2; // Try twice around the rotation
-            var slotIndex = _rotationSlotPointers[rotation.Id];
-
-            while (attempts < maxAttempts)
-            {
-                var slot = slots[slotIndex];
-                var track = TryPickTrackForSlot(slot);
-                
-                // Advance pointer for next call
-                slotIndex = (slotIndex + 1) % slots.Count;
-                attempts++;
-
-                if (track != null)
+                var rotation = GetActiveRotation();
+                if (rotation == null)
                 {
-                    // Prevent immediate back-to-back repeats
-                    if (_lastAddedTrack != null && track.Id == _lastAddedTrack.Id && attempts < maxAttempts)
-                    {
-                        _logger.LogDebug("Skipping duplicate track: {Title}", track.Title);
-                        continue;
-                    }
-
-                    _rotationSlotPointers[rotation.Id] = slotIndex;
-                    return track;
+                    _logger.LogWarning("No active rotation found");
+                    return null;
                 }
-            }
 
-            // No track found after full rotation
-            _logger.LogError("No valid tracks found after full rotation '{RotationName}'", rotation.Name);
-            return null;
+                if (!rotation.Enabled)
+                {
+                    _logger.LogWarning("Active rotation '{RotationName}' is disabled", rotation.Name);
+                    return null;
+                }
+
+                // Prefer slot-based clockwheel; fall back to legacy category lists
+                var slots = rotation.Slots != null && rotation.Slots.Count > 0
+                    ? rotation.Slots
+                    : BuildLegacySlots(rotation);
+
+                if (slots.Count == 0)
+                {
+                    _logger.LogWarning("Rotation '{RotationName}' has no slots", rotation.Name);
+                    return null;
+                }
+
+                // Initialize pointer for rotation
+                if (!_rotationSlotPointers.ContainsKey(rotation.Id))
+                {
+                    _rotationSlotPointers[rotation.Id] = 0;
+                }
+
+                var attempts = 0;
+                var maxAttempts = slots.Count * 2; // Try twice around the rotation
+                var slotIndex = _rotationSlotPointers[rotation.Id];
+
+                while (attempts < maxAttempts)
+                {
+                    var slot = slots[slotIndex];
+                    var track = TryPickTrackForSlot(slot);
+
+                    // Advance pointer for next call
+                    slotIndex = (slotIndex + 1) % slots.Count;
+                    attempts++;
+
+                    if (track != null)
+                    {
+                        // Prevent immediate back-to-back repeats
+                        if (_lastAddedTrack != null && track.Id == _lastAddedTrack.Id && attempts < maxAttempts)
+                        {
+                            _logger.LogDebug("Skipping duplicate track: {Title}", track.Title);
+                            continue;
+                        }
+
+                        _rotationSlotPointers[rotation.Id] = slotIndex;
+                        return track;
+                    }
+                }
+
+                // No track found after full rotation
+                _logger.LogError("No valid tracks found after full rotation '{RotationName}'", rotation.Name);
+                return null;
+            }
         }
 
         /// <summary>
@@ -321,41 +576,44 @@ namespace OpenBroadcaster.Core.Automation
         /// </summary>
         private SimpleRotation? GetActiveRotation()
         {
-            if (_rotations == null || _rotations.Count == 0)
+            lock (_lock)
             {
-                _logger.LogWarning("No rotations available");
+                if (_rotations == null || _rotations.Count == 0)
+                {
+                    _logger.LogWarning("No rotations available");
+                    return null;
+                }
+
+                // CRITICAL: Only use rotations marked as IsActive
+                var activeRotation = _rotations.FirstOrDefault(r => r.IsActive && r.Enabled);
+
+                if (activeRotation != null)
+                {
+                    return activeRotation;
+                }
+
+                // No active rotation found - try to auto-activate first enabled rotation
+                var firstEnabled = _rotations.FirstOrDefault(r => r.Enabled);
+                if (firstEnabled != null)
+                {
+                    _logger.LogWarning("No active rotation found. Auto-activating '{RotationName}'", firstEnabled.Name);
+                    firstEnabled.IsActive = true;
+                    return firstEnabled;
+                }
+
+                // Still nothing - try any rotation
+                var anyRotation = _rotations.FirstOrDefault();
+                if (anyRotation != null)
+                {
+                    _logger.LogWarning("No enabled rotations. Auto-activating '{RotationName}'", anyRotation.Name);
+                    anyRotation.IsActive = true;
+                    anyRotation.Enabled = true;
+                    return anyRotation;
+                }
+
+                _logger.LogError("No rotations available at all. Please create a rotation in settings.");
                 return null;
             }
-            
-            // CRITICAL: Only use rotations marked as IsActive
-            var activeRotation = _rotations.FirstOrDefault(r => r.IsActive && r.Enabled);
-            
-            if (activeRotation != null)
-            {
-                return activeRotation;
-            }
-
-            // No active rotation found - try to auto-activate first enabled rotation
-            var firstEnabled = _rotations.FirstOrDefault(r => r.Enabled);
-            if (firstEnabled != null)
-            {
-                _logger.LogWarning("No active rotation found. Auto-activating '{RotationName}'", firstEnabled.Name);
-                firstEnabled.IsActive = true;
-                return firstEnabled;
-            }
-            
-            // Still nothing - try any rotation
-            var anyRotation = _rotations.FirstOrDefault();
-            if (anyRotation != null)
-            {
-                _logger.LogWarning("No enabled rotations. Auto-activating '{RotationName}'", anyRotation.Name);
-                anyRotation.IsActive = true;
-                anyRotation.Enabled = true;
-                return anyRotation;
-            }
-
-            _logger.LogError("No rotations available at all. Please create a rotation in settings.");
-            return null;
         }
 
         /// <summary>

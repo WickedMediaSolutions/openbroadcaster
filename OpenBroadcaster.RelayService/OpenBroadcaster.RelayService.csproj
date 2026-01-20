@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>OpenBroadcaster.RelayService</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- JWT Authentication -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
+    
+    <!-- Configuration -->
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+
+    <!-- OpenAPI/Swagger -->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+  </ItemGroup>
+
+  <!-- 
+    IMPORTANT: The relay service shares message contracts with the desktop app.
+    In a real deployment, you would:
+    1. Create a shared OpenBroadcaster.Contracts NuGet package, OR
+    2. Copy the contract files to this project, OR
+    3. Reference the main project (not ideal for deployment separation)
+    
+    For this implementation, we include the contracts directly.
+  -->
+
+</Project>

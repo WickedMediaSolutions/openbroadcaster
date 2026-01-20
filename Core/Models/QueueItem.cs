@@ -4,7 +4,14 @@ namespace OpenBroadcaster.Core.Models
 {
     public sealed class QueueItem
     {
-        public QueueItem(Track track, QueueSource sourceType, string sourceLabel, string requestedBy, string? rotationName = null, string? categoryName = null)
+        public QueueItem(
+            Track track,
+            QueueSource sourceType,
+            string sourceLabel,
+            string requestedBy,
+            string? rotationName = null,
+            string? categoryName = null,
+            string? requestMessage = null)
         {
             Track = track ?? throw new ArgumentNullException(nameof(track));
             SourceType = sourceType;
@@ -13,6 +20,7 @@ namespace OpenBroadcaster.Core.Models
             RotationName = rotationName?.Trim() ?? string.Empty;
             CategoryName = categoryName?.Trim() ?? string.Empty;
             CreatedAtUtc = DateTime.UtcNow;
+            RequestMessage = requestMessage?.Trim() ?? string.Empty;
         }
 
         public Track Track { get; }
@@ -22,6 +30,12 @@ namespace OpenBroadcaster.Core.Models
         public string RotationName { get; }
         public string CategoryName { get; }
         public DateTime CreatedAtUtc { get; }
+
+        /// <summary>
+        /// Optional free-form message supplied with the request (e.g. from the website request form).
+        /// Empty string when not provided.
+        /// </summary>
+        public string RequestMessage { get; }
 
         public bool HasRequester => !string.IsNullOrWhiteSpace(RequestedBy);
 

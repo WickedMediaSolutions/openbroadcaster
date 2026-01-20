@@ -11,10 +11,21 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using OpenBroadcaster.Core.Diagnostics;
 using OpenBroadcaster.Core.Models;
+using OpenBroadcaster.Core.Services;
 using TagLib;
 
 namespace OpenBroadcaster.Core.Overlay
 {
+    /// <summary>
+    /// Result of a web-based song request submission.
+    /// </summary>
+    public sealed class WebRequestResult
+    {
+        public bool Success { get; init; }
+        public string Message { get; init; } = string.Empty;
+        public int? QueuePosition { get; init; }
+    }
+
     public sealed class OverlayDataServer : IDisposable
     {
         private readonly Func<OverlayStateSnapshot> _snapshotAccessor;
@@ -37,11 +48,49 @@ namespace OpenBroadcaster.Core.Overlay
         private string _fallbackArtworkPath = string.Empty;
         private bool _disposed;
 
+        // Library and request handling delegates
+        private Func<string, int, IReadOnlyList<Track>>? _librarySearchHandler;
+        private Func<IReadOnlyCollection<LibraryCategory>>? _categoriesHandler;
+        private Func<Guid, IReadOnlyCollection<Track>>? _categoryTracksHandler;
+        private Func<Guid, string, string?, WebRequestResult>? _requestHandler;
+
         public OverlayDataServer(Func<OverlayStateSnapshot> snapshotAccessor, Func<string?>? currentTrackFileAccessor = null, ILogger<OverlayDataServer>? logger = null)
         {
             _snapshotAccessor = snapshotAccessor ?? throw new ArgumentNullException(nameof(snapshotAccessor));
             _currentTrackFileAccessor = currentTrackFileAccessor ?? (() => null);
             _logger = logger ?? AppLogger.CreateLogger<OverlayDataServer>();
+        }
+
+        /// <summary>
+        /// Configures library search functionality for web requests.
+        /// </summary>
+        public void SetLibrarySearchHandler(Func<string, int, IReadOnlyList<Track>>? handler)
+        {
+            _librarySearchHandler = handler;
+        }
+
+        /// <summary>
+        /// Configures category listing functionality for web requests.
+        /// </summary>
+        public void SetCategoriesHandler(Func<IReadOnlyCollection<LibraryCategory>>? handler)
+        {
+            _categoriesHandler = handler;
+        }
+
+        /// <summary>
+        /// Configures category track listing functionality for web requests.
+        /// </summary>
+        public void SetCategoryTracksHandler(Func<Guid, IReadOnlyCollection<Track>>? handler)
+        {
+            _categoryTracksHandler = handler;
+        }
+
+        /// <summary>
+        /// Configures song request submission functionality.
+        /// </summary>
+        public void SetRequestHandler(Func<Guid, string, string?, WebRequestResult>? handler)
+        {
+            _requestHandler = handler;
         }
 
         public void ApplySettings(OverlaySettings? settings)
@@ -238,6 +287,54 @@ namespace OpenBroadcaster.Core.Overlay
                     return;
                 }
 
+                // Library search endpoint (requires authentication if configured)
+                if (path.Equals("/api/library/search", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!ValidateApiAuthentication(context.Request))
+                    {
+                        WriteUnauthorized(context);
+                        return;
+                    }
+                    await ServeLibrarySearchAsync(context).ConfigureAwait(false);
+                    return;
+                }
+
+                // Categories endpoint (requires authentication if configured)
+                if (path.Equals("/api/library/categories", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!ValidateApiAuthentication(context.Request))
+                    {
+                        WriteUnauthorized(context);
+                        return;
+                    }
+                    await ServeCategoriesAsync(context).ConfigureAwait(false);
+                    return;
+                }
+
+                // Category tracks endpoint (requires authentication if configured)
+                if (path.StartsWith("/api/library/category/", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!ValidateApiAuthentication(context.Request))
+                    {
+                        WriteUnauthorized(context);
+                        return;
+                    }
+                    await ServeCategoryTracksAsync(context, path).ConfigureAwait(false);
+                    return;
+                }
+
+                // Request submission endpoint (requires authentication if configured)
+                if (path.Equals("/api/request", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!ValidateApiAuthentication(context.Request))
+                    {
+                        WriteUnauthorized(context);
+                        return;
+                    }
+                    await HandleRequestSubmissionAsync(context).ConfigureAwait(false);
+                    return;
+                }
+
                 await ServeStaticAsync(context, path).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -253,9 +350,63 @@ namespace OpenBroadcaster.Core.Overlay
         private void AddCorsHeaders(HttpListenerResponse response)
         {
             response.Headers.Add("Access-Control-Allow-Origin", "*");
-            response.Headers.Add("Access-Control-Allow-Methods", "GET, OPTIONS");
-            response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Accept");
+            response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Accept, Authorization");
             response.Headers.Add("Access-Control-Max-Age", "86400"); // Cache preflight for 24 hours
+        }
+
+        /// <summary>
+        /// Validates Basic authentication credentials if API authentication is enabled.
+        /// </summary>
+        /// <param name="request">The HTTP request to validate.</param>
+        /// <returns>True if authentication is not required or credentials are valid; false otherwise.</returns>
+        private bool ValidateApiAuthentication(HttpListenerRequest request)
+        {
+            // If no username is set, authentication is disabled
+            if (string.IsNullOrEmpty(_settings.ApiUsername))
+            {
+                return true;
+            }
+
+            var authHeader = request.Headers["Authorization"];
+            if (string.IsNullOrEmpty(authHeader))
+            {
+                return false;
+            }
+
+            // Expect "Basic base64(username:password)"
+            if (!authHeader.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            try
+            {
+                var base64Credentials = authHeader.Substring(6);
+                var credentials = Encoding.UTF8.GetString(Convert.FromBase64String(base64Credentials));
+                var parts = credentials.Split(':', 2);
+
+                if (parts.Length != 2)
+                {
+                    return false;
+                }
+
+                return parts[0] == _settings.ApiUsername && parts[1] == _settings.ApiPassword;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Sends a 401 Unauthorized response.
+        /// </summary>
+        private void WriteUnauthorized(HttpListenerContext context)
+        {
+            context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            context.Response.Headers.Add("WWW-Authenticate", "Basic realm=\"OpenBroadcaster API\"");
+            TryWriteStatus(context, HttpStatusCode.Unauthorized, "Unauthorized");
         }
 
         private bool IsWebSocketPath(HttpListenerRequest request)
@@ -379,6 +530,182 @@ namespace OpenBroadcaster.Core.Overlay
             var snapshot = _snapshotAccessor();
             var payload = JsonSerializer.Serialize(snapshot, _jsonOptions);
             var buffer = Encoding.UTF8.GetBytes(payload);
+            context.Response.ContentType = "application/json";
+            context.Response.ContentEncoding = Encoding.UTF8;
+            context.Response.ContentLength64 = buffer.Length;
+            await context.Response.OutputStream.WriteAsync(buffer.AsMemory(0, buffer.Length)).ConfigureAwait(false);
+            context.Response.OutputStream.Close();
+        }
+
+        private async Task ServeLibrarySearchAsync(HttpListenerContext context)
+        {
+            if (_librarySearchHandler == null)
+            {
+                TryWriteStatus(context, HttpStatusCode.ServiceUnavailable, "Library search not available");
+                return;
+            }
+
+            var query = context.Request.QueryString["q"] ?? string.Empty;
+            var limitStr = context.Request.QueryString["limit"];
+            var limit = 50;
+            if (!string.IsNullOrWhiteSpace(limitStr) && int.TryParse(limitStr, out var parsedLimit))
+            {
+                limit = Math.Clamp(parsedLimit, 1, 100);
+            }
+
+            var tracks = _librarySearchHandler(query, limit);
+            var results = tracks.Select(track => new LibraryTrackDto
+            {
+                Id = track.Id.ToString(),
+                Title = track.Title,
+                Artist = track.Artist,
+                Album = track.Album,
+                DurationSeconds = track.Duration.TotalSeconds,
+                IsEnabled = track.IsEnabled
+            }).ToArray();
+
+            var payload = JsonSerializer.Serialize(new { tracks = results, total = results.Length }, _jsonOptions);
+            var buffer = Encoding.UTF8.GetBytes(payload);
+            context.Response.ContentType = "application/json";
+            context.Response.ContentEncoding = Encoding.UTF8;
+            context.Response.ContentLength64 = buffer.Length;
+            await context.Response.OutputStream.WriteAsync(buffer.AsMemory(0, buffer.Length)).ConfigureAwait(false);
+            context.Response.OutputStream.Close();
+        }
+
+        private async Task ServeCategoriesAsync(HttpListenerContext context)
+        {
+            if (_categoriesHandler == null)
+            {
+                TryWriteStatus(context, HttpStatusCode.ServiceUnavailable, "Categories not available");
+                return;
+            }
+
+            var categories = _categoriesHandler();
+            // Filter out TOH categories - those are internal system categories
+            var results = categories
+                .Where(c => !LibraryService.IsTohCategory(c.Id))
+                .Select(category => new CategoryDto
+                {
+                    Id = category.Id.ToString(),
+                    Name = category.Name,
+                    Type = category.Type
+                }).ToArray();
+
+            var payload = JsonSerializer.Serialize(new { categories = results }, _jsonOptions);
+            var buffer = Encoding.UTF8.GetBytes(payload);
+            context.Response.ContentType = "application/json";
+            context.Response.ContentEncoding = Encoding.UTF8;
+            context.Response.ContentLength64 = buffer.Length;
+            await context.Response.OutputStream.WriteAsync(buffer.AsMemory(0, buffer.Length)).ConfigureAwait(false);
+            context.Response.OutputStream.Close();
+        }
+
+        private async Task ServeCategoryTracksAsync(HttpListenerContext context, string path)
+        {
+            if (_categoryTracksHandler == null)
+            {
+                TryWriteStatus(context, HttpStatusCode.ServiceUnavailable, "Category tracks not available");
+                return;
+            }
+
+            // Extract category ID from path: /api/library/category/{id}
+            var idPart = path.Substring("/api/library/category/".Length).TrimEnd('/');
+            if (!Guid.TryParse(idPart, out var categoryId))
+            {
+                TryWriteStatus(context, HttpStatusCode.BadRequest, "Invalid category ID");
+                return;
+            }
+
+            var tracks = _categoryTracksHandler(categoryId);
+            var results = tracks.Select(track => new LibraryTrackDto
+            {
+                Id = track.Id.ToString(),
+                Title = track.Title,
+                Artist = track.Artist,
+                Album = track.Album,
+                DurationSeconds = track.Duration.TotalSeconds,
+                IsEnabled = track.IsEnabled
+            }).ToArray();
+
+            var payload = JsonSerializer.Serialize(new { tracks = results, total = results.Length }, _jsonOptions);
+            var buffer = Encoding.UTF8.GetBytes(payload);
+            context.Response.ContentType = "application/json";
+            context.Response.ContentEncoding = Encoding.UTF8;
+            context.Response.ContentLength64 = buffer.Length;
+            await context.Response.OutputStream.WriteAsync(buffer.AsMemory(0, buffer.Length)).ConfigureAwait(false);
+            context.Response.OutputStream.Close();
+        }
+
+        private async Task HandleRequestSubmissionAsync(HttpListenerContext context)
+        {
+            if (!context.Request.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase))
+            {
+                TryWriteStatus(context, HttpStatusCode.MethodNotAllowed, "POST required");
+                return;
+            }
+
+            if (_requestHandler == null)
+            {
+                await WriteJsonResponseAsync(context, HttpStatusCode.ServiceUnavailable, new { success = false, message = "Requests not available" }).ConfigureAwait(false);
+                return;
+            }
+
+            // Read request body
+            string body;
+            using (var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding))
+            {
+                body = await reader.ReadToEndAsync().ConfigureAwait(false);
+            }
+
+            RequestSubmissionDto? submission;
+            try
+            {
+                submission = JsonSerializer.Deserialize<RequestSubmissionDto>(body, _jsonOptions);
+            }
+            catch
+            {
+                await WriteJsonResponseAsync(context, HttpStatusCode.BadRequest, new { success = false, message = "Invalid JSON" }).ConfigureAwait(false);
+                return;
+            }
+
+            if (submission == null || string.IsNullOrWhiteSpace(submission.TrackId))
+            {
+                await WriteJsonResponseAsync(context, HttpStatusCode.BadRequest, new { success = false, message = "Track ID required" }).ConfigureAwait(false);
+                return;
+            }
+
+            if (!Guid.TryParse(submission.TrackId, out var trackId))
+            {
+                await WriteJsonResponseAsync(context, HttpStatusCode.BadRequest, new { success = false, message = "Invalid track ID" }).ConfigureAwait(false);
+                return;
+            }
+
+            var requesterName = string.IsNullOrWhiteSpace(submission.RequesterName)
+                ? "Web Listener"
+                : submission.RequesterName.Trim();
+
+            var message = string.IsNullOrWhiteSpace(submission.Message)
+                ? null
+                : submission.Message.Trim();
+
+            _logger.LogInformation("Web request received for track {TrackId} by {Requester}. Message: {Message}", trackId, requesterName, message ?? "<none>");
+
+            var result = _requestHandler(trackId, requesterName, message);
+            var status = result.Success ? HttpStatusCode.OK : HttpStatusCode.BadRequest;
+            await WriteJsonResponseAsync(context, status, new
+            {
+                success = result.Success,
+                message = result.Message,
+                queuePosition = result.QueuePosition
+            }).ConfigureAwait(false);
+        }
+
+        private async Task WriteJsonResponseAsync(HttpListenerContext context, HttpStatusCode status, object data)
+        {
+            var payload = JsonSerializer.Serialize(data, _jsonOptions);
+            var buffer = Encoding.UTF8.GetBytes(payload);
+            context.Response.StatusCode = (int)status;
             context.Response.ContentType = "application/json";
             context.Response.ContentEncoding = Encoding.UTF8;
             context.Response.ContentLength64 = buffer.Length;
@@ -560,5 +887,38 @@ namespace OpenBroadcaster.Core.Overlay
                 // Ignore failures when client disconnects early.
             }
         }
+    }
+
+    /// <summary>
+    /// DTO for library track information returned to web clients.
+    /// </summary>
+    internal sealed class LibraryTrackDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Artist { get; set; } = string.Empty;
+        public string Album { get; set; } = string.Empty;
+        public double DurationSeconds { get; set; }
+        public bool IsEnabled { get; set; }
+    }
+
+    /// <summary>
+    /// DTO for category information returned to web clients.
+    /// </summary>
+    internal sealed class CategoryDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// DTO for request submission from web clients.
+    /// </summary>
+    internal sealed class RequestSubmissionDto
+    {
+        public string TrackId { get; set; } = string.Empty;
+        public string RequesterName { get; set; } = string.Empty;
+            public string? Message { get; set; }
     }
 }

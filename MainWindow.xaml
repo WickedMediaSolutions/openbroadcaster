@@ -7,10 +7,22 @@
         xmlns:models="clr-namespace:OpenBroadcaster.Core.Models"
         xmlns:streaming="clr-namespace:OpenBroadcaster.Core.Streaming"
         xmlns:converters="clr-namespace:OpenBroadcaster.Converters"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         Title="OpenBroadcaster"
         Icon="Assets/app-icon.ico"
         WindowState="Maximized"
+        WindowStyle="None"
+        ResizeMode="CanResize"
         mc:Ignorable="d">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome
+            CaptionHeight="40"
+            CornerRadius="0"
+            GlassFrameThickness="0"
+            ResizeBorderThickness="6"
+            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
@@ -46,16 +58,19 @@
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0"
+                x:Name="TitleBarBorder"
                 Background="{StaticResource PanelBackgroundBrush}"
                 BorderBrush="{StaticResource StudioAccentBrush}"
                 BorderThickness="0,0,0,2"
-                Padding="12 6">
+                Padding="12 6"
+                MouseDown="TitleBarBorder_MouseDown">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Menu VerticalAlignment="Center">
+                <Menu VerticalAlignment="Center" shell:WindowChrome.IsHitTestVisibleInChrome="True">
                     <MenuItem Header="_File">
                         <MenuItem Header="Exit" Click="OnExitClick" />
                     </MenuItem>
@@ -73,7 +88,23 @@
                     </MenuItem>
                 </Menu>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Button Content="App Settings" Command="{Binding OpenAppSettingsCommand}" Width="140" Margin="12,0,0,0" />
+                    <Button Content="App Settings"
+                            Command="{Binding OpenAppSettingsCommand}"
+                            Width="140"
+                            Margin="12,0,0,0"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                    <Button Width="36" Height="24" Margin="0,0,2,0" Click="MinimizeButton_Click" ToolTip="Minimize" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <TextBlock Text="_" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Button>
+                    <Button Width="36" Height="24" Margin="0,0,2,0" Click="MaximizeRestoreButton_Click" ToolTip="Maximize/Restore" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <TextBlock Text="▢" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Button>
+                    <Button Width="36" Height="24" Click="CloseButton_Click" ToolTip="Close" Background="#FFAA3333" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <TextBlock Text="X" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>
@@ -176,7 +207,8 @@
                               SelectedItem="{Binding SelectedLibraryItem}"
                               SelectionMode="Extended"
                               PreviewMouseLeftButtonDown="LibraryListView_PreviewMouseLeftButtonDown"
-                              MouseMove="LibraryListView_MouseMove">
+                              MouseMove="LibraryListView_MouseMove"
+                              ScrollViewer.VerticalScrollBarVisibility="Hidden">
                         <ListView.ContextMenu>
                             <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                 <MenuItem Header="Assign Categories..." Command="{Binding AssignCategoriesCommand}" />
@@ -207,7 +239,13 @@
                     </StackPanel>
 
                     <Border Grid.Row="4" Background="#FF0E1118" BorderBrush="#FF2D313B" BorderThickness="1" CornerRadius="6">
-                        <ListBox ItemsSource="{Binding ChatMessages}" Background="Transparent" BorderThickness="0" Margin="4">
+                        <ListBox x:Name="TwitchChatListBox"
+                                 ItemsSource="{Binding ChatMessages}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Margin="4"
+                                 ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                             <ListBox.ItemTemplate>
                                 <DataTemplate DataType="{x:Type vm:TwitchChatMessageViewModel}">
                                     <Grid Margin="0,3">
@@ -526,6 +564,17 @@
                                            Foreground="{StaticResource StudioMutedTextBrush}"
                                            TextWrapping="Wrap" />
                                 <Separator Margin="0,8,0,8" Background="#FF2F343F" Height="1" />
+
+                                <TextBlock Text="Live Assist Rotation" Style="{StaticResource SectionTitleText}" FontSize="12" />
+                                <ComboBox ItemsSource="{Binding LiveAssistRotations}"
+                                          SelectedItem="{Binding SelectedLiveAssistRotation}"
+                                          DisplayMemberPath="Name"
+                                          Margin="0,4,0,4"
+                                          Height="26"
+                                          HorizontalAlignment="Stretch"
+                                          IsEnabled="{Binding IsLiveAssistRotationSelectionEnabled}" />
+
+                                <Separator Margin="0,8,0,8" Background="#FF2F343F" Height="1" />
                                 <TextBlock Text="AutoDJ" Style="{StaticResource SectionTitleText}" FontSize="12" />
                                 <ToggleButton IsChecked="{Binding AutoDjEnabled}"
                                               Margin="0,4,0,0"
@@ -664,14 +713,26 @@
                                     </StackPanel>
                                     
                                     <!-- Digital Clock -->
-                                    <Separator Margin="0,12,0,8" Background="#FF2F343F" Height="1" />
-                                    <TextBlock Text="{Binding CurrentTime}"
-                                               FontFamily="Consolas"
-                                               FontSize="28"
-                                               FontWeight="Bold"
-                                               Foreground="{StaticResource StudioAccentBrush}"
-                                               HorizontalAlignment="Center"
-                                               Margin="0,4,0,4" />
+                                    <Separator Margin="0,18,0,8" Background="#FF2F343F" Height="1" />
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,8">
+                                        <TextBlock Text="{Binding CurrentTime}"
+                                                   FontFamily="Consolas"
+                                                   FontSize="28"
+                                                   FontWeight="Bold"
+                                                   Foreground="{StaticResource StudioAccentBrush}"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,8,0" />
+                                        <ToggleButton Width="36"
+                                                      Height="18"
+                                                      VerticalAlignment="Center"
+                                                      IsChecked="{Binding Use24HourClock, Mode=TwoWay}"
+                                                      ToolTip="Toggle 24-hour / 12-hour clock">
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                <TextBlock Text="24" FontSize="10" Visibility="{Binding IsChecked, RelativeSource={RelativeSource AncestorType=ToggleButton}, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                                <TextBlock Text="12" FontSize="10" Visibility="{Binding IsChecked, RelativeSource={RelativeSource AncestorType=ToggleButton}, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
+                                            </StackPanel>
+                                        </ToggleButton>
+                                    </StackPanel>
                                     </StackPanel>
                             </ScrollViewer>
                             </Border>
@@ -719,7 +780,7 @@
                                  BorderBrush="#1C2230"
                                  BorderThickness="1"
                                  Padding="4"
-                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.VerticalScrollBarVisibility="Hidden"
                                  PreviewMouseLeftButtonDown="QueueListBox_PreviewMouseLeftButtonDown"
                                  PreviewMouseRightButtonDown="QueueListBox_PreviewMouseRightButtonDown"
                                  MouseMove="QueueListBox_MouseMove"
@@ -789,6 +850,33 @@
                                                         <Setter Property="Visibility" Value="Collapsed" />
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding IsTwitchRequest}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                            </Border>
+                                            <!-- Website Request with green neon border including listener message -->
+                                            <Border Grid.Row="2"
+                                                    Margin="0,6,0,0"
+                                                    Padding="8,4"
+                                                    CornerRadius="4"
+                                                    BorderThickness="1"
+                                                    BorderBrush="#39FF14"
+                                                    Background="#1A39FF14">
+                                                <Border.Effect>
+                                                    <DropShadowEffect Color="#39FF14" BlurRadius="8" ShadowDepth="0" Opacity="0.6" />
+                                                </Border.Effect>
+                                                <TextBlock Text="{Binding WebRequestDisplay}"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#39FF14"
+                                                           TextWrapping="Wrap" />
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsWebRequest}" Value="True">
                                                                 <Setter Property="Visibility" Value="Visible" />
                                                             </DataTrigger>
                                                         </Style.Triggers>

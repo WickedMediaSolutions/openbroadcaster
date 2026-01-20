@@ -25,6 +25,12 @@ namespace OpenBroadcaster.Core.Services
         private CancellationTokenSource? _deckBCts;
         private bool _disposed;
 
+        /// <summary>
+        /// Flag to indicate a manual skip is in progress. When true, the PlaybackStopped event
+        /// should not trigger auto-advance since the skip operation will handle loading the next track.
+        /// </summary>
+        public bool IsSkipping { get; set; }
+
         public TransportService(IEventBus eventBus, QueueService queueService, AudioService? audioService = null, ILogger<TransportService>? logger = null, TimeSpan? telemetryInterval = null)
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
@@ -62,41 +68,82 @@ namespace OpenBroadcaster.Core.Services
         public void Play(DeckIdentifier deckId)
         {
             var lockObj = deckId == DeckIdentifier.A ? _deckALock : _deckBLock;
+            bool needsAudioStart = false;
+            bool needsAudioResume = false;
+            string? filePath = null;
             
             lock (lockObj)
             {
                 var deck = Resolve(deckId);
-                if (deck.CurrentQueueItem == null)
+                
+                // If already playing, do nothing
+                if (deck.Status == DeckStatus.Playing)
                 {
-                    if (!TryLoadFromQueue(deckId))
-                    {
-                        _logger.LogWarning("Deck {DeckId} has no track to play and queue is empty.", deckId);
-                        return;
-                    }
-
-                    deck = Resolve(deckId);
+                    _logger.LogDebug("Deck {DeckId} is already playing, ignoring play command", deckId);
+                    return;
                 }
-
-                deck.Play();
-                StartTelemetry(deckId);
-
-                // Cancel any previous playback task
-                if (deckId == DeckIdentifier.A)
+                
+                // If paused, just resume (don't reload file)
+                if (deck.Status == DeckStatus.Paused)
                 {
-                    _deckACts?.Cancel();
-                    _deckACts = new CancellationTokenSource();
+                    deck.Play();
+                    StartTelemetry(deckId);
+                    needsAudioResume = true;
+                    _logger.LogInformation("Resuming playback on deck {DeckId}", deckId);
+                    Publish(deckId, deck);
                 }
                 else
                 {
-                    _deckBCts?.Cancel();
-                    _deckBCts = new CancellationTokenSource();
+                    // Deck is stopped/ready - need to load if no track
+                    if (deck.CurrentQueueItem == null)
+                    {
+                        if (!TryLoadFromQueue(deckId))
+                        {
+                            _logger.LogWarning("Deck {DeckId} has no track to play and queue is empty.", deckId);
+                            return;
+                        }
+
+                        deck = Resolve(deckId);
+                    }
+
+                    deck.Play();
+                    StartTelemetry(deckId);
+                    needsAudioStart = true;
+                    filePath = deck.CurrentQueueItem?.Track?.FilePath;
+
+                    // Cancel any previous playback task
+                    if (deckId == DeckIdentifier.A)
+                    {
+                        _deckACts?.Cancel();
+                        _deckACts = new CancellationTokenSource();
+                    }
+                    else
+                    {
+                        _deckBCts?.Cancel();
+                        _deckBCts = new CancellationTokenSource();
+                    }
+
+                    _logger.LogInformation("Play triggered on deck {DeckId}", deckId);
+                    Publish(deckId, deck);
                 }
+            }
 
+            // Handle audio outside the lock
+            if (needsAudioResume && _audioService != null)
+            {
+                try
+                {
+                    _audioService.PlayDeck(deckId); // Resume without file path
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error resuming audio for deck {DeckId}", deckId);
+                }
+            }
+            else if (needsAudioStart && _audioService != null && !string.IsNullOrWhiteSpace(filePath))
+            {
                 var cts = deckId == DeckIdentifier.A ? _deckACts : _deckBCts;
-
-                // Trigger actual audio playback if AudioService is wired
-                var filePath = deck.CurrentQueueItem?.Track?.FilePath;
-                if (_audioService != null && !string.IsNullOrWhiteSpace(filePath) && cts != null)
+                if (cts != null)
                 {
                     _ = Task.Run(async () =>
                     {
@@ -119,9 +166,6 @@ namespace OpenBroadcaster.Core.Services
                         }
                     }, cts.Token);
                 }
-
-                _logger.LogInformation("Play triggered on deck {DeckId}", deckId);
-                Publish(deckId, deck);
             }
         }
 
@@ -131,11 +175,35 @@ namespace OpenBroadcaster.Core.Services
             
             lock (lockObj)
             {
+                // Cancel any pending playback
+                if (deckId == DeckIdentifier.A)
+                {
+                    _deckACts?.Cancel();
+                    _deckACts?.Dispose();
+                    _deckACts = null;
+                }
+                else
+                {
+                    _deckBCts?.Cancel();
+                    _deckBCts?.Dispose();
+                    _deckBCts = null;
+                }
+
                 var deck = Resolve(deckId);
                 deck.Pause();
                 StopTelemetry(deckId);
                 _logger.LogInformation("Pause triggered on deck {DeckId}", deckId);
                 Publish(deckId, deck);
+            }
+
+            // Pause audio outside the lock to prevent deadlocks
+            try
+            {
+                _audioService?.PauseDeck(deckId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error pausing audio for deck {DeckId}", deckId);
             }
         }
 

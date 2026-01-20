@@ -1,0 +1,142 @@
+/**
+ * OpenBroadcaster Web - Admin Styles
+ */
+
+.obw-admin-wrap {
+    max-width: 1200px;
+}
+
+.obw-admin-wrap h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.obw-admin-wrap h1 .dashicons {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+}
+
+.obw-admin-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+@media (max-width: 960px) {
+    .obw-admin-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.obw-admin-main {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.obw-settings-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #dcdcde;
+}
+
+.obw-settings-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.obw-settings-section h2 {
+    margin-top: 0;
+    margin-bottom: 5px;
+    font-size: 1.3em;
+}
+
+.obw-settings-section > p.description {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #646970;
+}
+
+/* Sidebar */
+.obw-admin-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.obw-admin-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 15px;
+}
+
+.obw-admin-card h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
+.obw-admin-card p {
+    margin: 0 0 10px;
+    color: #50575e;
+}
+
+.obw-admin-card p:last-child {
+    margin-bottom: 0;
+}
+
+/* Shortcode list */
+.obw-shortcode-list {
+    margin: 0;
+}
+
+.obw-shortcode-list dt {
+    font-weight: normal;
+    margin-top: 10px;
+}
+
+.obw-shortcode-list dt:first-child {
+    margin-top: 0;
+}
+
+.obw-shortcode-list dt code {
+    background: #f0f0f1;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.obw-shortcode-list dd {
+    margin: 4px 0 0 0;
+    color: #646970;
+    font-size: 13px;
+}
+
+/* Form table adjustments */
+.obw-admin-wrap .form-table th {
+    width: 180px;
+}
+
+.obw-admin-wrap .form-table td p.description {
+    margin-top: 5px;
+}
+
+/* Color picker */
+.obw-admin-wrap input[type="color"] {
+    width: 60px;
+    height: 36px;
+    padding: 3px;
+    cursor: pointer;
+}
+
+/* Custom CSS textarea */
+.obw-admin-wrap textarea.code {
+    font-family: Consolas, Monaco, monospace;
+    font-size: 13px;
+}

@@ -57,9 +57,9 @@
             <Setter Property="Background" Value="Transparent" />
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="{StaticResource StudioPanelHighlightBrush}" />
-                    <Setter Property="BorderBrush" Value="{StaticResource StudioAccentBrightBrush}" />
-                    <Setter Property="Foreground" Value="{StaticResource StudioMetadataTextBrush}" />
+                    <Setter Property="Background" Value="{StaticResource StudioAccentBrightBrush}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource StudioAccentBrush}" />
+                    <Setter Property="Foreground" Value="#FF040A18" />
                     <Setter Property="FontWeight" Value="Bold" />
                     <Setter Property="Effect" Value="{StaticResource StudioNeonGlowEffect}" />
                 </Trigger>
@@ -589,6 +589,67 @@
                     </StackPanel>
                 </TabItem>
 
+                <TabItem Header="Direct Server">
+                    <StackPanel>
+                        <CheckBox Content="Enable Direct Server (for WordPress plugin)"
+                                  IsChecked="{Binding Settings.DirectServer.Enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}" />
+                        <TextBlock Text="The Direct Server allows the WordPress plugin to connect directly to OpenBroadcaster without a relay service."
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource StudioMutedTextBrush}"
+                                   Margin="0,4,0,12" />
+                        
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <Label Content="Port" Width="200" />
+                            <TextBox Width="100"
+                                     Text="{Binding Settings.DirectServer.Port, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}" />
+                        </StackPanel>
+                        
+                        <CheckBox Content="Allow remote connections (not just localhost)"
+                                  IsChecked="{Binding Settings.DirectServer.AllowRemoteConnections, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}"
+                                  Margin="0,12,0,0" />
+                        <TextBlock Text="Enable this if WordPress is running on a different machine or VM."
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource StudioMutedTextBrush}"
+                                   Margin="0,4,0,0" />
+                        
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <Label Content="API Key (optional)" Width="200" />
+                            <TextBox Width="200"
+                                     Text="{Binding Settings.DirectServer.ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}" />
+                        </StackPanel>
+                        <TextBlock Text="Leave blank for no authentication. If set, the same key must be configured in the WordPress plugin."
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource StudioMutedTextBrush}"
+                                   Margin="0,4,0,0" />
+                        
+                        <CheckBox Content="Enable CORS"
+                                  IsChecked="{Binding Settings.DirectServer.EnableCors, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}"
+                                  Margin="0,12,0,0" />
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <Label Content="CORS Origins" Width="200" />
+                            <TextBox Width="300"
+                                     Text="{Binding Settings.DirectServer.CorsOrigins, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}" />
+                        </StackPanel>
+                        <TextBlock Text="Use * to allow all origins, or specify comma-separated URLs."
+                                   Foreground="{StaticResource StudioMutedTextBrush}"
+                                   Margin="0,4,0,0" />
+                        
+                        <TextBlock Text="Connection Information" 
+                                   FontWeight="SemiBold" 
+                                   Margin="0,16,0,8" />
+                        <TextBlock Text="For WordPress in a VM: Use your host machine's IP address, not localhost."
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource StudioMutedTextBrush}" />
+                        <TextBlock Text="You may also need to allow the port through Windows Firewall."
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource StudioMutedTextBrush}"
+                                   Margin="0,4,0,0" />
+                        <TextBlock Text="Restart OpenBroadcaster after changing these settings."
+                                   Foreground="Orange"
+                                   Margin="0,12,0,0" />
+                    </StackPanel>
+                </TabItem>
+
                 <TabItem Header="Overlay">
                     <StackPanel>
                         <CheckBox Content="Enable OBS overlay &amp; data API"
@@ -622,6 +683,24 @@
                             <TextBox Width="360"
                                      Text="{Binding Settings.Overlay.ArtworkFallbackUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}" />
                         </StackPanel>
+                        
+                        <TextBlock Text="WordPress Plugin API Authentication" 
+                                   FontWeight="SemiBold" 
+                                   Margin="0,16,0,8" />
+                        <TextBlock Text="Leave username blank to allow unauthenticated access to library browsing and requests."
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource StudioMutedTextBrush}"
+                                   Margin="0,0,0,8" />
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <Label Content="API Username" Width="200" />
+                            <TextBox Width="200"
+                                     Text="{Binding Settings.Overlay.ApiUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <Label Content="API Password" Width="200" />
+                            <PasswordBox x:Name="ApiPasswordBox" Width="200" PasswordChanged="OnApiPasswordChanged" />
+                        </StackPanel>
+                        
                         <TextBlock Text="Point a Browser Source in OBS to http://localhost:&lt;port&gt;/ to display the overlay."
                                    Margin="0,12,0,0"
                                    Foreground="{StaticResource StudioMutedTextBrush}" />

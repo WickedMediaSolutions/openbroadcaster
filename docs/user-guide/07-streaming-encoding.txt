@@ -1,0 +1,299 @@
+================================================================================
+                    OPENBROADCASTER - STREAMING & ENCODING
+================================================================================
+
+OpenBroadcaster can stream your audio to internet radio servers, allowing
+listeners worldwide to tune in via their web browsers or media players.
+
+--------------------------------------------------------------------------------
+STREAMING OVERVIEW
+--------------------------------------------------------------------------------
+
+How streaming works:
+
+  [OpenBroadcaster] --> [Encoder] --> [Streaming Server] --> [Listeners]
+       (your PC)         (built-in)     (Icecast/Shoutcast)    (worldwide)
+
+OpenBroadcaster encodes your audio and sends it to a streaming server.
+The server distributes it to all connected listeners.
+
+--------------------------------------------------------------------------------
+SUPPORTED STREAMING SERVERS
+--------------------------------------------------------------------------------
+
+ICECAST (Recommended):
+- Open-source streaming server
+- Supports MP3, OGG, and Opus
+- Free to self-host
+- Many hosting providers available
+
+SHOUTCAST:
+- Popular commercial option
+- Wide player compatibility
+- Supports MP3 and AAC
+- Licensing may be required
+
+THIRD-PARTY SERVICES:
+- Radio.co
+- Airtime Pro
+- Live365
+- Many others compatible with Icecast/Shoutcast protocols
+
+--------------------------------------------------------------------------------
+CONFIGURING AN ENCODER PROFILE
+--------------------------------------------------------------------------------
+
+1. Go to Settings > Encoder
+2. Click "Add Profile"
+3. Configure the following:
+
+PROFILE NAME:
+- A descriptive name (e.g., "Main Stream 128k", "Mobile 64k")
+
+SERVER TYPE:
+- Icecast 2 (recommended)
+- Shoutcast v1
+- Shoutcast v2
+
+SERVER ADDRESS:
+- Hostname or IP of your streaming server
+- Example: stream.yourdomain.com or 192.168.1.100
+
+PORT:
+- Server port number
+- Icecast default: 8000
+- Shoutcast default: 8000
+
+MOUNT POINT (Icecast only):
+- The stream path on the server
+- Example: /live or /stream.mp3
+
+PASSWORD:
+- Source password for your server
+- Provided by your hosting provider or set in server config
+
+--------------------------------------------------------------------------------
+AUDIO FORMAT SETTINGS
+--------------------------------------------------------------------------------
+
+FORMAT:
+- MP3: Most compatible, works everywhere
+- OGG Vorbis: Better quality at same bitrate, less compatible
+- Opus: Best quality, newest format, limited compatibility
+- AAC: Good quality, requires licensing (Shoutcast)
+
+BITRATE:
+- 64 kbps: Low quality, minimal bandwidth
+- 96 kbps: Acceptable quality for speech
+- 128 kbps: Standard quality, good for music
+- 192 kbps: High quality
+- 256 kbps: Very high quality
+- 320 kbps: Maximum MP3 quality
+
+SAMPLE RATE:
+- 44100 Hz: CD quality (recommended)
+- 48000 Hz: Professional audio
+- 22050 Hz: Reduced quality, lower bandwidth
+
+CHANNELS:
+- Stereo: Full left/right audio
+- Mono: Single channel, half the bandwidth
+- Joint Stereo: Efficient stereo encoding
+
+RECOMMENDATIONS BY USE CASE:
+
+  Music Station:
+    MP3, 128-192 kbps, 44100 Hz, Stereo
+  
+  Talk/Podcast:
+    MP3, 64-96 kbps, 44100 Hz, Mono or Joint Stereo
+  
+  High Quality Music:
+    MP3 320 kbps or OGG 256 kbps, 44100 Hz, Stereo
+  
+  Mobile/Low Bandwidth:
+    MP3, 64 kbps, 44100 Hz, Joint Stereo
+
+--------------------------------------------------------------------------------
+STREAM METADATA
+--------------------------------------------------------------------------------
+
+Configure information sent to listeners:
+
+STATION NAME:
+- Your station's display name
+- Shown in media players
+
+GENRE:
+- Music genre or station type
+- Helps listeners find you in directories
+
+DESCRIPTION:
+- Brief description of your station
+- Shown in some players and directories
+
+URL:
+- Your station's website
+- Listeners can click to visit
+
+NOW PLAYING:
+- Automatically updated with current track info
+- Title - Artist format
+- Updated when tracks change
+
+--------------------------------------------------------------------------------
+STARTING AND STOPPING THE ENCODER
+--------------------------------------------------------------------------------
+
+MANUAL START:
+1. Go to the Encoder panel (View > Encoder)
+2. Select your encoder profile
+3. Click "Start Encoding"
+4. Status shows "Connected" when successful
+
+MANUAL STOP:
+- Click "Stop Encoding"
+- Stream disconnects gracefully
+
+AUTO-START:
+1. Go to Settings > Encoder
+2. Enable "Auto-start encoding on launch"
+3. Select the profile to auto-start
+4. Encoding begins when OpenBroadcaster opens
+
+--------------------------------------------------------------------------------
+ENCODER STATUS INDICATORS
+--------------------------------------------------------------------------------
+
+The encoder panel shows:
+
+CONNECTION STATUS:
+  [Disconnected] - Not streaming
+  [Connecting]   - Establishing connection
+  [Connected]    - Successfully streaming
+  [Error]        - Connection failed
+
+STREAM STATS:
+  Bitrate: Current encoding bitrate
+  Listeners: Number of connected listeners (if server reports)
+  Uptime: How long the stream has been running
+
+AUDIO LEVELS:
+  Input meter shows audio being encoded
+  Verify audio is present before going live
+
+--------------------------------------------------------------------------------
+MULTIPLE ENCODER PROFILES
+--------------------------------------------------------------------------------
+
+You can create multiple profiles for different purposes:
+
+USE CASES:
+- Different quality levels (128k for web, 64k for mobile)
+- Backup servers (primary and failover)
+- Different formats (MP3 and OGG)
+
+RUNNING MULTIPLE STREAMS:
+- OpenBroadcaster can run multiple encoders simultaneously
+- Each encoder uses additional CPU and upload bandwidth
+- Enable additional profiles in the encoder panel
+
+--------------------------------------------------------------------------------
+ENCODER INPUT SOURCE
+--------------------------------------------------------------------------------
+
+By default, the encoder captures what's playing. You can also:
+
+ENCODER INPUT DEVICE:
+1. Go to Settings > Audio
+2. Set "Encoder Input Device"
+3. Options:
+   - Default: Uses internal audio routing
+   - Specific device: Captures from that audio device
+   - Useful for external mixers
+
+MIC INPUT:
+- If using a mixer, route mixed audio to encoder input
+- Allows including external microphones
+- Provides flexibility for live shows
+
+--------------------------------------------------------------------------------
+TROUBLESHOOTING STREAMING
+--------------------------------------------------------------------------------
+
+CAN'T CONNECT TO SERVER:
+1. Verify server address and port
+2. Check password is correct
+3. Ensure server is running
+4. Check firewall isn't blocking outbound connection
+5. Try ping/telnet to server address
+
+STREAM DROPS FREQUENTLY:
+1. Check internet connection stability
+2. Reduce bitrate if bandwidth is limited
+3. Check for network congestion
+4. Verify server isn't overloaded
+
+NO AUDIO IN STREAM:
+1. Check encoder input source
+2. Verify audio is playing in OpenBroadcaster
+3. Check audio routing settings
+4. Test with a different encoder profile
+
+POOR AUDIO QUALITY:
+1. Increase bitrate
+2. Check source audio quality
+3. Verify sample rate settings
+4. Avoid re-encoding already compressed audio
+
+METADATA NOT UPDATING:
+1. Check "Send Now Playing" is enabled
+2. Verify server supports metadata
+3. Check mount point configuration
+4. Some players cache metadata
+
+--------------------------------------------------------------------------------
+BANDWIDTH REQUIREMENTS
+--------------------------------------------------------------------------------
+
+Upload bandwidth needed for streaming:
+
+  64 kbps stream:  ~80 kbps upload
+  128 kbps stream: ~150 kbps upload
+  192 kbps stream: ~220 kbps upload
+  256 kbps stream: ~290 kbps upload
+  320 kbps stream: ~360 kbps upload
+
+Note: Additional bandwidth needed for listeners if self-hosting the server.
+Using a dedicated streaming host eliminates this concern.
+
+--------------------------------------------------------------------------------
+BEST PRACTICES
+--------------------------------------------------------------------------------
+
+1. TEST BEFORE GOING LIVE
+   - Connect and verify audio
+   - Check metadata updates
+   - Listen to your own stream
+
+2. USE RELIABLE INTERNET
+   - Wired connection preferred over WiFi
+   - Ensure adequate upload bandwidth
+   - Consider backup internet connection
+
+3. MONITOR YOUR STREAM
+   - Keep encoder panel visible
+   - Watch for disconnections
+   - Listen to stream periodically
+
+4. PREPARE FOR FAILURES
+   - Have a backup encoder profile
+   - Configure auto-reconnect
+   - Have fallback content ready
+
+5. RESPECT LICENSING
+   - Music streaming requires licenses
+   - Check requirements in your country
+   - Consider royalty-free music for background
+
+================================================================================
