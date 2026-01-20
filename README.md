@@ -139,10 +139,11 @@ OpenBroadcaster is a full-featured radio automation system designed for internet
 
 ### Using the Windows Installer
 
-1. Download the latest `OpenBroadcaster-Setup.exe` from the GitHub Releases page
-2. Run the installer and follow the prompts
-3. Launch **OpenBroadcaster** from the Start Menu or desktop shortcut
-4. Open **Settings → Audio** on first launch to verify devices
+If you obtained an `OpenBroadcaster-Setup.exe` installer (for example from the official distribution channel):
+
+1. Run the installer and follow the prompts
+2. Launch **OpenBroadcaster** from the Start Menu or desktop shortcut
+3. Open **Settings → Audio** on first launch to verify devices
 
 ### Building from Source
 
