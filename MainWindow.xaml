@@ -84,7 +84,7 @@
                         <MenuItem Header="Cleanup Reserved Category Names..." Command="{Binding CleanupReservedCategoriesCommand}" />
                     </MenuItem>
                     <MenuItem Header="_Help">
-                        <MenuItem Header="About OpenBroadcaster" />
+                        <MenuItem Header="About OpenBroadcaster" Command="{Binding OpenAboutDialogCommand}" />
                     </MenuItem>
                 </Menu>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">

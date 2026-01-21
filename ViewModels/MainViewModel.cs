@@ -71,8 +71,7 @@ namespace OpenBroadcaster.ViewModels
         private bool _suppressDeckVolumePersistence;
         private DeckStateChangedEvent? _deckAState;
         private DeckStateChangedEvent? _deckBState;
-        private Guid? _lastAnnouncedTrackId;
-        private DateTime _lastAnnouncementTime = DateTime.MinValue;
+        private Guid? _currentlyPlayingTrackId;
         private readonly System.Windows.Threading.DispatcherTimer _clockTimer;
         private string _currentTime = "00:00:00";
         private bool _use24HourClock = true;
@@ -170,6 +169,7 @@ namespace OpenBroadcaster.ViewModels
 
         public ICommand OpenTwitchSettingsCommand { get; }
         public ICommand OpenAppSettingsCommand { get; }
+        public ICommand OpenAboutDialogCommand { get; }
         public ICommand ManageCategoriesCommand { get; }
         public ICommand RemoveUncategorizedTracksCommand { get; }
         public ICommand CleanupReservedCategoriesCommand { get; }
@@ -393,8 +393,7 @@ namespace OpenBroadcaster.ViewModels
                         
                         // Clear Deck B state to prevent stale data from being used
                         _deckBState = null;
-                        _lastAnnouncedTrackId = null;
-                        
+
                         // Auto-play on Deck A when AutoDJ is enabled
                         if (DeckA != null)
                         {
@@ -596,6 +595,7 @@ namespace OpenBroadcaster.ViewModels
 
             OpenTwitchSettingsCommand = new RelayCommand(_ => OpenTwitchSettingsDialog());
             OpenAppSettingsCommand = new RelayCommand(_ => OpenAppSettingsDialog());
+            OpenAboutDialogCommand = new RelayCommand(_ => OpenAboutDialog());
             ManageCategoriesCommand = new RelayCommand(_ => OpenManageCategoriesDialog());
             RemoveUncategorizedTracksCommand = new RelayCommand(_ => RemoveUncategorizedTracks());
             CleanupReservedCategoriesCommand = new RelayCommand(_ => CleanupReservedCategories());
@@ -1262,11 +1262,18 @@ namespace OpenBroadcaster.ViewModels
         {
             try
             {
-                // Load next track into the target deck
-                var next = _transportService.RequestNextFromQueue(toDeck);
-                if (next == null)
+                // The 'toDeck' should already be primed with the next track.
+                // If not, we can't crossfade.
+                var toDeckService = toDeck == DeckIdentifier.A ? _transportService.DeckA : _transportService.DeckB;
+                if (toDeckService.CurrentQueueItem == null)
                 {
-                    return;
+                    _logger.LogWarning("AutoDJ crossfade cannot start: '{ToDeck}' is not loaded.", toDeck);
+                    // As a fallback, try to load the next track now.
+                    var next = _transportService.RequestNextFromQueue(toDeck);
+                    if (next == null)
+                    {
+                        return; // Nothing in queue, can't continue.
+                    }
                 }
 
                 // Capture current deck volumes
@@ -2082,6 +2089,15 @@ namespace OpenBroadcaster.ViewModels
             settingsVm.SettingsChanged -= handler;
         }
 
+        private void OpenAboutDialog()
+        {
+            var window = new AboutWindow
+            {
+                Owner = System.Windows.Application.Current?.MainWindow
+            };
+            window.ShowDialog();
+        }
+
         private void ApplyAppSettings(AppSettings? previous, AppSettings? settings)
         {
             if (settings == null)
@@ -2389,21 +2405,34 @@ namespace OpenBroadcaster.ViewModels
                 _deckBState = payload;
             }
 
-            // Choose a single encoder candidate deck and announce based on that,
-            // so we never send duplicate announcements when both decks change.
             var candidate = SelectEncoderDeckCandidate();
-            var currentTrackId = candidate?.QueueItem?.Track?.Id;
-            var now = DateTime.UtcNow;
 
-            // Debounce: Don't announce if we just announced within the last 2 seconds
-            var timeSinceLastAnnouncement = (now - _lastAnnouncementTime).TotalSeconds;
-
-            if (_twitchChatEnabled && candidate != null && candidate.IsPlaying && currentTrackId.HasValue &&
-                currentTrackId != _lastAnnouncedTrackId && timeSinceLastAnnouncement > 2.0)
+            // If a track is actively playing...
+            if (candidate != null && candidate.IsPlaying && candidate.QueueItem?.Track != null)
             {
-                _lastAnnouncedTrackId = currentTrackId;
-                _lastAnnouncementTime = now;
-                _twitchService.AnnounceNowPlaying(candidate.QueueItem);
+                var newTrackId = candidate.QueueItem.Track.Id;
+
+                // ...and it's a different track than the one we've announced...
+                if (_currentlyPlayingTrackId != newTrackId)
+                {
+                    // ...and it has been playing for at least 3 seconds...
+                    if (candidate.Elapsed.TotalSeconds >= 3)
+                    {
+                        // ...then this is our new official playing track.
+                        _currentlyPlayingTrackId = newTrackId;
+
+                        // Announce it if Twitch is enabled.
+                        if (_twitchChatEnabled)
+                        {
+                            _twitchService.AnnounceNowPlaying(candidate.QueueItem);
+                        }
+                    }
+                }
+            }
+            // If no track is playing, clear the playing track ID.
+            else if (candidate == null || !candidate.IsPlaying)
+            {
+                _currentlyPlayingTrackId = null;
             }
 
             UpdateEncoderMetadataFromDecks();
