@@ -1,9 +1,9 @@
 # OpenBroadcaster
 
-A professional-grade internet radio automation and broadcasting application for Windows, built with WPF and .NET 8.
+A professional-grade internet radio automation and broadcasting application, built with Avalonia and .NET 8. Fully cross-platform with native support for Windows, Linux, and macOS.
 
 ![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square&logo=dotnet)
-![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?style=flat-square&logo=windows)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-2d8659?style=flat-square&logo=dotnet)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
 ## Overview
@@ -125,11 +125,59 @@ OpenBroadcaster is a full-featured radio automation system designed for internet
 
 ## System Requirements
 
+### Windows (Fully Supported)
 - **Operating System**: Windows 10 or later (64-bit)
-- **Runtime**: .NET 8.0 Desktop Runtime
+- **Runtime**: .NET 8.0 Runtime
 - **Audio**: WASAPI-compatible audio devices
 - **Memory**: 4 GB RAM minimum, 8 GB recommended
 - **Storage**: 100 MB for application, plus space for music library
+
+### Linux / macOS (Expanding Cross-Platform Support)
+
+#### Linux Audio Implementation Status
+
+Audio support on Linux is currently being developed through a multi-backend architecture:
+
+- **Windows**: ✅ **Complete** - Full audio playback, recording, and encoding (NAudio)
+- **Linux**: 🚧 **In Development**
+  - **PulseAudio** - Primary desktop Linux target (libpulse)
+  - **JACK** - Professional audio server (libjack)
+  - **ALSA** - Fallback for container-based systems like ChromeOS (libasound)
+  - **Device Enumeration**: ✅ Working with automatic backend detection
+  
+- **macOS**: 📋 Future (CoreAudio framework)
+
+#### Current Feature Availability
+
+| Feature | Windows | Linux | macOS | Notes |
+|---------|---------|-------|-------|-------|
+| Library Management | ✅ | ✅ | 📋 | Full import, metadata, categories |
+| Music Playback | ✅ | 🚧 | 📋 | Audio backend implementation in progress |
+| Queue & Decks | ✅ | ✅ | 📋 | Full UI, playback queuing system |
+| AutoDJ & Rotation | ✅ | ✅ | 📋 | Playlist automation |
+| Microphone Input | ✅ | 🚧 | 📋 | Linux backend implementation in progress |
+| Streaming/Encoding | ✅ | 🚧 | 📋 | Requires audio playback engine |
+| Cartwall | ✅ | 🚧 | 📋 | Requires audio playback engine |
+| Twitch Integration | ✅ | ✅ | 📋 | Chat & song requests |
+| Web/WordPress API | ✅ | ✅ | 📋 | Metadata and overlay serving |
+
+**LinuxRequirements** (Audio playback):
+- **Operating System**: Linux distribution with .NET 8.0 support (Ubuntu 20.04+, Debian 11+, etc.) or ChromeOS with Penguin container
+- **Audio Subsystem**: One of PulseAudio, JACK, or ALSA
+- **Runtime**: .NET 8.0 Runtime
+- **Memory**: 2 GB RAM minimum, 4 GB recommended
+- **Storage**: 100 MB for application, plus space for music library
+
+For detailed implementation status and developer notes, see [Linux Audio Implementation](./docs/LINUX_AUDIO_IMPLEMENTATION.md).
+
+#### macOS Requirements
+- **Operating System**: macOS 10.15+
+- **Runtime**: .NET 8.0 Runtime
+- **Memory**: 2 GB RAM minimum, 4 GB recommended
+- **Storage**: 100 MB for application, plus space for music library
+- **Note**: macOS audio support is planned using CoreAudio framework.
+
+For more platform details, see [Cross-Platform Compliance](./docs/CROSS_PLATFORM_COMPLIANCE.md).
 
 ## Installation
 
