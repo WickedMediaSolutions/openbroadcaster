@@ -4,7 +4,7 @@ A professional-grade internet radio automation and broadcasting application, bui
 
 ![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square&logo=dotnet)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-2d8659?style=flat-square&logo=dotnet)
-![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
+![License](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey?style=flat-square)
 
 ## Overview
 
@@ -136,10 +136,10 @@ OpenBroadcaster is a full-featured radio automation system designed for internet
 
 #### Linux Audio Implementation Status
 
-Audio support on Linux is currently being developed through a multi-backend architecture:
+Audio support on Linux uses a multi-backend architecture and is now nearly complete:
 
 - **Windows**: ✅ **Complete** - Full audio playback, recording, and encoding (NAudio)
-- **Linux**: 🚧 **In Development**
+- **Linux**: ✅ **Nearly Complete** - All core features implemented, currently in bug-fixing phase
   - **PulseAudio** - Primary desktop Linux target (libpulse)
   - **JACK** - Professional audio server (libjack)
   - **ALSA** - Fallback for container-based systems like ChromeOS (libasound)
@@ -152,12 +152,12 @@ Audio support on Linux is currently being developed through a multi-backend arch
 | Feature | Windows | Linux | macOS | Notes |
 |---------|---------|-------|-------|-------|
 | Library Management | ✅ | ✅ | 📋 | Full import, metadata, categories |
-| Music Playback | ✅ | 🚧 | 📋 | Audio backend implementation in progress |
+| Music Playback | ✅ | ✅ | 📋 | Working, minor bugs being resolved |
 | Queue & Decks | ✅ | ✅ | 📋 | Full UI, playback queuing system |
 | AutoDJ & Rotation | ✅ | ✅ | 📋 | Playlist automation |
-| Microphone Input | ✅ | 🚧 | 📋 | Linux backend implementation in progress |
-| Streaming/Encoding | ✅ | 🚧 | 📋 | Requires audio playback engine |
-| Cartwall | ✅ | 🚧 | 📋 | Requires audio playback engine |
+| Microphone Input | ✅ | ✅ | 📋 | Working, minor bugs being resolved |
+| Streaming/Encoding | ✅ | ✅ | 📋 | Working, minor bugs being resolved |
+| Cartwall | ✅ | ✅ | 📋 | Working, minor bugs being resolved |
 | Twitch Integration | ✅ | ✅ | 📋 | Chat & song requests |
 | Web/WordPress API | ✅ | ✅ | 📋 | Metadata and overlay serving |
 
@@ -438,7 +438,17 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)** license.
+
+You are free to:
+- **Share** — copy and redistribute the material in any medium or format
+- **Adapt** — remix, transform, fork, and build upon the material
+
+Under the following terms:
+- **Attribution** — You must give appropriate credit and indicate if changes were made
+- **NonCommercial** — You may not use the material for commercial purposes or profit from the source code
+
+See the [LICENSE](LICENSE) file for full details.
 
 ## Acknowledgments
 
