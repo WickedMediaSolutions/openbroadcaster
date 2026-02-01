@@ -1,12 +1,14 @@
 using System;
 using System.Buffers;
 using NAudio.Wave;
+using OpenBroadcaster.Core.Audio;
 
 namespace OpenBroadcaster.Core.Services
 {
     public sealed class MicInputService : IDisposable
     {
         private WaveInEvent? _waveIn;
+        private OpenAlMicCapture? _openAlCapture;
         private int _deviceNumber = -1;
         private readonly WaveFormat _captureFormat = new WaveFormat(44100, 1);
         private readonly WaveFormat _floatFormat = WaveFormat.CreateIeeeFloatWaveFormat(44100, 1);
@@ -28,7 +30,7 @@ namespace OpenBroadcaster.Core.Services
                 return;
             }
 
-            if (_waveIn != null && _deviceNumber == deviceNumber)
+            if (_deviceNumber == deviceNumber && (_waveIn != null || _openAlCapture != null))
             {
                 return;
             }
@@ -36,33 +38,53 @@ namespace OpenBroadcaster.Core.Services
             Stop();
 
             _deviceNumber = deviceNumber;
-            _waveIn = new WaveInEvent
+
+            if (OperatingSystem.IsWindows())
             {
-                DeviceNumber = deviceNumber,
-                WaveFormat = _captureFormat
-            };
-            _waveIn.DataAvailable += OnDataAvailable;
-            _waveIn.StartRecording();
+                _waveIn = new WaveInEvent
+                {
+                    DeviceNumber = deviceNumber,
+                    WaveFormat = _captureFormat
+                };
+                _waveIn.DataAvailable += OnDataAvailable;
+                _waveIn.StartRecording();
+                return;
+            }
+
+            var deviceName = OpenAlDeviceLookup.ResolveCaptureDeviceName(deviceNumber);
+            _openAlCapture = new OpenAlMicCapture(_captureFormat.SampleRate, _captureFormat.Channels);
+            _openAlCapture.SamplesCaptured += OnOpenAlSamplesCaptured;
+            _openAlCapture.Start(deviceName);
         }
 
         public void Stop()
         {
-            if (_waveIn == null)
+            if (_waveIn == null && _openAlCapture == null)
             {
                 return;
             }
 
-            _waveIn.DataAvailable -= OnDataAvailable;
-            try
+            if (_waveIn != null)
             {
-                _waveIn.StopRecording();
-            }
-            catch
-            {
+                _waveIn.DataAvailable -= OnDataAvailable;
+                try
+                {
+                    _waveIn.StopRecording();
+                }
+                catch
+                {
+                }
+
+                _waveIn.Dispose();
+                _waveIn = null;
             }
 
-            _waveIn.Dispose();
-            _waveIn = null;
+            if (_openAlCapture != null)
+            {
+                _openAlCapture.SamplesCaptured -= OnOpenAlSamplesCaptured;
+                _openAlCapture.Dispose();
+                _openAlCapture = null;
+            }
             _deviceNumber = -1;
             LevelChanged?.Invoke(this, 0);
         }
@@ -106,6 +128,37 @@ namespace OpenBroadcaster.Core.Services
             }
 
             SamplesAvailable?.Invoke(this, new MicSampleBlockEventArgs(_floatFormat, buffer, sampleCount, true));
+        }
+
+        private void OnOpenAlSamplesCaptured(object? sender, OpenAlCaptureEventArgs e)
+        {
+            try
+            {
+                if (e.SampleCount <= 0)
+                {
+                    return;
+                }
+
+                float max = 0;
+                var buffer = ArrayPool<float>.Shared.Rent(e.SampleCount);
+                for (int i = 0; i < e.SampleCount; i++)
+                {
+                    var normalized = (e.Buffer[i] / 32768f) * _volume;
+                    buffer[i] = normalized;
+                    var abs = Math.Abs(normalized);
+                    if (abs > max)
+                    {
+                        max = abs;
+                    }
+                }
+
+                LevelChanged?.Invoke(this, max);
+                SamplesAvailable?.Invoke(this, new MicSampleBlockEventArgs(_floatFormat, buffer, e.SampleCount, true));
+            }
+            finally
+            {
+                e.Dispose();
+            }
         }
 
         public void Dispose()

@@ -1,0 +1,641 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="using:OpenBroadcaster.Core.Models"
+        xmlns:converters="using:OpenBroadcaster.Converters"
+        x:Class="OpenBroadcaster.Views.SettingsWindow"
+        Title="OpenBroadcaster Settings"
+        SizeToContent="WidthAndHeight"
+        MinWidth="640"
+        MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        Background="#0A0E17"
+        Foreground="#E0E6F0">
+  <Window.Resources>
+    <converters:EnumToIndexConverter x:Key="EnumToIndexConverter" />
+    <SolidColorBrush x:Key="PanelBackground" Color="#121826" />
+    <SolidColorBrush x:Key="PanelBorder" Color="#1C2534" />
+    <SolidColorBrush x:Key="MutedTextBrush" Color="#8C97A8" />
+  </Window.Resources>
+
+  <DockPanel Margin="12">
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
+      <Button Content="OK" Width="110" Click="OnOkClick" />
+      <Button Content="Cancel" Width="110" Click="OnCancelClick" />
+      <Button Content="Apply" Width="110" IsEnabled="{Binding IsDirty}" Click="OnApplyClick" />
+    </StackPanel>
+
+    <Border Background="{StaticResource PanelBackground}"
+            BorderBrush="{StaticResource PanelBorder}"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="18">
+      <TabControl>
+        <TabItem Header="Audio">
+          <StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock Text="Master Volume" Width="200" />
+              <Slider Minimum="0"
+                      Maximum="100"
+                      Value="{Binding Settings.Audio.MasterVolumePercent, Mode=TwoWay}"
+                      Width="220" />
+              <TextBlock Text="{Binding Settings.Audio.MasterVolumePercent, StringFormat='{}{0}%'}" Margin="12,0,0,0" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,8,0,0">
+              <TextBlock Text="Deck A Output" Width="200" />
+              <ComboBox Width="260"
+                        ItemsSource="{Binding PlaybackDeviceOptions}"
+                        SelectedValueBinding="{Binding DeviceNumber}"
+                        SelectedValue="{Binding Settings.Audio.DeckADeviceId, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,4,0,0">
+              <TextBlock Text="Deck B Output" Width="200" />
+              <ComboBox Width="260"
+                        ItemsSource="{Binding PlaybackDeviceOptions}"
+                        SelectedValueBinding="{Binding DeviceNumber}"
+                        SelectedValue="{Binding Settings.Audio.DeckBDeviceId, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,4,0,0">
+              <TextBlock Text="Cart Wall Output" Width="200" />
+              <ComboBox Width="260"
+                        ItemsSource="{Binding PlaybackDeviceOptions}"
+                        SelectedValueBinding="{Binding DeviceNumber}"
+                        SelectedValue="{Binding Settings.Audio.CartWallDeviceId, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,4,0,0">
+              <TextBlock Text="Cart Wall Volume" Width="200" />
+              <Slider Minimum="0"
+                      Maximum="100"
+                      Value="{Binding Settings.Audio.CartWallVolumePercent, Mode=TwoWay}"
+                      Width="220" />
+              <TextBlock Text="{Binding Settings.Audio.CartWallVolumePercent, StringFormat='{}{0}%'}" Margin="12,0,0,0" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,4,0,0">
+              <TextBlock Text="Encoder Bus Capture" Width="200" />
+              <ComboBox Width="260"
+                        ItemsSource="{Binding PlaybackDeviceOptions}"
+                        SelectedValueBinding="{Binding DeviceNumber}"
+                        SelectedValue="{Binding Settings.Audio.EncoderDeviceId, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,4,0,0">
+              <TextBlock Text="Mic Input" Width="200" />
+              <ComboBox Width="260"
+                        ItemsSource="{Binding InputDeviceOptions}"
+                        SelectedValueBinding="{Binding DeviceNumber}"
+                        SelectedValue="{Binding Settings.Audio.MicInputDeviceId, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </StackPanel>
+            <TextBlock Text="Changes apply immediately after clicking OK/Apply." FontSize="11" Margin="0,8,0,0" Foreground="{StaticResource MutedTextBrush}" />
+          </StackPanel>
+        </TabItem>
+
+        <TabItem Header="Encoders">
+          <Grid>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="*" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0" Margin="0,0,0,12">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <StackPanel Orientation="Vertical" Margin="0,0,12,0">
+                <CheckBox Content="Auto start encoders when OpenBroadcaster launches"
+                          IsChecked="{Binding Settings.Encoder.AutoStart, Mode=TwoWay}" />
+                <TextBlock Text="Configure each streaming target below. Disabled profiles are skipped when encoders run."
+                           Foreground="{StaticResource MutedTextBrush}"
+                           FontSize="11"
+                           Margin="0,4,0,0" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Add Profile" Width="120" Command="{Binding AddEncoderProfileCommand}" />
+                <Button Content="Remove Selected" Width="150" Margin="8,0,0,0" Command="{Binding RemoveEncoderProfileCommand}" />
+              </StackPanel>
+            </Grid>
+            <ListBox Grid.Row="1"
+                     ItemsSource="{Binding Settings.Encoder.Profiles}"
+                     SelectedItem="{Binding SelectedEncoderProfile, Mode=TwoWay}"
+                     Background="#0F141F"
+                     BorderBrush="#1C2534"
+                     BorderThickness="1"
+                     Padding="6">
+              <ListBox.ItemTemplate>
+                <DataTemplate DataType="models:EncoderProfile">
+                  <Border Background="#121826" BorderBrush="#1F2734" BorderThickness="1" CornerRadius="6" Padding="12">
+                    <StackPanel>
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="Auto" />
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Name" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Margin="8,0,0,0" Text="{Binding Name, Mode=TwoWay}" />
+                        <CheckBox Grid.Column="2" Content="Enabled" Margin="12,0,0,0" IsChecked="{Binding Enabled, Mode=TwoWay}" />
+                      </Grid>
+                      <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="120" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                          <TextBlock Text="Host" Foreground="{StaticResource MutedTextBrush}" FontSize="11" />
+                          <TextBox Text="{Binding Host, Mode=TwoWay}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                          <TextBlock Text="Port" Foreground="{StaticResource MutedTextBrush}" FontSize="11" />
+                          <TextBox Text="{Binding Port, Mode=TwoWay}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Margin="12,0,0,0" Width="140">
+                          <TextBlock Text="Mount" Foreground="{StaticResource MutedTextBrush}" FontSize="11" />
+                          <TextBox Text="{Binding Mount, Mode=TwoWay}" />
+                        </StackPanel>
+                      </Grid>
+                      <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                          <TextBlock Text="Protocol" Foreground="{StaticResource MutedTextBrush}" FontSize="11" />
+                          <ComboBox ItemsSource="{Binding DataContext.EncoderProtocolValues, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    SelectedItem="{Binding Protocol, Mode=TwoWay}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                          <TextBlock Text="Format" Foreground="{StaticResource MutedTextBrush}" FontSize="11" />
+                          <ComboBox ItemsSource="{Binding DataContext.EncoderFormatValues, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    SelectedItem="{Binding Format, Mode=TwoWay}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Margin="12,0,0,0" Width="120">
+                          <TextBlock Text="Bitrate (kbps)" Foreground="{StaticResource MutedTextBrush}" FontSize="11" />
+                          <TextBox Text="{Binding BitrateKbps, Mode=TwoWay}" />
+                        </StackPanel>
+                      </Grid>
+                      <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                          <TextBlock Text="Username" Foreground="{StaticResource MutedTextBrush}" FontSize="11" />
+                          <TextBox Text="{Binding Username, Mode=TwoWay}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                          <TextBlock Text="Password" Foreground="{StaticResource MutedTextBrush}" FontSize="11" />
+                          <TextBox Text="{Binding Password, Mode=TwoWay}" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="2" Content="Use SSL" Margin="12,16,0,0" VerticalAlignment="Top"
+                                  IsChecked="{Binding UseSsl, Mode=TwoWay}" />
+                      </Grid>
+                      <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                          <TextBlock Text="Description" Foreground="{StaticResource MutedTextBrush}" FontSize="11" />
+                          <TextBox Text="{Binding Description, Mode=TwoWay}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                          <TextBlock Text="Genre" Foreground="{StaticResource MutedTextBrush}" FontSize="11" />
+                          <TextBox Text="{Binding Genre, Mode=TwoWay}" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="2" Content="Public" Margin="12,16,0,0" VerticalAlignment="Top"
+                                  IsChecked="{Binding Public, Mode=TwoWay}" />
+                      </Grid>
+                      <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                          <TextBlock Text="Admin User" Foreground="{StaticResource MutedTextBrush}" FontSize="11" />
+                          <TextBox Text="{Binding AdminUser, Mode=TwoWay}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                          <TextBlock Text="Admin Password" Foreground="{StaticResource MutedTextBrush}" FontSize="11" />
+                          <TextBox PasswordChar="•"
+                                   Text="{Binding AdminPassword, Mode=TwoWay}" />
+                        </StackPanel>
+                      </Grid>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock Grid.Row="2" Margin="0,12,0,0"
+                       Text="Encoders stream the mixed program bus plus mic routing. Select the correct Encoder Bus Capture device under Audio to feed them."
+                       Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" />
+          </Grid>
+        </TabItem>
+
+        <TabItem Header="Twitch">
+          <StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Channel" Width="160" />
+              <TextBox Text="{Binding Settings.Twitch.Channel, Mode=TwoWay}" Width="280" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Radio Station Name" Width="160" />
+              <TextBox Text="{Binding Settings.Twitch.RadioStationName, Mode=TwoWay}" Width="280" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Bot Username" Width="160" />
+              <TextBox Text="{Binding Settings.Twitch.UserName, Mode=TwoWay}" Width="280" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="OAuth Token" Width="160" />
+              <TextBox x:Name="OAuthTokenBox" Width="280"
+                       PasswordChar="•"
+                       Text="{Binding Settings.Twitch.OAuthToken, Mode=TwoWay}" />
+            </StackPanel>
+            <StackPanel Margin="0,8,0,0">
+              <TextBlock Text="Points" FontWeight="SemiBold" Margin="0,6,0,4" />
+              <Border Background="#0F141F" BorderBrush="#1C2534" BorderThickness="1" CornerRadius="4" Padding="8">
+                <StackPanel>
+                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Currency Name" Width="160" />
+                    <TextBox Text="{Binding Settings.Twitch.PointsName, Mode=TwoWay}" Width="200" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Request Cost" Width="160" />
+                    <TextBox Text="{Binding Settings.Twitch.RequestCost, Mode=TwoWay}" Width="120" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="PlayNext Cost" Width="160" />
+                    <TextBox Text="{Binding Settings.Twitch.PlayNextCost, Mode=TwoWay}" Width="120" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Search Results" Width="160" />
+                    <TextBox Text="{Binding Settings.Twitch.SearchResultsLimit, Mode=TwoWay}" Width="120" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Request Cooldown (s)" Width="160" />
+                    <TextBox Text="{Binding Settings.Twitch.RequestCooldownSeconds, Mode=TwoWay}" Width="120" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Chat Award Points" Width="160" />
+                    <TextBox Text="{Binding Settings.Twitch.ChatMessageAwardPoints, Mode=TwoWay}" Width="120" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Idle Award Points" Width="160" />
+                    <TextBox Text="{Binding Settings.Twitch.IdleAwardPoints, Mode=TwoWay}" Width="120" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Idle Award Interval (min)" Width="160" />
+                    <TextBox Text="{Binding Settings.Twitch.IdleAwardIntervalMinutes, Mode=TwoWay}" Width="120" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </StackPanel>
+        </TabItem>
+
+        <TabItem Header="Queue">
+          <StackPanel>
+            <CheckBox Content="Auto advance queue"
+                      IsChecked="{Binding Settings.Queue.AutoAdvance, Mode=TwoWay}" />
+            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+              <TextBlock Text="Max history items" Width="200" />
+              <TextBox Text="{Binding Settings.Queue.MaxHistoryItems, Mode=TwoWay}" Width="120" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Default source label" Width="200" />
+              <TextBox Text="{Binding Settings.Queue.DefaultSourceLabel, Mode=TwoWay}" Width="220" />
+            </StackPanel>
+          </StackPanel>
+        </TabItem>
+
+        <TabItem Header="Automation">
+          <StackPanel>
+            <CheckBox Content="Auto start AutoDJ when OpenBroadcaster launches"
+                      IsChecked="{Binding Settings.Automation.AutoStartAutoDj, Mode=TwoWay}" />
+            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+              <TextBlock Text="Target queue depth" Width="200" />
+              <TextBox Width="140" Text="{Binding Settings.Automation.TargetQueueDepth, Mode=TwoWay}" />
+            </StackPanel>
+            <StackPanel Margin="0,8,0,0">
+              <TextBlock Text="Rotations (Simple)" FontWeight="SemiBold" Margin="0,6,0,4" />
+              <Border Background="#0F141F" BorderBrush="#1C2534" BorderThickness="1" CornerRadius="4" Padding="8">
+                <StackPanel>
+                  <ListBox ItemsSource="{Binding Settings.Automation.SimpleRotations}"
+                           SelectedItem="{Binding SelectedSimpleRotation, Mode=TwoWay}"
+                           Height="140"
+                           DoubleTapped="OnSimpleRotationDoubleClick">
+                    <ListBox.ItemTemplate>
+                      <DataTemplate>
+                        <StackPanel>
+                          <StackPanel Orientation="Horizontal">
+                            <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}" Margin="0,0,8,0" />
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                          </StackPanel>
+                          <TextBlock Text="{Binding CategoryNamesString}" Foreground="{StaticResource MutedTextBrush}" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                    <Button Content="Add" Width="80" Command="{Binding AddSimpleRotationCommand}" />
+                    <Button Content="Edit" Width="80" Margin="8,0,0,0" Command="{Binding EditSimpleRotationCommand}" />
+                    <Button Content="Remove" Width="80" Margin="8,0,0,0" Command="{Binding RemoveSimpleRotationCommand}" />
+                    <Button Content="Set Default" Width="100" Margin="8,0,0,0" Command="{Binding SetDefaultSimpleRotationCommand}" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+            <StackPanel Margin="0,12,0,0">
+              <TextBlock Text="Schedule (Simple)" FontWeight="SemiBold" Margin="0,6,0,4" />
+              <Border Background="#0F141F" BorderBrush="#1C2534" BorderThickness="1" CornerRadius="4" Padding="8">
+                <StackPanel>
+                  <ListBox ItemsSource="{Binding Settings.Automation.SimpleSchedule}"
+                           SelectedItem="{Binding SelectedSimpleScheduleEntry, Mode=TwoWay}"
+                           Height="140"
+                           DoubleTapped="OnSimpleScheduleDoubleClick">
+                    <ListBox.ItemTemplate>
+                      <DataTemplate>
+                        <StackPanel>
+                          <StackPanel Orientation="Horizontal">
+                            <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}" Margin="0,0,8,0" />
+                            <TextBlock Text="{Binding RotationName}" FontWeight="SemiBold" />
+                            <TextBlock Text=" · " Foreground="{StaticResource MutedTextBrush}" />
+                            <TextBlock Text="{Binding StartTimeString}" />
+                            <TextBlock Text=" - " />
+                            <TextBlock Text="{Binding EndTimeString}" />
+                          </StackPanel>
+                          <TextBlock Text="{Binding Day, TargetNullValue=Every day}" Foreground="{StaticResource MutedTextBrush}" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                    <Button Content="Add" Width="80" Command="{Binding AddSimpleScheduleEntryCommand}" />
+                    <Button Content="Edit" Width="80" Margin="8,0,0,0" Command="{Binding EditSimpleScheduleEntryCommand}" />
+                    <Button Content="Remove" Width="80" Margin="8,0,0,0" Command="{Binding RemoveSimpleScheduleEntryCommand}" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+            <TextBlock Text="Use the editor to set rotation names and category slots, then schedule them by day and time."
+                       Margin="0,12,0,0" Foreground="{StaticResource MutedTextBrush}" />
+          </StackPanel>
+        </TabItem>
+
+        <TabItem Header="Top of Hour">
+          <ScrollViewer>
+            <StackPanel>
+              <CheckBox Content="Enable Top-of-the-Hour injection"
+                        IsChecked="{Binding Settings.Automation.TopOfHour.Enabled, Mode=TwoWay}" />
+
+              <StackPanel Margin="0,12,0,0">
+                <TextBlock Text="Timing" FontWeight="SemiBold" Margin="0,6,0,4" />
+                <Border Background="#0F141F" BorderBrush="#1C2534" BorderThickness="1" CornerRadius="4" Padding="8">
+                  <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock Text="Fire offset (seconds)" Width="180" />
+                      <TextBox Width="80" Text="{Binding Settings.Automation.TopOfHour.FireSecondOffset, Mode=TwoWay}" />
+                      <TextBlock Text="(0 = exactly at :00:00)" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" />
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+
+              <StackPanel Margin="0,12,0,0">
+                <TextBlock Text="Mode Options" FontWeight="SemiBold" Margin="0,6,0,4" />
+                <Border Background="#0F141F" BorderBrush="#1C2534" BorderThickness="1" CornerRadius="4" Padding="8">
+                  <StackPanel>
+                    <CheckBox Content="Allow TOH during AutoDJ"
+                              IsChecked="{Binding Settings.Automation.TopOfHour.AllowDuringAutoDj, Mode=TwoWay}" />
+                    <CheckBox Content="Allow TOH during Live Assist"
+                              IsChecked="{Binding Settings.Automation.TopOfHour.AllowDuringLiveAssist, Mode=TwoWay}"
+                              Margin="0,4,0,0" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+
+              <StackPanel Margin="0,12,0,0">
+                <TextBlock Text="TOH Sequence" FontWeight="SemiBold" Margin="0,6,0,4" />
+                <Border Background="#0F141F" BorderBrush="#1C2534" BorderThickness="1" CornerRadius="4" Padding="8">
+                  <Grid>
+                    <Grid.RowDefinitions>
+                      <RowDefinition Height="*" />
+                      <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <ListBox Grid.Row="0"
+                             ItemsSource="{Binding Settings.Automation.TopOfHour.Slots}"
+                             SelectedItem="{Binding SelectedTohSlot, Mode=TwoWay}"
+                             Height="200"
+                             Background="#0F141F"
+                             BorderBrush="#1C2534">
+                      <ListBox.ItemTemplate>
+                        <DataTemplate DataType="models:TohSlot">
+                          <Border Background="#121826" BorderBrush="#1F2734" BorderThickness="1" CornerRadius="4" Padding="8">
+                            <Grid>
+                              <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="30" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="80" />
+                                <ColumnDefinition Width="100" />
+                                <ColumnDefinition Width="100" />
+                              </Grid.ColumnDefinitions>
+                              <TextBlock Grid.Column="0" Text="{Binding SlotOrder}" FontWeight="Bold" VerticalAlignment="Center" />
+                              <ComboBox Grid.Column="1"
+                                        ItemsSource="{Binding DataContext.TohCategoryOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        SelectedValue="{Binding CategoryId, Mode=TwoWay}"
+                                        SelectedValueBinding="{Binding CategoryId}"
+                                        Margin="4,0">
+                                <ComboBox.ItemTemplate>
+                                  <DataTemplate>
+                                    <TextBlock Text="{Binding Name}" />
+                                  </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                              </ComboBox>
+                              <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="×" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                <TextBox Text="{Binding TrackCount, Mode=TwoWay}" Width="40" />
+                              </StackPanel>
+                              <ComboBox Grid.Column="3"
+                                        SelectedIndex="{Binding SelectionMode, Mode=TwoWay, Converter={StaticResource EnumToIndexConverter}}"
+                                        Margin="4,0">
+                                <ComboBoxItem Content="Random" />
+                                <ComboBoxItem Content="Sequential" />
+                              </ComboBox>
+                              <CheckBox Grid.Column="4" Content="No Repeat"
+                                        IsChecked="{Binding PreventRepeat, Mode=TwoWay}"
+                                        VerticalAlignment="Center" />
+                            </Grid>
+                          </Border>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                      <Button Content="▲" Width="40" Command="{Binding MoveTohSlotUpCommand}" />
+                      <Button Content="▼" Width="40" Command="{Binding MoveTohSlotDownCommand}" Margin="4,0,0,0" />
+                      <Button Content="Add Slot" Width="100" Command="{Binding AddTohSlotCommand}" Margin="12,0,0,0" />
+                      <Button Content="Remove" Width="100" Command="{Binding RemoveTohSlotCommand}" Margin="4,0,0,0" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </StackPanel>
+
+              <TextBlock Margin="0,12,0,0" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}"
+                         Text="Configure slots to play at the top of each hour. Tracks are inserted at the top of the queue in sequence order. Categories should be dedicated TOH content (Station IDs, Commercials, Sweepers, Legal IDs)." />
+            </StackPanel>
+          </ScrollViewer>
+        </TabItem>
+
+        <TabItem Header="Requests">
+          <StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Max pending requests" Width="200" />
+              <TextBox Width="160" Text="{Binding Settings.Requests.MaxPendingRequests, Mode=TwoWay}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+              <TextBlock Text="Max per user" Width="200" />
+              <TextBox Width="160" Text="{Binding Settings.Requests.MaxRequestsPerUser, Mode=TwoWay}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+              <TextBlock Text="Queue source label" Width="200" />
+              <TextBox Width="260" Text="{Binding Settings.Requests.SourceLabel, Mode=TwoWay}" />
+            </StackPanel>
+            <TextBlock Margin="0,12,0,0" Foreground="{StaticResource MutedTextBrush}"
+                       Text="When the limit is reached, Twitch chat receives an automatic message instructing users to wait." />
+          </StackPanel>
+        </TabItem>
+
+        <TabItem Header="Direct Server">
+          <StackPanel>
+            <CheckBox Content="Enable Direct Server (for WordPress plugin)"
+                      IsChecked="{Binding Settings.DirectServer.Enabled, Mode=TwoWay}" />
+            <TextBlock Text="The Direct Server allows the WordPress plugin to connect directly to OpenBroadcaster without a relay service."
+                       TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,12" />
+
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+              <TextBlock Text="Port" Width="200" />
+              <TextBox Width="100" Text="{Binding Settings.DirectServer.Port, Mode=TwoWay}" />
+            </StackPanel>
+
+            <CheckBox Content="Allow remote connections (not just localhost)"
+                      IsChecked="{Binding Settings.DirectServer.AllowRemoteConnections, Mode=TwoWay}" Margin="0,12,0,0" />
+            <TextBlock Text="Enable this if WordPress is running on a different machine or VM." TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,0" />
+
+            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+              <TextBlock Text="API Key (optional)" Width="200" />
+              <TextBox Width="200" Text="{Binding Settings.DirectServer.ApiKey, Mode=TwoWay}" />
+            </StackPanel>
+            <TextBlock Text="Leave blank for no authentication. If set, the same key must be configured in the WordPress plugin."
+                       TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,0" />
+
+            <CheckBox Content="Enable CORS"
+                      IsChecked="{Binding Settings.DirectServer.EnableCors, Mode=TwoWay}" Margin="0,12,0,0" />
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+              <TextBlock Text="CORS Origins" Width="200" />
+              <TextBox Width="300" Text="{Binding Settings.DirectServer.CorsOrigins, Mode=TwoWay}" />
+            </StackPanel>
+            <TextBlock Text="Use * to allow all origins, or specify comma-separated URLs."
+                       Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,0" />
+
+            <TextBlock Text="Connection Information" FontWeight="SemiBold" Margin="0,16,0,8" />
+            <TextBlock Text="For WordPress in a VM: Use your host machine's IP address, not localhost."
+                       TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" />
+            <TextBlock Text="You may also need to allow the port through Windows Firewall."
+                       TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,0" />
+            <TextBlock Text="Restart OpenBroadcaster after changing these settings." Foreground="Orange" Margin="0,12,0,0" />
+          </StackPanel>
+        </TabItem>
+
+        <TabItem Header="Overlay">
+          <StackPanel>
+            <CheckBox Content="Enable OBS overlay &amp; data API"
+                      IsChecked="{Binding Settings.Overlay.Enabled, Mode=TwoWay}" />
+            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+              <TextBlock Text="HTTP Port" Width="200" />
+              <TextBox Width="140" Text="{Binding Settings.Overlay.Port, Mode=TwoWay}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+              <TextBlock Text="Recent history items" Width="200" />
+              <TextBox Width="140" Text="{Binding Settings.Overlay.RecentListLimit, Mode=TwoWay}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+              <TextBlock Text="Request display limit" Width="200" />
+              <TextBox Width="140" Text="{Binding Settings.Overlay.RequestListLimit, Mode=TwoWay}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+              <TextBlock Text="Artwork fallback file" Width="200" />
+              <TextBox Width="300" Text="{Binding Settings.Overlay.ArtworkFallbackFilePath, Mode=TwoWay}" />
+              <Button Content="Browse…" Width="100" Margin="8,0,0,0" Click="OnBrowseOverlayArtworkClick" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+              <TextBlock Text="Artwork fallback URL" Width="200" />
+              <TextBox Width="360" Text="{Binding Settings.Overlay.ArtworkFallbackUrl, Mode=TwoWay}" />
+            </StackPanel>
+
+            <TextBlock Text="WordPress Plugin API Authentication" FontWeight="SemiBold" Margin="0,16,0,8" />
+            <TextBlock Text="Leave username blank to allow unauthenticated access to library browsing and requests."
+                       TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,8" />
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+              <TextBlock Text="API Username" Width="200" />
+              <TextBox Width="200" Text="{Binding Settings.Overlay.ApiUsername, Mode=TwoWay}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+              <TextBlock Text="API Password" Width="200" />
+              <TextBox x:Name="ApiPasswordBox" Width="200"
+                       PasswordChar="•"
+                       Text="{Binding Settings.Overlay.ApiPassword, Mode=TwoWay}" />
+            </StackPanel>
+
+            <TextBlock Text="Point a Browser Source in OBS to http://localhost:&lt;port&gt;/ to display the overlay."
+                       Margin="0,12,0,0" Foreground="{StaticResource MutedTextBrush}" />
+          </StackPanel>
+        </TabItem>
+
+        <TabItem Header="Advanced">
+          <StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+              <TextBlock Text="Settings version" Width="200" />
+              <TextBox Text="{Binding Settings.Version}" Width="140" IsReadOnly="True" />
+            </StackPanel>
+            <TextBlock Text="Reload discards edits in progress." Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,8" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+              <Button Content="Reload from disk" Command="{Binding ReloadCommand}" />
+              <Button Content="Revert changes" Command="{Binding CancelCommand}" Margin="8,0,0,0" />
+            </StackPanel>
+          </StackPanel>
+        </TabItem>
+      </TabControl>
+    </Border>
+  </DockPanel>
+</Window>

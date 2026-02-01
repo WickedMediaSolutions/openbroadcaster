@@ -1,55 +1,65 @@
 using System.Collections;
-using System.Windows;
-using System.Windows.Controls;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
 
 namespace OpenBroadcaster.Behaviors
 {
-    public static class SelectedItemsBehavior
+    public sealed class SelectedItemsBehavior
     {
-        public static readonly DependencyProperty BindableSelectedItemsProperty =
-            DependencyProperty.RegisterAttached(
-                "BindableSelectedItems",
-                typeof(IList),
-                typeof(SelectedItemsBehavior),
-                new PropertyMetadata(null, OnBindableSelectedItemsChanged));
+        public static readonly AttachedProperty<IList?> BindableSelectedItemsProperty =
+            AvaloniaProperty.RegisterAttached<SelectedItemsBehavior, ListBox, IList?>(
+                "BindableSelectedItems");
 
-        public static void SetBindableSelectedItems(DependencyObject element, IList value)
+        static SelectedItemsBehavior()
+        {
+            BindableSelectedItemsProperty.Changed.AddClassHandler<ListBox>(OnBindableSelectedItemsChanged);
+        }
+
+        public static void SetBindableSelectedItems(AvaloniaObject element, IList? value)
         {
             element.SetValue(BindableSelectedItemsProperty, value);
         }
 
-        public static IList GetBindableSelectedItems(DependencyObject element)
+        public static IList? GetBindableSelectedItems(AvaloniaObject element)
         {
-            return (IList)element.GetValue(BindableSelectedItemsProperty);
+            return element.GetValue(BindableSelectedItemsProperty);
         }
 
-        private static void OnBindableSelectedItemsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private static void OnBindableSelectedItemsChanged(ListBox listBox, AvaloniaPropertyChangedEventArgs e)
         {
-            if (d is System.Windows.Controls.ListBox listBox)
+            listBox.SelectionChanged -= ListBox_SelectionChanged;
+            listBox.SelectionChanged += ListBox_SelectionChanged;
+            SyncSelectedItems(listBox, e.NewValue as IList);
+        }
+
+        private static void ListBox_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+        {
+            if (sender is not ListBox listBox)
             {
-                listBox.SelectionChanged -= ListBox_SelectionChanged;
-                listBox.SelectionChanged += ListBox_SelectionChanged;
-                SyncSelectedItems(listBox, e.NewValue as IList);
+                return;
+            }
+
+            var bindableSelectedItems = GetBindableSelectedItems(listBox);
+            if (bindableSelectedItems == null)
+            {
+                return;
+            }
+
+            bindableSelectedItems.Clear();
+            foreach (var item in listBox.SelectedItems)
+            {
+                bindableSelectedItems.Add(item);
             }
         }
 
-        private static void ListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private static void SyncSelectedItems(ListBox listBox, IList? selectedItems)
         {
-            if (sender is System.Windows.Controls.ListBox listBox)
+            if (selectedItems == null)
             {
-                var bindableSelectedItems = GetBindableSelectedItems(listBox);
-                if (bindableSelectedItems == null) return;
-                bindableSelectedItems.Clear();
-                foreach (var item in listBox.SelectedItems)
-                {
-                    bindableSelectedItems.Add(item);
-                }
+                return;
             }
-        }
 
-        private static void SyncSelectedItems(System.Windows.Controls.ListBox listBox, IList? selectedItems)
-        {
-            if (selectedItems == null) return;
             listBox.SelectedItems.Clear();
             foreach (var item in selectedItems)
             {

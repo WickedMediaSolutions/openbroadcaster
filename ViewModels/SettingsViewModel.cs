@@ -10,6 +10,7 @@ using OpenBroadcaster.Core.Audio;
 using OpenBroadcaster.Core.Automation;
 using OpenBroadcaster.Core.Models;
 using OpenBroadcaster.Core.Services;
+using OpenBroadcaster.Views;
 
 namespace OpenBroadcaster.ViewModels
 {
@@ -88,6 +89,9 @@ namespace OpenBroadcaster.ViewModels
             PlaybackDeviceOptions = BuildDeviceOptions(playbackDevices, "System Default");
             InputDeviceOptions = BuildDeviceOptions(inputDevices, "Mic Not Connected");
             RotationCategoryOptions = BuildCategoryOptions(libraryCategories);
+            EncoderProtocolValues = Enum.GetValues<EncoderProtocol>();
+            EncoderFormatValues = Enum.GetValues<EncoderFormat>();
+            DayOfWeekValues = Enum.GetValues<DayOfWeek>();
             EnsureEncoderSelection();
             EnsureRotationSelection();
 
@@ -128,6 +132,9 @@ namespace OpenBroadcaster.ViewModels
         public ICommand RemoveClockwheelSlotCommand { get; }
         public ICommand AddScheduleEntryCommand { get; }
         public ICommand RemoveScheduleEntryCommand { get; }
+        public IReadOnlyList<EncoderProtocol> EncoderProtocolValues { get; }
+        public IReadOnlyList<EncoderFormat> EncoderFormatValues { get; }
+        public IReadOnlyList<DayOfWeek> DayOfWeekValues { get; }
         public IReadOnlyList<AudioDeviceOption> PlaybackDeviceOptions { get; }
         public IReadOnlyList<AudioDeviceOption> InputDeviceOptions { get; }
         public IReadOnlyList<string> RotationCategoryOptions { get; }

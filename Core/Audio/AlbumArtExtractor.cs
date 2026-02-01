@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-using System.Windows.Media.Imaging;
+using Avalonia.Media.Imaging;
 using TagLib;
 
 namespace OpenBroadcaster.Core.Audio
@@ -15,7 +15,7 @@ namespace OpenBroadcaster.Core.Audio
         /// </summary>
         /// <param name="filePath">Path to the audio file.</param>
         /// <returns>A BitmapImage of the album art, or null if none found.</returns>
-        public static BitmapImage? ExtractAlbumArt(string? filePath)
+        public static Bitmap? ExtractAlbumArt(string? filePath)
         {
             if (string.IsNullOrWhiteSpace(filePath) || !System.IO.File.Exists(filePath))
             {
@@ -49,18 +49,8 @@ namespace OpenBroadcaster.Core.Audio
                     return null;
                 }
 
-                var image = new BitmapImage();
-                using (var stream = new MemoryStream(picture.Data.Data))
-                {
-                    image.BeginInit();
-                    image.CacheOption = BitmapCacheOption.OnLoad;
-                    image.StreamSource = stream;
-                    image.DecodePixelWidth = 120; // Limit size for performance
-                    image.EndInit();
-                    image.Freeze(); // Make cross-thread accessible
-                }
-
-                return image;
+                using var stream = new MemoryStream(picture.Data.Data);
+                return new Bitmap(stream);
             }
             catch
             {

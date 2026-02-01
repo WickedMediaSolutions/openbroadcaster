@@ -13,8 +13,8 @@ namespace OpenBroadcaster.Core.Audio
     {
         private readonly Timer _elapsedTimer;
         private readonly object _sync = new();
-        private WaveOutEvent? _waveOut;
-        private AudioFileReader? _reader;
+        private IAudioOutput? _waveOut;
+        private WaveStream? _reader;
         private SampleChannel? _sampleChannel;
         private MeteringSampleProvider? _meteringProvider;
         private int _deviceNumber;
@@ -69,7 +69,7 @@ namespace OpenBroadcaster.Core.Audio
             lock (_sync)
             {
                 ResetReader();
-                _reader = new AudioFileReader(filePath);
+                _reader = AudioFileReaderFactory.OpenRead(filePath);
                 _lastNonSilentPosition = TimeSpan.Zero;
                 _sampleChannel = new SampleChannel(_reader, true);
                 _sampleChannel.Volume = _volume;
@@ -151,12 +151,12 @@ namespace OpenBroadcaster.Core.Audio
                 _deviceNumber = deviceNumber;
                 if (_reader == null)
                 {
-                    RecreateOutput(null);
+                    RecreateOutput();
                     return;
                 }
 
                 var wasPlaying = _waveOut?.PlaybackState == PlaybackState.Playing;
-                RecreateOutput(_reader);
+                RecreateOutput();
                 if (wasPlaying == true)
                 {
                     _waveOut!.Play();
@@ -169,13 +169,13 @@ namespace OpenBroadcaster.Core.Audio
         {
             if (_waveOut == null)
             {
-                _waveOut = new WaveOutEvent { DeviceNumber = _deviceNumber };
+                _waveOut = AudioOutputFactory.Create(_deviceNumber);
                 _waveOut.Volume = _volume;
                 _waveOut.PlaybackStopped += OnPlaybackStopped;
             }
         }
 
-        private void RecreateOutput(AudioFileReader? reader)
+        private void RecreateOutput()
         {
             if (_waveOut != null)
             {
@@ -184,10 +184,17 @@ namespace OpenBroadcaster.Core.Audio
                 _waveOut = null;
             }
 
-            if (reader != null)
+            if (_sampleChannel != null)
             {
+                if (_meteringProvider != null)
+                {
+                    _meteringProvider.StreamVolume -= OnStreamVolume;
+                    _meteringProvider = null;
+                }
+
                 InitializeOutput();
-                _waveOut!.Init(reader);
+                var playbackSource = BuildPlaybackSource(_sampleChannel);
+                _waveOut!.Init(playbackSource);
                 _waveOut!.Volume = _volume;
             }
         }

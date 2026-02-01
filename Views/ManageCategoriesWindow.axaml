@@ -1,0 +1,33 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenBroadcaster.Views.ManageCategoriesWindow"
+        Title="Manage Categories"
+        Width="640" Height="480">
+  <DockPanel Margin="12">
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="Close" Click="OnCloseClick" />
+    </StackPanel>
+
+    <StackPanel Spacing="8">
+      <ListBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding Name}" />
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBox Width="220" Watermark="Name" Text="{Binding NewCategoryName}" />
+        <TextBox Width="160" Watermark="Type" Text="{Binding NewCategoryType}" />
+        <Button Content="{Binding AddButtonText}" Command="{Binding AddCategoryCommand}" />
+      </StackPanel>
+
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Edit" Command="{Binding EditCategoryCommand}" />
+        <Button Content="Remove" Command="{Binding RemoveCategoryCommand}" />
+        <Button Content="Cancel Edit" Command="{Binding CancelEditCommand}" />
+      </StackPanel>
+    </StackPanel>
+  </DockPanel>
+</Window>

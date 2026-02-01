@@ -13,6 +13,7 @@ namespace OpenBroadcaster.Core.Models
         private string _colorHex;
         private string _hotkey = string.Empty;
         private bool _loopEnabled;
+        private string _remainingTime = string.Empty;
 
         public CartPad(int id, string label, string colorHex)
         {
@@ -71,6 +72,12 @@ namespace OpenBroadcaster.Core.Models
         {
             get => _loopEnabled;
             set => SetProperty(ref _loopEnabled, value);
+        }
+
+        public string RemainingTime
+        {
+            get => _remainingTime;
+            set => SetProperty(ref _remainingTime, value);
         }
 
         public bool HasAudio => !string.IsNullOrWhiteSpace(FilePath);

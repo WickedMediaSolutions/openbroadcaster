@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenBroadcaster.Views.TwitchSettingsWindow"
+        Title="Twitch Settings"
+        Width="520" Height="420">
+  <DockPanel Margin="12">
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="Save" Click="OnSave" />
+      <Button Content="Cancel" Click="OnCancel" />
+    </StackPanel>
+
+    <StackPanel Spacing="8">
+      <TextBox Watermark="Username" Text="{Binding UserName}" />
+      <TextBox Watermark="OAuth Token" Text="{Binding OAuthToken}" PasswordChar="●" />
+      <TextBox Watermark="Channel" Text="{Binding Channel}" />
+      <TextBox Watermark="Points Name" Text="{Binding PointsName}" />
+      <TextBox Watermark="Request Cost" Text="{Binding RequestCost}" />
+      <TextBox Watermark="Play Next Cost" Text="{Binding PlayNextCost}" />
+      <TextBox Watermark="Search Results Limit" Text="{Binding SearchResultsLimit}" />
+      <TextBox Watermark="Request Cooldown (sec)" Text="{Binding RequestCooldownSeconds}" />
+      <TextBox Watermark="Chat Message Award" Text="{Binding ChatMessageAwardPoints}" />
+      <TextBox Watermark="Idle Award" Text="{Binding IdleAwardPoints}" />
+      <TextBox Watermark="Idle Award Interval (min)" Text="{Binding IdleAwardIntervalMinutes}" />
+    </StackPanel>
+  </DockPanel>
+</Window>

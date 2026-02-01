@@ -7,11 +7,10 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
 using Microsoft.Extensions.Logging;
-using Microsoft.Win32;
-using WinForms = System.Windows.Forms;
+using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using OpenBroadcaster.Core.Messaging;
 using OpenBroadcaster.Core.Messaging.Events;
 using OpenBroadcaster.Core.Automation;
@@ -72,7 +71,7 @@ namespace OpenBroadcaster.ViewModels
         private DeckStateChangedEvent? _deckAState;
         private DeckStateChangedEvent? _deckBState;
         private Guid? _currentlyPlayingTrackId;
-        private readonly System.Windows.Threading.DispatcherTimer _clockTimer;
+        private readonly DispatcherTimer _clockTimer;
         private string _currentTime = "00:00:00";
         private bool _use24HourClock = true;
         private int _masterVolume = 100;
@@ -170,6 +169,7 @@ namespace OpenBroadcaster.ViewModels
         public ICommand OpenTwitchSettingsCommand { get; }
         public ICommand OpenAppSettingsCommand { get; }
         public ICommand OpenAboutDialogCommand { get; }
+        public ICommand ExitCommand { get; }
         public ICommand ManageCategoriesCommand { get; }
         public ICommand RemoveUncategorizedTracksCommand { get; }
         public ICommand CleanupReservedCategoriesCommand { get; }
@@ -179,6 +179,7 @@ namespace OpenBroadcaster.ViewModels
         public ICommand SaveCartWallCommand { get; }
         public ICommand ImportTracksCommand { get; }
         public ICommand ImportFolderCommand { get; }
+        public ICommand RefreshLibraryCommand { get; }
         public ICommand AddLibraryItemToQueueCommand { get; }
         public ICommand AssignCategoriesCommand { get; }
         public ICommand RemoveQueueItemCommand { get; }
@@ -593,20 +594,22 @@ namespace OpenBroadcaster.ViewModels
             CartColorPalette = new ObservableCollection<string>(BuildCartColorPalette());
             EncoderStatuses = new ObservableCollection<EncoderStatusViewModel>();
 
-            OpenTwitchSettingsCommand = new RelayCommand(_ => OpenTwitchSettingsDialog());
-            OpenAppSettingsCommand = new RelayCommand(_ => OpenAppSettingsDialog());
-            OpenAboutDialogCommand = new RelayCommand(_ => OpenAboutDialog());
-            ManageCategoriesCommand = new RelayCommand(_ => OpenManageCategoriesDialog());
-            RemoveUncategorizedTracksCommand = new RelayCommand(_ => RemoveUncategorizedTracks());
-            CleanupReservedCategoriesCommand = new RelayCommand(_ => CleanupReservedCategories());
+            OpenTwitchSettingsCommand = new RelayCommand(async _ => await OpenTwitchSettingsDialogAsync());
+            OpenAppSettingsCommand = new RelayCommand(async _ => await OpenAppSettingsDialogAsync());
+            OpenAboutDialogCommand = new RelayCommand(async _ => await OpenAboutDialogAsync());
+            ExitCommand = new RelayCommand(_ => { /* Exit handled by platform */ });
+            ManageCategoriesCommand = new RelayCommand(async _ => await OpenManageCategoriesDialogAsync());
+            RemoveUncategorizedTracksCommand = new RelayCommand(async _ => await RemoveUncategorizedTracksAsync());
+            CleanupReservedCategoriesCommand = new RelayCommand(async _ => await CleanupReservedCategoriesAsync());
             TriggerCartCommand = new RelayCommand(p => ToggleCartPad(p as CartPad), p => p is CartPad);
-            AssignCartFromPickerCommand = new RelayCommand(p => AssignCartPadFromPicker(p as CartPad), p => p is CartPad);
-            BrowseCartFileCommand = new RelayCommand(_ => BrowseCartFile(), _ => HasSelectedCart);
+            AssignCartFromPickerCommand = new RelayCommand(async p => await AssignCartPadFromPickerAsync(p as CartPad));
+            BrowseCartFileCommand = new RelayCommand(async _ => await BrowseCartFileAsync(), _ => HasSelectedCart);
             SaveCartWallCommand = new RelayCommand(_ => PersistCartPads(), _ => CartPads.Count > 0);
             ImportTracksCommand = new RelayCommand(async _ => await ImportLibraryFilesAsync());
             ImportFolderCommand = new RelayCommand(async _ => await ImportLibraryFolderAsync());
+            RefreshLibraryCommand = new RelayCommand(_ => RefreshLibrarySnapshot());
             AddLibraryItemToQueueCommand = new RelayCommand(_ => QueueSelectedLibraryTrack(), _ => CanQueueLibrarySelection);
-            AssignCategoriesCommand = new RelayCommand(_ => OpenAssignCategoriesDialog(), _ => SelectedLibraryItem != null);
+            AssignCategoriesCommand = new RelayCommand(async _ => await OpenAssignCategoriesDialogAsync(), _ => SelectedLibraryItem != null);
             RemoveQueueItemCommand = new RelayCommand(_ => RemoveSelectedQueueItem(), _ => HasSelectedQueueItem);
             ClearQueueCommand = new RelayCommand(_ => ClearQueue(), _ => QueueItems.Count > 0);
             ShuffleQueueCommand = new RelayCommand(_ => ShuffleQueue(), _ => QueueItems.Count > 1);
@@ -678,7 +681,7 @@ namespace OpenBroadcaster.ViewModels
             SyncAutoDjPreview();
 
             // Initialize digital clock timer
-            _clockTimer = new System.Windows.Threading.DispatcherTimer
+            _clockTimer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(100)
             };
@@ -860,13 +863,18 @@ namespace OpenBroadcaster.ViewModels
 
         private void RefreshLibrarySnapshot()
         {
-            var tracks = _libraryService.GetTracks();
+            var tracks = _libraryService.GetTracks().ToList();
             lock (_libraryCacheLock)
             {
-                _libraryTrackCache = tracks.ToList();
+                _libraryTrackCache = tracks;
             }
 
-            ApplyLibraryFilters();
+            // Ensure filter is applied on UI thread
+            RunOnUiThread(() =>
+            {
+                LibraryStatusMessage = $"Refreshing: {_libraryTrackCache.Count} tracks loaded from service...";
+                ApplyLibraryFilters();
+            });
         }
 
         private void RefreshCategorySnapshot()
@@ -933,13 +941,13 @@ namespace OpenBroadcaster.ViewModels
                     .ToList();
             }
 
-            RunOnUiThread(() =>
-            {
-                SyncCollection(LibraryItems, filtered);
-                LibraryStatusMessage = filtered.Count == totalCount
-                    ? $"Showing {filtered.Count} track(s)."
-                    : $"Showing {filtered.Count} of {totalCount} track(s).";
-            });
+            // Show status before sync
+            LibraryStatusMessage = $"Syncing {filtered.Count} filtered items from cache of {totalCount}...";
+            
+            SyncCollection(LibraryItems, filtered);
+            
+            // Show final status
+            LibraryStatusMessage = $"✓ Library ready: {LibraryItems.Count} tracks (cache: {totalCount}, selected category: {SelectedLibraryCategory?.DisplayName ?? "None"})";
         }
 
         private static bool TrackMatchesSearch(Track track, string search)
@@ -1376,7 +1384,7 @@ namespace OpenBroadcaster.ViewModels
             return true;
         }
 
-        private void OpenAssignCategoriesDialog()
+        private async Task OpenAssignCategoriesDialogAsync()
         {
             var selected = SelectedLibraryItem;
             if (selected == null)
@@ -1402,11 +1410,10 @@ namespace OpenBroadcaster.ViewModels
 
             var window = new AssignCategoriesWindow
             {
-                Owner = System.Windows.Application.Current?.MainWindow,
                 DataContext = dialogVm
             };
 
-            var result = window.ShowDialog();
+            var result = await window.ShowDialog<bool?>(UiServices.MainWindow);
             if (result == true)
             {
                 try
@@ -1428,63 +1435,41 @@ namespace OpenBroadcaster.ViewModels
 
         private async Task ImportLibraryFilesAsync()
         {
-            var dialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Filter = "Audio Files|*.mp3;*.wav;*.flac;*.aac;*.wma;*.ogg;*.m4a;*.aif;*.aiff;*.opus|All Files|*.*",
-                Multiselect = true,
-                Title = "Import audio files"
-            };
+            var files = await UiServices.OpenFilesAsync(
+                "Import audio files",
+                "mp3;wav;flac;aac;wma;ogg;m4a;aif;aiff;opus",
+                allowMultiple: true);
 
-            var result = dialog.ShowDialog();
-            if (result == true && dialog.FileNames.Length > 0)
+            if (files == null || files.Length == 0)
             {
-                var categories = _libraryService.GetCategories();
-                
-                // If no categories exist, prompt to create them first
-                if (categories.Count == 0)
-                {
-                    var createCats = System.Windows.MessageBox.Show(
-                        "No categories found. Create categories first to organize your tracks.\n\nOpen Manage Categories now?",
-                        "No Categories",
-                        System.Windows.MessageBoxButton.YesNo,
-                        System.Windows.MessageBoxImage.Information);
-                    
-                    if (createCats == System.Windows.MessageBoxResult.Yes)
-                    {
-                        OpenManageCategoriesDialog();
-                        categories = _libraryService.GetCategories();
-                        if (categories.Count == 0)
-                        {
-                            LibraryStatusMessage = "Import cancelled - no categories available.";
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        // Allow import without categories
-                        await RunLibraryImportAsync(() => _libraryService.ImportFiles(dialog.FileNames, null),
-                            $"Importing {dialog.FileNames.Length} file(s)...");
-                        return;
-                    }
-                }
-                
-                var categorySelector = new ImportCategorySelectorWindow(categories)
-                {
-                    Owner = System.Windows.Application.Current?.MainWindow
-                };
+                return;
+            }
 
-                if (categorySelector.ShowDialog() == true)
+            var categories = _libraryService.GetCategories();
+            
+            // If categories exist, let user select which ones to import to
+            if (categories.Count > 0)
+            {
+                var categorySelector = new ImportCategorySelectorWindow(categories);
+                var selectionResult = await categorySelector.ShowDialog<bool?>(UiServices.MainWindow);
+                if (selectionResult == true)
                 {
                     var selectedCategories = categorySelector.SelectedCategoryIds;
-                    await RunLibraryImportAsync(() => _libraryService.ImportFiles(dialog.FileNames, selectedCategories),
-                        $"Importing {dialog.FileNames.Length} file(s)...");
+                    await RunLibraryImportAsync(() => _libraryService.ImportFiles(files, selectedCategories),
+                        $"Importing {files.Length} file(s)...");
                 }
+            }
+            else
+            {
+                // No categories - import without category assignment
+                await RunLibraryImportAsync(() => _libraryService.ImportFiles(files, null),
+                    $"Importing {files.Length} file(s)...");
             }
         }
 
         private async Task ImportLibraryFolderAsync()
         {
-            var folderPath = SelectFolderPath();
+            var folderPath = await SelectFolderPathAsync();
             if (string.IsNullOrWhiteSpace(folderPath))
             {
                 return;
@@ -1492,43 +1477,22 @@ namespace OpenBroadcaster.ViewModels
 
             var categories = _libraryService.GetCategories();
             
-            // If no categories exist, prompt to create them first
-            if (categories.Count == 0)
+            // If categories exist, let user select which ones to import to
+            if (categories.Count > 0)
             {
-                var createCats = System.Windows.MessageBox.Show(
-                    "No categories found. Create categories first to organize your tracks.\n\nOpen Manage Categories now?",
-                    "No Categories",
-                    System.Windows.MessageBoxButton.YesNo,
-                    System.Windows.MessageBoxImage.Information);
-                
-                if (createCats == System.Windows.MessageBoxResult.Yes)
+                var categorySelector = new ImportCategorySelectorWindow(categories);
+                var selectionResult = await categorySelector.ShowDialog<bool?>(UiServices.MainWindow);
+                if (selectionResult == true)
                 {
-                    OpenManageCategoriesDialog();
-                    categories = _libraryService.GetCategories();
-                    if (categories.Count == 0)
-                    {
-                        LibraryStatusMessage = "Import cancelled - no categories available.";
-                        return;
-                    }
-                }
-                else
-                {
-                    // Allow import without categories
-                    await RunLibraryImportAsync(() => _libraryService.ImportFolder(folderPath, includeSubfolders: true, null),
+                    var selectedCategories = categorySelector.SelectedCategoryIds;
+                    await RunLibraryImportAsync(() => _libraryService.ImportFolder(folderPath, includeSubfolders: true, selectedCategories),
                         $"Scanning '{folderPath}' for new audio files...");
-                    return;
                 }
             }
-            
-            var categorySelector = new ImportCategorySelectorWindow(categories)
+            else
             {
-                Owner = System.Windows.Application.Current?.MainWindow
-            };
-
-            if (categorySelector.ShowDialog() == true)
-            {
-                var selectedCategories = categorySelector.SelectedCategoryIds;
-                await RunLibraryImportAsync(() => _libraryService.ImportFolder(folderPath, includeSubfolders: true, selectedCategories),
+                // No categories - import without category assignment
+                await RunLibraryImportAsync(() => _libraryService.ImportFolder(folderPath, includeSubfolders: true, null),
                     $"Scanning '{folderPath}' for new audio files...");
             }
         }
@@ -1541,9 +1505,18 @@ namespace OpenBroadcaster.ViewModels
             {
                 var imported = await Task.Run(importFunc);
                 
-                LibraryStatusMessage = imported.Count == 0
-                    ? "No changes made. Files may already be imported with the selected categories."
-                    : $"Successfully processed {imported.Count} track(s). New tracks were added and existing tracks had categories updated.";
+                if (imported.Count > 0)
+                {
+                    LibraryStatusMessage = $"Import complete: {imported.Count} track(s) added.";
+                    
+                    // Force refresh on UI thread
+                    await System.Threading.Tasks.Task.Delay(50);
+                    RefreshLibrarySnapshot();
+                }
+                else
+                {
+                    LibraryStatusMessage = "No changes made. Files may already be imported.";
+                }
             }
             catch (Exception ex)
             {
@@ -1551,17 +1524,9 @@ namespace OpenBroadcaster.ViewModels
             }
         }
 
-        private static string? SelectFolderPath()
+        private static Task<string?> SelectFolderPathAsync()
         {
-            using var dialog = new WinForms.FolderBrowserDialog
-            {
-                Description = "Select a music folder to scan",
-                UseDescriptionForTitle = true,
-                ShowNewFolderButton = false
-            };
-
-            var result = dialog.ShowDialog();
-            return result == WinForms.DialogResult.OK ? dialog.SelectedPath : null;
+            return UiServices.OpenFolderAsync("Select a music folder to scan");
         }
 
         private static void SyncCollection<T>(ObservableCollection<T> target, IList<T> source)
@@ -1635,15 +1600,22 @@ namespace OpenBroadcaster.ViewModels
             UpdateCartStatus(pad);
         }
 
-        private void AssignCartPadFromPicker(CartPad? pad)
+        private async Task AssignCartPadFromPickerAsync(CartPad? pad)
+        {
+            await AssignCartPadFromPickerPublicAsync(pad);
+        }
+
+        public async Task AssignCartPadFromPickerPublicAsync(CartPad? pad)
         {
             if (pad == null)
             {
                 return;
             }
 
-            if (_cartWallService.TryAssignPadFromFilePicker(pad.Id))
+            var selected = await UiServices.OpenFilesAsync($"Assign audio to {pad.Label}", "mp3;wav;flac;aac;wma;ogg;opus;m4a;aif;aiff", false);
+            if (selected != null && selected.Length > 0)
             {
+                _cartWallService.AssignPadFile(pad.Id, selected[0]);
                 if (SelectedCart != pad)
                 {
                     SelectedCart = pad;
@@ -1695,7 +1667,7 @@ namespace OpenBroadcaster.ViewModels
             };
         }
 
-        private void BrowseCartFile()
+        private async Task BrowseCartFileAsync()
         {
             if (!HasSelectedCart || SelectedCart == null)
             {
@@ -1703,8 +1675,10 @@ namespace OpenBroadcaster.ViewModels
                 return;
             }
 
-            if (_cartWallService.TryAssignPadFromFilePicker(SelectedCart.Id))
+            var selected = await UiServices.OpenFilesAsync($"Assign audio to {SelectedCart.Label}", "mp3;wav;flac;aac;wma;ogg;opus;m4a;aif;aiff", false);
+            if (selected != null && selected.Length > 0)
             {
+                _cartWallService.AssignPadFile(SelectedCart.Id, selected[0]);
                 UpdateCartStatus(SelectedCart);
                 CommandManager.InvalidateRequerySuggested();
             }
@@ -1949,16 +1923,15 @@ namespace OpenBroadcaster.ViewModels
             StopTwitchBridge();
         }
 
-        private void OpenTwitchSettingsDialog()
+        private async Task OpenTwitchSettingsDialogAsync()
         {
             var settingsVm = new TwitchSettingsViewModel(_twitchSettings.Clone());
             var window = new TwitchSettingsWindow
             {
-                Owner = System.Windows.Application.Current?.MainWindow,
                 DataContext = settingsVm
             };
 
-            var result = window.ShowDialog();
+            var result = await window.ShowDialog<bool?>(UiServices.MainWindow);
             if (result != true)
             {
                 return;
@@ -1975,52 +1948,42 @@ namespace OpenBroadcaster.ViewModels
             }
         }
 
-        private void OpenManageCategoriesDialog()
+        private async Task OpenManageCategoriesDialogAsync()
         {
             var window = new ManageCategoriesWindow(_libraryService)
             {
-                Owner = System.Windows.Application.Current?.MainWindow
+                DataContext = null
             };
-            window.ShowDialog();
+            await window.ShowDialog<bool?>(UiServices.MainWindow);
             RefreshCategorySnapshot();
         }
 
-        private void RemoveUncategorizedTracks()
+        private async Task RemoveUncategorizedTracksAsync()
         {
             var allTracks = _libraryService.GetTracks();
             var uncategorized = allTracks.Where(t => t.CategoryIds.Count == 0).ToList();
             
             if (uncategorized.Count == 0)
             {
-                System.Windows.MessageBox.Show(
-                    "No uncategorized tracks found.",
-                    "Remove Uncategorized",
-                    System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Information);
+                await UiServices.ShowInfoAsync("Remove Uncategorized", "No uncategorized tracks found.");
                 return;
             }
 
-            var result = System.Windows.MessageBox.Show(
-                $"Remove {uncategorized.Count} uncategorized track(s) from the library?\\n\\nThis will permanently delete tracks that have no categories assigned.",
+            var confirmed = await UiServices.ShowConfirmAsync(
                 "Confirm Remove Uncategorized",
-                System.Windows.MessageBoxButton.YesNo,
-                System.Windows.MessageBoxImage.Warning);
+                $"Remove {uncategorized.Count} uncategorized track(s) from the library?\n\nThis will permanently delete tracks that have no categories assigned.");
 
-            if (result == System.Windows.MessageBoxResult.Yes)
+            if (confirmed)
             {
                 foreach (var track in uncategorized)
                 {
                     _libraryService.RemoveTrack(track.Id);
                 }
-                System.Windows.MessageBox.Show(
-                    $"Removed {uncategorized.Count} uncategorized track(s).",
-                    "Remove Complete",
-                    System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Information);
+                await UiServices.ShowInfoAsync("Remove Complete", $"Removed {uncategorized.Count} uncategorized track(s).");
             }
         }
 
-        private void CleanupReservedCategories()
+        private async Task CleanupReservedCategoriesAsync()
         {
             var allCategories = _libraryService.GetCategories();
             var reserved = new[] { "All Categories", "All", "Uncategorized" };
@@ -2030,36 +1993,26 @@ namespace OpenBroadcaster.ViewModels
             
             if (toRemove.Count == 0)
             {
-                System.Windows.MessageBox.Show(
-                    "No reserved category names found in the database.",
-                    "Cleanup Reserved Names",
-                    System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Information);
+                await UiServices.ShowInfoAsync("Cleanup Reserved Names", "No reserved category names found in the database.");
                 return;
             }
 
             var names = string.Join(", ", toRemove.Select(c => $"'{c.Name}'"));
-            var result = System.Windows.MessageBox.Show(
-                $"Found {toRemove.Count} reserved category name(s): {names}\n\nRemove these from the database? Tracks assigned to these categories will keep their other categories.",
+            var confirmed = await UiServices.ShowConfirmAsync(
                 "Confirm Cleanup",
-                System.Windows.MessageBoxButton.YesNo,
-                System.Windows.MessageBoxImage.Warning);
+                $"Found {toRemove.Count} reserved category name(s): {names}\n\nRemove these from the database? Tracks assigned to these categories will keep their other categories.");
 
-            if (result == System.Windows.MessageBoxResult.Yes)
+            if (confirmed)
             {
                 foreach (var category in toRemove)
                 {
                     _libraryService.RemoveCategory(category.Id);
                 }
-                System.Windows.MessageBox.Show(
-                    $"Removed {toRemove.Count} reserved category name(s).",
-                    "Cleanup Complete",
-                    System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Information);
+                await UiServices.ShowInfoAsync("Cleanup Complete", $"Removed {toRemove.Count} reserved category name(s).");
             }
         }
 
-        private void OpenAppSettingsDialog()
+        private async Task OpenAppSettingsDialogAsync()
         {
             var playbackDevices = _audioService.GetOutputDevices();
             var inputDevices = _audioService.GetInputDevices();
@@ -2072,7 +2025,6 @@ namespace OpenBroadcaster.ViewModels
             var settingsVm = new SettingsViewModel(_appSettings, playbackDevices, inputDevices, categories);
             var window = new SettingsWindow
             {
-                Owner = System.Windows.Application.Current?.MainWindow,
                 DataContext = settingsVm
             };
 
@@ -2085,17 +2037,17 @@ namespace OpenBroadcaster.ViewModels
             };
 
             settingsVm.SettingsChanged += handler;
-            window.ShowDialog();
+            await window.ShowDialog<bool?>(UiServices.MainWindow);
             settingsVm.SettingsChanged -= handler;
         }
 
-        private void OpenAboutDialog()
+        private async Task OpenAboutDialogAsync()
         {
             var window = new AboutWindow
             {
-                Owner = System.Windows.Application.Current?.MainWindow
+                DataContext = null
             };
-            window.ShowDialog();
+            await window.ShowDialog<bool?>(UiServices.MainWindow);
         }
 
         private void ApplyAppSettings(AppSettings? previous, AppSettings? settings)
@@ -2592,15 +2544,13 @@ namespace OpenBroadcaster.ViewModels
                 return;
             }
 
-            var dispatcher = System.Windows.Application.Current?.Dispatcher;
-            if (dispatcher == null || dispatcher.CheckAccess())
+            if (Dispatcher.UIThread.CheckAccess())
             {
                 action();
             }
             else
             {
-                // Use BeginInvoke (async) instead of Invoke (sync) to prevent deadlocks
-                dispatcher.BeginInvoke(action);
+                Dispatcher.UIThread.Post(action);
             }
         }
 
@@ -2803,8 +2753,8 @@ namespace OpenBroadcaster.ViewModels
             private set => SetProperty(ref _year, value);
         }
 
-        private System.Windows.Media.Imaging.BitmapImage? _albumArt;
-        public System.Windows.Media.Imaging.BitmapImage? AlbumArt
+        private Bitmap? _albumArt;
+        public Bitmap? AlbumArt
         {
             get => _albumArt;
             private set => SetProperty(ref _albumArt, value);

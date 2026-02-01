@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
-using System.Windows;
-using System.Windows.Data;
+using Avalonia.Controls;
+using Avalonia.Data.Converters;
 
 namespace OpenBroadcaster.Converters
 {
@@ -14,7 +14,7 @@ namespace OpenBroadcaster.Converters
         public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             var flag = value is bool b && b;
-            return flag ? Visibility.Collapsed : Visibility.Visible;
+            return !flag;
         }
 
         public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

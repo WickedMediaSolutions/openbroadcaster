@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using Microsoft.Extensions.Logging;
-using Microsoft.Win32;
 using OpenBroadcaster.Core.Audio;
 using OpenBroadcaster.Core.Diagnostics;
 using OpenBroadcaster.Core.Models;
@@ -19,6 +18,7 @@ namespace OpenBroadcaster.Core.Services
         private readonly CartPadStore _store;
         private readonly ObservableCollection<CartPad> _pads = new();
         private readonly Dictionary<int, PlaybackEntry> _active = new();
+        private readonly Dictionary<int, TimeSpan> _totalDurations = new();
         private readonly SynchronizationContext? _syncContext;
         private readonly ILogger<CartWallService> _logger;
         private readonly string[] _defaultPalette =
@@ -66,26 +66,6 @@ namespace OpenBroadcaster.Core.Services
             }
 
             return pad;
-        }
-
-        public bool TryAssignPadFromFilePicker(int padId)
-        {
-            var pad = GetPad(padId);
-
-            var dialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Filter = "Audio Files|*.mp3;*.wav;*.flac;*.aac;*.wma;*.ogg|All Files|*.*",
-                Title = $"Assign audio to {pad.Label}"
-            };
-
-            var result = dialog.ShowDialog();
-            if (result == true && !string.IsNullOrWhiteSpace(dialog.FileName))
-            {
-                AssignPadFile(padId, dialog.FileName);
-                return true;
-            }
-
-            return false;
         }
 
         public void AssignPadFile(int padId, string filePath)
@@ -225,7 +205,12 @@ namespace OpenBroadcaster.Core.Services
 
             try
             {
-                var playback = _audioService.PlayCart(pad.FilePath, pad.LoopEnabled);
+                // Get total duration for remaining time calculation
+                var totalDuration = GetAudioDuration(pad.FilePath);
+                _totalDurations[pad.Id] = totalDuration;
+                _logger.LogInformation("Cart {PadId} total duration: {Duration}", pad.Id, totalDuration);
+
+                var playback = _audioService.PlayCart(pad.FilePath, pad.LoopEnabled, elapsed => OnElapsedUpdate(pad.Id, elapsed));
                 EventHandler handler = (_, __) => OnPlaybackCompleted(pad.Id);
                 playback.Completed += handler;
                 _active[pad.Id] = new PlaybackEntry(playback, handler);
@@ -273,10 +258,71 @@ namespace OpenBroadcaster.Core.Services
             if (_syncContext == null)
             {
                 pad.IsPlaying = isPlaying;
+                if (!isPlaying)
+                {
+                    pad.RemainingTime = string.Empty;
+                }
                 return;
             }
 
-            _syncContext.Post(_ => pad.IsPlaying = isPlaying, null);
+            _syncContext.Post(_ =>
+            {
+                pad.IsPlaying = isPlaying;
+                if (!isPlaying)
+                {
+                    pad.RemainingTime = string.Empty;
+                }
+            }, null);
+        }
+
+        private void OnElapsedUpdate(int padId, TimeSpan elapsed)
+        {
+            var pad = _pads.FirstOrDefault(p => p.Id == padId);
+            if (pad == null)
+            {
+                _logger.LogWarning("OnElapsedUpdate: pad {PadId} not found", padId);
+                return;
+            }
+            
+            if (!_totalDurations.TryGetValue(padId, out var total))
+            {
+                _logger.LogWarning("OnElapsedUpdate: total duration not found for pad {PadId}", padId);
+                return;
+            }
+
+            var remaining = total - elapsed;
+            if (remaining < TimeSpan.Zero)
+            {
+                remaining = TimeSpan.Zero;
+            }
+
+            var formatted = remaining.TotalHours >= 1
+                ? remaining.ToString(@"h\:mm\:ss")
+                : remaining.ToString(@"m\:ss");
+
+            _logger.LogDebug("Cart {PadId} elapsed={Elapsed}, total={Total}, remaining={Remaining}", padId, elapsed, total, formatted);
+
+            if (_syncContext == null)
+            {
+                pad.RemainingTime = formatted;
+                return;
+            }
+
+            _syncContext.Post(_ => pad.RemainingTime = formatted, null);
+        }
+
+        private static TimeSpan GetAudioDuration(string filePath)
+        {
+            try
+            {
+                // Use the same factory that CartPlayer uses to get accurate duration
+                using var reader = Audio.AudioFileReaderFactory.OpenRead(filePath);
+                return reader.TotalTime;
+            }
+            catch
+            {
+                return TimeSpan.Zero;
+            }
         }
 
         private void PersistPads()

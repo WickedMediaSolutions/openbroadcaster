@@ -7,11 +7,15 @@ I've created a complete cross-platform audio abstraction layer with support for:
 ### Windows
 - ✅ **Complete**: NAudio (WaveOut/WaveIn) implementations ready to use
 
-### Linux (3 Audio Backends - Auto-Detected)
-- 🚧 **In Development**: PulseAudio, JACK, ALSA
-- The framework automatically detects which backend is available and selects the best one
-- All device enumeration works (parsing command-line tool output)
-- Playback/Recording engines have the interface contract ready, implementation in progress
+### Linux (Current Implementation)
+- ✅ **Implemented**: OpenAL playback + capture (OpenTK) with device enumeration
+- ✅ **Implemented**: FFmpeg-based decoder (`FfmpegWaveStream`) for cross-format audio decoding
+- ✅ **Implemented**: Linux device resolver with OpenAL/Pulse/ALSA fallback enumeration
+- 🚧 **Optional Future**: Native PulseAudio/JACK/ALSA P/Invoke engines (not required for baseline Linux support)
+
+### Linux Runtime Dependencies
+- **OpenAL Soft** (`libopenal`) for playback/capture
+- **FFmpeg + FFprobe** for decoding audio files to PCM
 
 **See [LINUX_AUDIO_STRATEGY.md](./LINUX_AUDIO_STRATEGY.md) for the complete development roadmap, implementation guidelines, and timeline.**
 
@@ -28,67 +32,24 @@ I've created a complete cross-platform audio abstraction layer with support for:
 - `WindowsRecordingEngine` - Full NAudio WaveInEvent implementation
 - `WindowsAudioDeviceEnumerator` - Full NAudio device enumeration
 
-### ✅ Linux Audio Backend Detection
-`LinuxAudioDetector` automatically probes for (in this order):
-1. **PulseAudio** - Most common on desktop Linux (check via `pactl --version`)
-2. **JACK** - Professional audio (check via `jack_lsp` availability)
-3. **ALSA** - Always available fallback (check via `aplay --version`)
+### ✅ Linux Audio Runtime Selection
+- **Playback/Capture**: OpenAL (OpenTK) with device lists exposed in the UI
+- **Decode**: FFmpeg CLI (`ffmpeg` + `ffprobe`) for MP3/WAV/FLAC/OGG/AAC/WMA
+- **Device Enumeration**: OpenAL list first, then PulseAudio (`pactl`) or ALSA (`aplay`/`arecord`) fallback
 
-**Result**: Auto-selects best available backend without user intervention
+### ✅ Linux Device Enumeration (Working)
+- OpenAL devices are preferred (aligned with playback/capture backend)
+- PulseAudio/ALSA parsing used as fallback when OpenAL lists are empty
 
-### ✅ Linux Device Enumerators (Working)
-Each parser uses command-line tools already available on Linux:
-- `PulseAudioDeviceEnumerator` - Parses `pactl list short sinks/sources`
-- `JackAudioDeviceEnumerator` - Parses `jack_lsp -p` output
-- `AlsaDeviceEnumerator` - Parses `aplay -l` and `arecord -l` output
+## Optional Future Work
 
-## What Needs Implementation
+If deeper integration with system mixers is required, native backends can still be added:
 
-### The 3 Linux Audio Backends
+- **PulseAudio** via libpulse
+- **JACK** via libjack
+- **ALSA** via libasound
 
-Each backend needs to implement two classes:
-
-#### 1. PulseAudio
-```csharp
-// Location: Core\Audio\Engines\
-PulseAudioPlaybackEngine.cs    // Output - TODO: implement libpulse integration
-PulseAudioRecordingEngine.cs   // Input - TODO: implement libpulse integration
-```
-
-**What to implement**:
-- Use P/Invoke to call libpulse C library functions
-- Handle PulseAudio connection, stream creation, sample I/O
-- Set volume, handle state changes
-
-**Test on**: Desktop Linux (Ubuntu, Debian, etc.)
-
-#### 2. JACK Audio Connection Kit
-```csharp
-// Location: Core\Audio\Engines\
-JackPlaybackEngine.cs          // Output - TODO: implement libjack integration
-JackRecordingEngine.cs         // Input - TODO: implement libjack integration
-```
-
-**What to implement**:
-- Use P/Invoke to call libjack C library functions
-- Handle JACK client creation, port connections, real-time thread
-- Set volume, handle state changes
-
-**Test on**: Professional audio workstations
-
-#### 3. ALSA (Recommended for ChromeOS)
-```csharp
-// Location: Core\Audio\Engines\
-AlsaPlaybackEngine.cs          // Output - TODO: implement libasound integration
-AlsaRecordingEngine.cs         // Input - TODO: implement libasound integration
-```
-
-**What to implement**:
-- Use P/Invoke to call libasound (ALSA) C library functions
-- Handle PCM device opening/configuration, sample I/O
-- Set volume, handle state changes
-
-**Test on**: ChromeOS Penguin (Debian-based Linux container)
+These are no longer required for baseline Linux audio support because OpenAL + FFmpeg are now the default path.
 
 ## For ChromeOS Testing
 
@@ -137,13 +98,13 @@ Recording devices:
   1: alsa_input.usb-0123...
 ```
 
-## Integration Points
+## Integration Points (Current)
 
 The abstraction layer interfaces with:
 1. `AudioDeck` - Uses `IPlaybackEngine` for playback
 2. `CartPlayer` - Uses `IPlaybackEngine` for cart playback
 3. `MicInputService` - Uses `IRecordingEngine` for microphone input
-4. `WaveAudioDeviceResolver` - Uses `IAudioDeviceEnumerator` for device lists
+4. `WaveAudioDeviceResolver` - Uses OpenAL + Pulse/ALSA device lists on Linux
 
 **Note**: These integration changes can be done after Linux engines are implemented.
 
@@ -159,16 +120,15 @@ The abstraction layer interfaces with:
 - `OpenBroadcaster/Core/Audio/Engines/WindowsRecordingEngine.cs`
 - `OpenBroadcaster/Core/Audio/Engines/WindowsAudioDeviceEnumerator.cs`
 
-**Linux Detection & Enumeration (Complete)**:
-- `OpenBroadcaster/Core/Audio/Engines/LinuxAudioDetector.cs`
-- `OpenBroadcaster/Core/Audio/Engines/PulseAudioDeviceEnumerator.cs`
-- `OpenBroadcaster/Core/Audio/Engines/JackAudioDeviceEnumerator.cs`
-- `OpenBroadcaster/Core/Audio/Engines/AlsaDeviceEnumerator.cs`
+**Linux Audio (Implemented)**:
+- `OpenBroadcaster/Core/Audio/OpenAlAudioOutput.cs`
+- `OpenBroadcaster/Core/Services/OpenAlMicCapture.cs`
+- `OpenBroadcaster/Core/Audio/OpenAlDeviceLookup.cs`
+- `OpenBroadcaster/Core/Audio/LinuxAudioDeviceResolver.cs`
+- `OpenBroadcaster/Core/Audio/FfmpegWaveStream.cs`
 
-**Linux Engines (Stubs - TODO)**:
-- `OpenBroadcaster/Core/Audio/Engines/PulseAudio{Playback,Recording}Engine.cs`
-- `OpenBroadcaster/Core/Audio/Engines/Jack{Playback,Recording}Engine.cs`
-- `OpenBroadcaster/Core/Audio/Engines/Alsa{Playback,Recording}Engine.cs`
+**Linux Engines (Optional Future)**:
+- Native PulseAudio/JACK/ALSA engines (not required for current Linux support)
 
 **Factory & Detection**:
 - `OpenBroadcaster/Core/Audio/Engines/AudioEngineFactory.cs`

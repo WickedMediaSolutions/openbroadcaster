@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenBroadcaster.Views.SchedulerDialog"
+        Title="Schedule Entry"
+        Width="480" Height="360">
+  <DockPanel Margin="12">
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="Save" Click="OnSave" />
+      <Button Content="Cancel" Click="OnCancel" />
+    </StackPanel>
+
+    <StackPanel Spacing="8">
+      <TextBlock Text="Rotation" />
+      <ComboBox ItemsSource="{Binding Rotations}" SelectedItem="{Binding SelectedRotation}" />
+
+      <TextBlock Text="Start Time (HH:mm)" />
+      <TextBox Text="{Binding StartTime}" />
+
+      <TextBlock Text="End Time (HH:mm)" />
+      <TextBox Text="{Binding EndTime}" />
+
+      <CheckBox Content="Enabled" IsChecked="{Binding Enabled}" />
+      <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" />
+    </StackPanel>
+  </DockPanel>
+</Window>

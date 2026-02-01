@@ -7,13 +7,13 @@
 
 ## Executive Summary
 
-OpenBroadcaster has been architected with a **cross-platform audio abstraction layer** that enables audio support across Windows, Linux, and macOS through pluggable backend implementations. The strategy prioritizes:
+OpenBroadcaster now ships a **Linux-ready audio path** built on:
 
-1. **PulseAudio** (Primary): Most common on desktop Linux distributions
-2. **JACK** (Secondary): Professional audio workstations and DAWs
-3. **ALSA** (Tertiary/Fallback): Embedded systems, ChromeOS, and container environments
+1. **OpenAL (OpenTK)** for playback + capture
+2. **FFmpeg CLI** for cross-format decode (MP3/WAV/FLAC/OGG/AAC/WMA)
+3. **OpenAL device lists** with Pulse/ALSA fallback enumeration
 
-The implementation is **framework-complete** with working device enumeration. Audio engine implementations will be added incrementally to support each backend.
+Native PulseAudio/JACK/ALSA P/Invoke engines remain an optional future enhancement if deeper system integration is needed.
 
 ---
 

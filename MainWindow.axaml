@@ -1,0 +1,852 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OpenBroadcaster.ViewModels"
+        xmlns:models="using:OpenBroadcaster.Core.Models"
+        xmlns:streaming="using:OpenBroadcaster.Core.Streaming"
+        xmlns:converters="using:OpenBroadcaster.Converters"
+        x:Class="OpenBroadcaster.MainWindow"
+        Title="OpenBroadcaster"
+        Icon="avares://OpenBroadcaster/Assets/app-icon.ico"
+        WindowState="Maximized"
+        ExtendClientAreaToDecorationsHint="True">
+
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+
+    <Window.Resources>
+        <converters:NullToVisibleConverter x:Key="NullToVisibleConverter" />
+    </Window.Resources>
+
+    <Grid Background="#0A0E17" Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Title Bar / Menu Bar -->
+        <Border Grid.Row="0"
+                Background="#0F2446"
+                BorderBrush="#00FF88"
+                BorderThickness="0,0,0,2"
+                Padding="12,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Menu VerticalAlignment="Center">
+                    <MenuItem Header="_File">
+                        <MenuItem Header="Exit" Command="{Binding ExitCommand}" />
+                    </MenuItem>
+                    <MenuItem Header="_Library">
+                        <MenuItem Header="Manage Categories..." Command="{Binding ManageCategoriesCommand}" />
+                        <Separator />
+                        <MenuItem Header="Import Tracks" Command="{Binding ImportTracksCommand}" />
+                        <MenuItem Header="Scan Folders" Command="{Binding ImportFolderCommand}" />
+                        <Separator />
+                        <MenuItem Header="Remove Uncategorized Tracks..." Command="{Binding RemoveUncategorizedTracksCommand}" />
+                        <MenuItem Header="Cleanup Reserved Category Names..." Command="{Binding CleanupReservedCategoriesCommand}" />
+                    </MenuItem>
+                    <MenuItem Header="_Help">
+                        <MenuItem Header="About OpenBroadcaster" Command="{Binding OpenAboutDialogCommand}" />
+                    </MenuItem>
+                </Menu>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Content="App Settings"
+                            Command="{Binding OpenAppSettingsCommand}"
+                            Width="140"
+                            Margin="12,0,0,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.1*" />
+                <ColumnDefinition Width="1.9*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Left Column: Song Library and Twitch Chat -->
+            <Border Grid.Column="0" Background="#0F2446" BorderBrush="#2D313B" BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,0,14,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="0.9*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Song Library Header -->
+                    <StackPanel Orientation="Horizontal" Grid.Row="0" VerticalAlignment="Center">
+                        <TextBlock Text="Song Library" FontSize="19" FontWeight="SemiBold" Foreground="#00FF88" />
+                        <Border Background="#0F1218"
+                                BorderBrush="#00FF88"
+                                BorderThickness="0,0,0,2"
+                                Margin="12,0,0,0"
+                                Padding="6,2">
+                            <TextBlock Text="Ripped Graphite" Foreground="#00FF88" FontSize="12" />
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Library Controls -->
+                    <Grid Grid.Row="1" Margin="0,12,0,12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="260" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox Grid.Row="0"
+                                 Grid.Column="0"
+                                 Margin="0,0,12,0"
+                                 MinWidth="240"
+                                 Watermark="Search your library"
+                                 Text="{Binding LibrarySearchText}" />
+
+                        <ComboBox Grid.Row="0"
+                                  Grid.Column="1"
+                                  Margin="0,0,12,0"
+                                  MinWidth="200"
+                                  ItemsSource="{Binding LibraryCategories}"
+                                  SelectedItem="{Binding SelectedLibraryCategory}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayName}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <StackPanel Grid.Row="1"
+                                   Grid.Column="0"
+                                   Grid.ColumnSpan="2"
+                                   Orientation="Horizontal"
+                                   Spacing="8"
+                                   Margin="0,8,0,0">
+                            <Button Content="Add to Queue"
+                                    MinWidth="110"
+                                    Height="30"
+                                    Command="{Binding AddLibraryItemToQueueCommand}" />
+                            <Button Content="Assign Categories"
+                                    MinWidth="120"
+                                    Height="30"
+                                    Command="{Binding AssignCategoriesCommand}" />
+                            <Button Content="Import Files"
+                                    MinWidth="105"
+                                    Height="30"
+                                    Command="{Binding ImportTracksCommand}" />
+                            <Button Content="Import Folder"
+                                    MinWidth="115"
+                                    Height="30"
+                                    Command="{Binding ImportFolderCommand}" />
+                            <Button Content="Refresh Library"
+                                    MinWidth="120"
+                                    Height="30"
+                                    Command="{Binding RefreshLibraryCommand}" />
+                        </StackPanel>
+
+                        <TextBlock Grid.Row="2"
+                                   Grid.Column="0"
+                                   Grid.ColumnSpan="2"
+                                   Margin="0,6,0,0"
+                                   Foreground="#888"
+                                   Text="{Binding LibraryStatusMessage}" />
+                    </Grid>
+
+                    <!-- Library Track List -->
+                    <Border Grid.Row="2" Background="#0E1118" BorderBrush="#2D313B" BorderThickness="1" CornerRadius="4" MinHeight="150">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            
+                            <!-- Column Headers -->
+                            <Border Grid.Row="0" Background="#1A1F2A" Padding="8,6">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180" />
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="140" />
+                                        <ColumnDefinition Width="80" />
+                                        <ColumnDefinition Width="60" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Title" Foreground="#888" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="1" Text="Artist" Foreground="#888" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="2" Text="Album" Foreground="#888" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="3" Text="Genre" Foreground="#888" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="4" Text="Duration" Foreground="#888" FontWeight="SemiBold" />
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Track List -->
+                            <ListBox Grid.Row="1"
+                                     x:Name="LibraryListBox"
+                                     ItemsSource="{Binding LibraryItems}"
+                                     SelectedItem="{Binding SelectedLibraryItem}"
+                                     SelectionMode="Multiple"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Padding="0"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                <ListBox.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Assign Categories..." Command="{Binding AssignCategoriesCommand}" />
+                                        <MenuItem Header="Add to Queue" Command="{Binding AddLibraryItemToQueueCommand}" />
+                                    </ContextMenu>
+                                </ListBox.ContextMenu>
+                                <ListBox.Styles>
+                                    <Style Selector="ListBoxItem">
+                                        <Setter Property="Padding" Value="0" />
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    </Style>
+                                </ListBox.Styles>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#121826" Padding="8,6" Margin="2" CornerRadius="3">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="180" />
+                                                    <ColumnDefinition Width="120" />
+                                                    <ColumnDefinition Width="140" />
+                                                    <ColumnDefinition Width="80" />
+                                                    <ColumnDefinition Width="60" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="{Binding Title}" Foreground="White" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="1" Text="{Binding Artist}" Foreground="#CCC" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="2" Text="{Binding Album}" Foreground="#AAA" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="3" Text="{Binding Genre}" Foreground="#888" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="4" Text="{Binding Duration}" Foreground="#888" VerticalAlignment="Center" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </Border>
+
+                    <!-- Twitch Chat Header - Now in Row 3 -->
+                    <Grid Grid.Row="3" Margin="0,18,0,8" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Twitch Chat" FontSize="19" FontWeight="SemiBold" Foreground="#00FF88" />
+                            <Border Background="#0F1218"
+                                    BorderBrush="#2C3543"
+                                    BorderThickness="0,0,0,2"
+                                    Margin="10,0,0,0"
+                                    Padding="6,2">
+                                <TextBlock Text="#openbroadcaster" Foreground="#00FF88" FontSize="12" />
+                            </Border>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="4">
+                            <TextBlock Text="Font" Margin="0,0,4,0" Foreground="#888" FontSize="10" />
+                            <Slider Width="80"
+                                    Minimum="8"
+                                    Maximum="20"
+                                    Value="{Binding TwitchChatFontSize}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Twitch Chat ListBox - Now in Row 4 -->
+                    <ListBox Grid.Row="4"
+                             ItemsSource="{Binding ChatMessages}"
+                             Background="#0E1118"
+                             BorderBrush="#2D313B"
+                             BorderThickness="1"
+                             Margin="0,0,0,0"
+                             Padding="4">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Timestamp}" Foreground="#888" Margin="0,0,10,0" />
+                                    <TextBlock Grid.Column="1" Text="{Binding UserName}" FontWeight="SemiBold" Foreground="#00FF88" Margin="0,0,8,0" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Message}" TextWrapping="Wrap" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <!-- Right Column: Decks, Queue, Cart Wall -->
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="2*" />
+                    <RowDefinition Height="1*" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="0.7*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Deck A -->
+                <Border Grid.Row="0" Grid.Column="0"
+                        Background="#0F2446"
+                        BorderBrush="#2D313B"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="18"
+                        Margin="0,0,8,8">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Text="Deck A" FontSize="19" FontWeight="SemiBold" Foreground="#00FF88" />
+
+                        <Grid Grid.Row="1" Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Album Art -->
+                            <Border Width="80" Height="80"
+                                    Background="#1A1E28"
+                                    BorderBrush="#2F343F"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Margin="0,0,12,0">
+                                <Grid>
+                                    <TextBlock Text="♪" FontSize="32" Foreground="#3A4050"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               IsVisible="{Binding DeckA.AlbumArt, Converter={StaticResource NullToVisibleConverter}}" />
+                                    <Image Source="{Binding DeckA.AlbumArt}" Stretch="UniformToFill" />
+                                </Grid>
+                            </Border>
+
+                            <!-- Track Info -->
+                            <Grid Grid.Column="1">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Text="Title" Foreground="#888" Margin="0,0,8,0" />
+                                <TextBlock Grid.Column="1" Text="{Binding DeckA.Title}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Row="1" Text="Artist" Foreground="#888" Margin="0,0,8,0" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DeckA.Artist}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Row="2" Text="Elapsed" Foreground="#888" Margin="0,0,8,0" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DeckA.ElapsedTime}" />
+                                <TextBlock Grid.Row="3" Text="Remaining" Foreground="#888" Margin="0,0,8,0" />
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DeckA.RemainingTime}" />
+                            </Grid>
+                        </Grid>
+
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0" Spacing="6">
+                            <Button Content="Play" Command="{Binding DeckA.PlayCommand}" Width="80" />
+                            <Button Content="Stop" Command="{Binding DeckA.StopCommand}" Width="80" />
+                            <Button Content="Next" Command="{Binding DeckA.NextCommand}" Width="80" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Deck B -->
+                <Border Grid.Row="0" Grid.Column="1"
+                        Background="#0F2446"
+                        BorderBrush="#2D313B"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="18"
+                        Margin="8,0,8,8">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Text="Deck B" FontSize="19" FontWeight="SemiBold" Foreground="#00FF88" />
+
+                        <Grid Grid.Row="1" Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <Border Width="80" Height="80"
+                                    Background="#1A1E28"
+                                    BorderBrush="#2F343F"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Margin="0,0,12,0">
+                                <Grid>
+                                    <TextBlock Text="♪" FontSize="32" Foreground="#3A4050"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               IsVisible="{Binding DeckB.AlbumArt, Converter={StaticResource NullToVisibleConverter}}" />
+                                    <Image Source="{Binding DeckB.AlbumArt}" Stretch="UniformToFill" />
+                                </Grid>
+                            </Border>
+
+                            <Grid Grid.Column="1">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Text="Title" Foreground="#888" Margin="0,0,8,0" />
+                                <TextBlock Grid.Column="1" Text="{Binding DeckB.Title}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Row="1" Text="Artist" Foreground="#888" Margin="0,0,8,0" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DeckB.Artist}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Row="2" Text="Elapsed" Foreground="#888" Margin="0,0,8,0" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DeckB.ElapsedTime}" />
+                                <TextBlock Grid.Row="3" Text="Remaining" Foreground="#888" Margin="0,0,8,0" />
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DeckB.RemainingTime}" />
+                            </Grid>
+                        </Grid>
+
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0" Spacing="6">
+                            <Button Content="Play" Command="{Binding DeckB.PlayCommand}" Width="80" />
+                            <Button Content="Stop" Command="{Binding DeckB.StopCommand}" Width="80" />
+                            <Button Content="Next" Command="{Binding DeckB.NextCommand}" Width="80" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Control Rack (spans rows 0-1) -->
+                <Border Grid.Row="0" Grid.Column="2" Grid.RowSpan="2"
+                        Background="#0F2446"
+                        BorderBrush="#2D313B"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="18"
+                        Margin="8,0,0,8">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Control Rack" FontSize="19" FontWeight="SemiBold" Foreground="#00FF88" />
+                            
+                            <ToggleButton IsChecked="{Binding TwitchChatEnabled}"
+                                          Margin="0,12,0,0"
+                                          Height="26"
+                                          HorizontalAlignment="Stretch">
+                                <StackPanel Orientation="Horizontal">
+                                    <Panel Width="10" Height="10" Margin="0,0,6,0" VerticalAlignment="Center">
+                                        <Ellipse Width="10" Height="10" Stroke="#2F343F" StrokeThickness="1" Fill="#3A4252" IsVisible="{Binding !TwitchChatEnabled}" />
+                                        <Ellipse Width="10" Height="10" Stroke="#2F343F" StrokeThickness="1" Fill="#00FF00" IsVisible="{Binding TwitchChatEnabled}" />
+                                    </Panel>
+                                    <TextBlock Text="Enable Twitch" VerticalAlignment="Center" FontSize="11" />
+                                </StackPanel>
+                            </ToggleButton>
+
+                            <Separator Margin="0,8,0,8" Background="#2F343F" Height="1" />
+
+                            <TextBlock Text="Live Assist Rotation" FontSize="12" FontWeight="SemiBold" Foreground="#00FF88" />
+                            <ComboBox ItemsSource="{Binding LiveAssistRotations}"
+                                      SelectedItem="{Binding SelectedLiveAssistRotation}"
+                                      Margin="0,4,0,4"
+                                      Height="26"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <Separator Margin="0,8,0,8" Background="#2F343F" Height="1" />
+
+                            <TextBlock Text="AutoDJ" FontSize="12" FontWeight="SemiBold" Foreground="#00FF88" />
+                            <ToggleButton IsChecked="{Binding AutoDjEnabled}"
+                                          Margin="0,4,0,0"
+                                          Height="26"
+                                          HorizontalAlignment="Stretch">
+                                <StackPanel Orientation="Horizontal">
+                                    <Panel Width="10" Height="10" Margin="0,0,6,0" VerticalAlignment="Center">
+                                        <Ellipse Width="10" Height="10" Stroke="#2F343F" StrokeThickness="1" Fill="#3A4252" IsVisible="{Binding !AutoDjEnabled}" />
+                                        <Ellipse Width="10" Height="10" Stroke="#2F343F" StrokeThickness="1" Fill="#00FF00" IsVisible="{Binding AutoDjEnabled}" />
+                                    </Panel>
+                                    <TextBlock Text="Enable AutoDJ" VerticalAlignment="Center" FontSize="11" />
+                                </StackPanel>
+                            </ToggleButton>
+                            <TextBlock Text="{Binding AutoDjStatusMessage}"
+                                       Margin="0,4,0,0"
+                                       FontSize="10"
+                                       Foreground="#888"
+                                       TextWrapping="Wrap" />
+
+                            <Separator Margin="0,8,0,8" Background="#2F343F" Height="1" />
+
+                            <TextBlock Text="Encoders" FontSize="12" FontWeight="SemiBold" Foreground="#00FF88" />
+                            <ToggleButton IsChecked="{Binding EncodersEnabled}"
+                                          Margin="0,4,0,0"
+                                          Height="26"
+                                          HorizontalAlignment="Stretch">
+                                <StackPanel Orientation="Horizontal">
+                                    <Panel Width="10" Height="10" Margin="0,0,6,0" VerticalAlignment="Center">
+                                        <Ellipse Width="10" Height="10" Stroke="#2F343F" StrokeThickness="1" Fill="#555C6E" IsVisible="{Binding !EncodersEnabled}" />
+                                        <Ellipse Width="10" Height="10" Stroke="#2F343F" StrokeThickness="1" Fill="#4DF09C" IsVisible="{Binding EncodersEnabled}" />
+                                    </Panel>
+                                    <TextBlock Text="Start Encoders" VerticalAlignment="Center" FontSize="11" />
+                                </StackPanel>
+                            </ToggleButton>
+                            <TextBlock Text="{Binding EncoderStatusMessage}"
+                                       Margin="0,4,0,0"
+                                       FontSize="10"
+                                       Foreground="#888"
+                                       TextWrapping="Wrap" />
+                            <ItemsControl ItemsSource="{Binding EncoderStatuses}" Margin="0,4,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Ellipse Width="10" Height="10" Stroke="#2F343F" StrokeThickness="1" Fill="#555C6E" />
+                                                <TextBlock Text="{Binding Name}" Margin="4,0,0,0" FontWeight="SemiBold" FontSize="11" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding Message}"
+                                                       FontSize="10"
+                                                       Foreground="#888" />
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding LastConnectedDisplay}"
+                                                       Foreground="#888"
+                                                       FontSize="10" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <Separator Margin="0,8,0,8" Background="#2F343F" Height="1" />
+
+                            <TextBlock Text="Microphone" FontSize="12" FontWeight="SemiBold" Foreground="#00FF88" />
+                            <ToggleButton IsChecked="{Binding MicEnabled}"
+                                          Margin="0,4,0,0"
+                                          Height="26"
+                                          HorizontalAlignment="Stretch">
+                                <StackPanel Orientation="Horizontal">
+                                    <Panel Width="10" Height="10" Margin="0,0,6,0" VerticalAlignment="Center">
+                                        <Ellipse Width="10" Height="10" Stroke="#2F343F" StrokeThickness="1" Fill="#3A4252" IsVisible="{Binding !MicEnabled}" />
+                                        <Ellipse Width="10" Height="10" Stroke="#2F343F" StrokeThickness="1" Fill="#00FF00" IsVisible="{Binding MicEnabled}" />
+                                    </Panel>
+                                    <TextBlock Text="Enable Mic" VerticalAlignment="Center" FontSize="11" />
+                                </StackPanel>
+                            </ToggleButton>
+
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="50" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="32" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Level" VerticalAlignment="Center" Foreground="#888" FontSize="10" />
+                                <Slider Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding MicVolume}" VerticalAlignment="Center" Margin="4,0" />
+                                <TextBlock Grid.Column="2" Text="{Binding MicVolume, StringFormat={}{0}%}" VerticalAlignment="Center" Foreground="#888" FontSize="10" />
+                            </Grid>
+
+                            <CheckBox Content="Auto fade mic"
+                                      IsChecked="{Binding MicDuckingEnabled}"
+                                      Margin="0,6,0,0"
+                                      Foreground="#888"
+                                      FontSize="10" />
+                            <Separator Margin="0,8,0,8" Background="#2F343F" Height="1" />
+
+                            <TextBlock Text="Output Level" FontSize="12" FontWeight="SemiBold" Foreground="#00FF88" />
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="50" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="32" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Level" VerticalAlignment="Center" Foreground="#888" FontSize="10" />
+                                <Slider Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding MasterVolume}" VerticalAlignment="Center" Margin="4,0" />
+                                <TextBlock Grid.Column="2" Text="{Binding MasterVolume, StringFormat={}{0}%}" VerticalAlignment="Center" Foreground="#888" FontSize="10" />
+                            </Grid>
+
+                            <Separator Margin="0,8,0,8" Background="#2F343F" Height="1" />
+
+                            <TextBlock Text="Time" FontSize="12" FontWeight="SemiBold" Foreground="#00FF88" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,4" Spacing="8">
+                                <TextBlock Text="{Binding CurrentTime}"
+                                           FontFamily="Consolas"
+                                           FontSize="24"
+                                           FontWeight="Bold"
+                                           Foreground="#00FF88"
+                                           VerticalAlignment="Center" />
+                                <ToggleButton Width="32"
+                                              Height="18"
+                                              VerticalAlignment="Center"
+                                              IsChecked="{Binding Use24HourClock}"
+                                              ToolTip.Tip="Toggle 24-hour / 12-hour clock">
+                                    <Panel>
+                                        <TextBlock Text="24" FontSize="10" IsVisible="{Binding Use24HourClock}" HorizontalAlignment="Center" />
+                                        <TextBlock Text="12" FontSize="10" IsVisible="{Binding !Use24HourClock}" HorizontalAlignment="Center" />
+                                    </Panel>
+                                </ToggleButton>
+                            </StackPanel>
+
+                            <Separator Margin="0,8,0,8" Background="#2F343F" Height="1" />
+
+                            <TextBlock Text="VU Meters" FontSize="12" FontWeight="SemiBold" Foreground="#00FF88" />
+                            <StackPanel Margin="0,6,0,0" Spacing="4">
+                                <TextBlock Text="Program VU" Foreground="#888" FontSize="10" />
+                                <ProgressBar Value="{Binding ProgramVu}" Maximum="1" Height="8" />
+                                <TextBlock Text="Encoder VU" Foreground="#888" FontSize="10" />
+                                <ProgressBar Value="{Binding EncoderVu}" Maximum="1" Height="8" />
+                                <TextBlock Text="Mic VU" Foreground="#888" FontSize="10" />
+                                <ProgressBar Value="{Binding MicVu}" Maximum="1" Height="8" />
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- Queue -->
+                <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                        Background="#0F2446"
+                        BorderBrush="#2D313B"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="18"
+                        Margin="0,0,8,8">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="16">
+                            <TextBlock Text="Program Queue" FontSize="19" FontWeight="SemiBold" Foreground="#00FF88" />
+                            <Button Content="Shuffle" Width="96" Command="{Binding ShuffleQueueCommand}" />
+                            <Button Content="Clear" Width="96" Command="{Binding ClearQueueCommand}" />
+                            <Button Content="Remove Selected" MinWidth="130" Command="{Binding RemoveQueueItemCommand}" />
+                        </StackPanel>
+
+                        <ListBox Grid.Row="1"
+                                 ItemsSource="{Binding QueueItems}"
+                                 SelectedItem="{Binding SelectedQueueItem}"
+                                 Margin="0,12,0,0"
+                                 Background="#0F131D"
+                                 BorderBrush="#1C2230"
+                                 BorderThickness="1"
+                                 Padding="4"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+                            <ListBox.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Remove" Command="{Binding RemoveQueueItemCommand}" />
+                                </ContextMenu>
+                            </ListBox.ContextMenu>
+                            <ListBox.Styles>
+                                <Style Selector="ListBoxItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Margin" Value="0,3" />
+                                    <Setter Property="Padding" Value="0" />
+                                </Style>
+                            </ListBox.Styles>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#121826" Padding="10" CornerRadius="5" Margin="0,2">
+                                        <StackPanel>
+                                            <!-- Title and Duration -->
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                                <TextBlock Grid.Column="1" Text="{Binding Duration}" Foreground="#888" />
+                                            </Grid>
+                                            <!-- Artist and Source Badge -->
+                                            <Grid Margin="0,4,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Artist}" Foreground="#888" />
+                                                <Border Grid.Column="1"
+                                                        Background="#1E2532"
+                                                        Padding="6,2"
+                                                        CornerRadius="4"
+                                                        Margin="8,0,0,0">
+                                                    <TextBlock Text="{Binding Source}" FontSize="11" Foreground="#00FF88" />
+                                                </Border>
+                                            </Grid>
+                                            <!-- Twitch Request Badge -->
+                                            <Border Margin="0,6,0,0"
+                                                    Padding="8,4"
+                                                    CornerRadius="4"
+                                                    BorderThickness="1"
+                                                    BorderBrush="#39FF14"
+                                                    Background="#1A39FF14"
+                                                    IsVisible="{Binding IsTwitchRequest}">
+                                                <TextBlock Text="{Binding RequestedByDisplay}" 
+                                                           FontSize="11" 
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#39FF14" />
+                                            </Border>
+                                            <!-- Web Request Badge -->
+                                            <Border Margin="0,6,0,0"
+                                                    Padding="8,4"
+                                                    CornerRadius="4"
+                                                    BorderThickness="1"
+                                                    BorderBrush="#39FF14"
+                                                    Background="#1A39FF14"
+                                                    IsVisible="{Binding IsWebRequest}">
+                                                <TextBlock Text="{Binding WebRequestDisplay}"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#39FF14"
+                                                           TextWrapping="Wrap" />
+                                            </Border>
+                                            <!-- Top of Hour Badge -->
+                                            <Border Margin="0,6,0,0"
+                                                    Padding="8,4"
+                                                    CornerRadius="4"
+                                                    BorderThickness="1"
+                                                    BorderBrush="#FFB347"
+                                                    Background="#1AFFB347"
+                                                    IsVisible="{Binding IsTopOfHour}">
+                                                <TextBlock Text="Top of the Hour" 
+                                                           FontSize="11" 
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#FFB347" />
+                                            </Border>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </Border>
+
+                <!-- Cart Wall -->
+                <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+                        Background="#0F2446"
+                        BorderBrush="#2D313B"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="18"
+                        Margin="0,0,0,4">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Orientation="Horizontal" Grid.Row="0" Spacing="30" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <TextBlock Text="Cart Wall" FontSize="19" FontWeight="SemiBold" Foreground="#00FF88" />
+                                <TextBlock Text="Hot triggers" Foreground="#888" VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="Volume:" Foreground="#888" VerticalAlignment="Center" />
+                                <Slider Width="120" Minimum="0" Maximum="100" Value="{Binding CartWallVolume}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding CartWallVolume, StringFormat='{}{0}%'}" Width="40" Foreground="White" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <ItemsControl Grid.Row="1"
+                                      Margin="0,8,0,0"
+                                      ItemsSource="{Binding CartPads}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel ItemWidth="140" ItemHeight="80" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type models:CartPad}">
+                                    <Panel Margin="4" Width="132" Height="74">
+                                        <!-- Normal border (gray) - shown when not playing -->
+                                        <Border CornerRadius="4"
+                                                BorderThickness="2"
+                                                BorderBrush="#3C4654"
+                                                Background="{Binding ColorHex}"
+                                                Opacity="{Binding EmphasisOpacity}"
+                                                IsVisible="{Binding !IsPlaying}" />
+                                        <!-- Playing border (bright neon green glow) - shown when playing -->
+                                        <Border CornerRadius="4"
+                                                BorderThickness="4"
+                                                BorderBrush="#39FF14"
+                                                Background="{Binding ColorHex}"
+                                                IsVisible="{Binding IsPlaying}"
+                                                BoxShadow="0 0 15 3 #39FF14" />
+                                        <Button x:Name="CartButton"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                HorizontalAlignment="Stretch"
+                                                VerticalAlignment="Stretch"
+                                                HorizontalContentAlignment="Center"
+                                                VerticalContentAlignment="Center"
+                                                Tag="{Binding}"
+                                                Command="{Binding DataContext.TriggerCartCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}">
+                                            <Button.ContextFlyout>
+                                                <MenuFlyout Placement="Bottom">
+                                                    <MenuItem Header="Assign Track..." 
+                                                              DataContext="{Binding $parent[Button].DataContext}"
+                                                              Click="AssignCartTrack_Click" />
+                                                </MenuFlyout>
+                                            </Button.ContextFlyout>
+                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                <TextBlock Text="{Binding Label}" 
+                                                           FontWeight="SemiBold" 
+                                                           TextAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           MaxWidth="120" />
+                                                <!-- Remaining time countdown when playing -->
+                                                <TextBlock Text="{Binding RemainingTime}" 
+                                                           FontSize="14"
+                                                           FontWeight="Bold"
+                                                           FontFamily="Consolas"
+                                                           Foreground="#39FF14"
+                                                           HorizontalAlignment="Center"
+                                                           IsVisible="{Binding IsPlaying}" />
+                                                <TextBlock Text="Loop"
+                                                           FontSize="10"
+                                                           Foreground="#00FF88"
+                                                           HorizontalAlignment="Center"
+                                                           IsVisible="{Binding LoopEnabled}" />
+                                                <TextBlock Text="{Binding Hotkey}" 
+                                                           FontSize="11" 
+                                                           Foreground="#888"
+                                                           HorizontalAlignment="Center"
+                                                           IsVisible="{Binding Hotkey, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                            </StackPanel>
+                                        </Button>
+                                    </Panel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

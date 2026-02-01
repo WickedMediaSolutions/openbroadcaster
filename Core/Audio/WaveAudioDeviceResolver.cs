@@ -7,26 +7,40 @@ namespace OpenBroadcaster.Core.Audio
     {
         public IReadOnlyList<AudioDeviceInfo> GetPlaybackDevices()
         {
-            var devices = new List<AudioDeviceInfo>();
-            for (var i = 0; i < WaveOut.DeviceCount; i++)
+#if NET8_0_WINDOWS
+            if (OperatingSystem.IsWindows())
             {
-                var caps = WaveOut.GetCapabilities(i);
-                devices.Add(new AudioDeviceInfo(i, caps.ProductName));
-            }
+                var devices = new List<AudioDeviceInfo>();
+                for (var i = 0; i < WaveOut.DeviceCount; i++)
+                {
+                    var caps = WaveOut.GetCapabilities(i);
+                    devices.Add(new AudioDeviceInfo(i, caps.ProductName));
+                }
 
-            return devices;
+                return devices;
+            }
+#endif
+
+            return new LinuxAudioDeviceResolver().GetPlaybackDevices();
         }
 
         public IReadOnlyList<AudioDeviceInfo> GetInputDevices()
         {
-            var devices = new List<AudioDeviceInfo>();
-            for (var i = 0; i < WaveIn.DeviceCount; i++)
+#if NET8_0_WINDOWS
+            if (OperatingSystem.IsWindows())
             {
-                var caps = WaveIn.GetCapabilities(i);
-                devices.Add(new AudioDeviceInfo(i, caps.ProductName));
-            }
+                var devices = new List<AudioDeviceInfo>();
+                for (var i = 0; i < WaveIn.DeviceCount; i++)
+                {
+                    var caps = WaveIn.GetCapabilities(i);
+                    devices.Add(new AudioDeviceInfo(i, caps.ProductName));
+                }
 
-            return devices;
+                return devices;
+            }
+#endif
+
+            return new LinuxAudioDeviceResolver().GetInputDevices();
         }
     }
 }

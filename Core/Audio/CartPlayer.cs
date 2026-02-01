@@ -104,11 +104,11 @@ namespace OpenBroadcaster.Core.Audio
 
         private sealed class CartInstance : IDisposable
         {
-            private readonly AudioFileReader _reader;
+            private readonly WaveStream _reader;
             private readonly bool _loopEnabled;
             private readonly SampleChannel _sampleChannel;
             private MeteringSampleProvider _meteringProvider = null!;
-            private readonly WaveOutEvent _waveOut;
+            private readonly IAudioOutput _waveOut;
             private readonly Timer _timer;
             private readonly Action<CartInstance> _completed;
             private readonly Action<TimeSpan>? _elapsedCallback;
@@ -119,13 +119,13 @@ namespace OpenBroadcaster.Core.Audio
 
             public CartInstance(string filePath, int deviceNumber, bool loopEnabled, float initialVolume, Action<TimeSpan>? elapsedCallback, Action<CartInstance> completed, Action<float> levelChanged, WaveFormat? tapFormat, AudioSampleBlockHandler? tapHandler)
             {
-                _reader = new AudioFileReader(filePath);
+                _reader = AudioFileReaderFactory.OpenRead(filePath);
                 _loopEnabled = loopEnabled;
                 _sampleChannel = new SampleChannel(_reader, true);
                 _sampleChannel.Volume = initialVolume;
                 _sampleChannel.PreVolumeMeter += SampleChannelOnPreVolumeMeter;
                 var playbackSource = BuildPlaybackSource(_sampleChannel, tapFormat, tapHandler);
-                _waveOut = new WaveOutEvent { DeviceNumber = deviceNumber };
+                _waveOut = AudioOutputFactory.Create(deviceNumber);
                 _waveOut.PlaybackStopped += OnPlaybackStopped;
                 _waveOut.Init(playbackSource);
                 _waveOut.Volume = initialVolume;

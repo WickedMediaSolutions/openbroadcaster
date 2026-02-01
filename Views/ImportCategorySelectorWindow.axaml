@@ -1,0 +1,23 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenBroadcaster.Views.ImportCategorySelectorWindow"
+        Title="Select Categories"
+        Width="480" Height="420">
+  <DockPanel Margin="12">
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="Import" Click="OnImportClick" />
+      <Button Content="Cancel" Click="OnCancelClick" />
+    </StackPanel>
+
+    <StackPanel Spacing="8">
+      <TextBlock Text="Select categories for imported tracks" FontWeight="SemiBold" />
+      <ListBox ItemsSource="{Binding Categories}">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <CheckBox Content="{Binding DisplayName}" IsChecked="{Binding IsSelected}" />
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </StackPanel>
+  </DockPanel>
+</Window>

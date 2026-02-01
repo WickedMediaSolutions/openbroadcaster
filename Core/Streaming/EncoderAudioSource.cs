@@ -4,10 +4,12 @@ using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.Extensions.Logging;
-using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using OpenBroadcaster.Core.Diagnostics;
 using Timer = System.Threading.Timer;
+#if NET8_0_WINDOWS
+using NAudio.CoreAudioApi;
+#endif
 
 namespace OpenBroadcaster.Core.Streaming
 {
@@ -51,6 +53,7 @@ namespace OpenBroadcaster.Core.Streaming
     {
         public IEncoderAudioSource Create(int deviceNumber)
         {
+#if NET8_0_WINDOWS
             try
             {
                 return new WasapiLoopbackAudioSource(deviceNumber);
@@ -59,6 +62,9 @@ namespace OpenBroadcaster.Core.Streaming
             {
                 return new NullEncoderAudioSource();
             }
+#else
+            return new NullEncoderAudioSource();
+#endif
         }
     }
 
@@ -119,6 +125,7 @@ namespace OpenBroadcaster.Core.Streaming
         }
     }
 
+#if NET8_0_WINDOWS
     public sealed class WasapiLoopbackAudioSource : IEncoderAudioSource
     {
         private readonly int _deviceNumber;
@@ -243,4 +250,5 @@ namespace OpenBroadcaster.Core.Streaming
             Stop();
         }
     }
+#endif
 }
