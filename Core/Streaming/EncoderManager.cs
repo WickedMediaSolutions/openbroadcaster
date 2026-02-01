@@ -122,19 +122,26 @@ namespace OpenBroadcaster.Core.Streaming
                 _cts = new CancellationTokenSource();
                 try
                 {
+                    _logger.LogDebug("EncoderManager: Creating audio source (device ID: {DeviceId})", _captureDeviceId);
                     _audioSource = _audioSourceFactory.Create(_captureDeviceId);
+                    _logger.LogDebug("EncoderManager: Audio source created. Format: {SampleRate}Hz, {Channels} channels, {Bits}-bit", 
+                        _audioSource.Format.SampleRate, _audioSource.Format.Channels, _audioSource.Format.BitsPerSample);
                     _audioSource.FrameReady += OnAudioFrameReady;
                     _audioSource.Start();
+                    _logger.LogInformation("EncoderManager: Audio source started");
 
                     foreach (var profile in enabledProfiles)
                     {
+                        _logger.LogDebug("EncoderManager: Starting encoder worker for '{Name}'", profile.Name);
                         var worker = new EncoderWorker(profile, _audioSource.Format, this, _logger, _cts.Token);
                         _workers[profile.Id] = worker;
                         worker.Start();
                         worker.UpdateMetadata(_metadata);
+                        _logger.LogDebug("EncoderManager: Encoder worker started for '{Name}'", profile.Name);
                     }
 
                     _isRunning = true;
+                    _logger.LogInformation("EncoderManager: All {Count} encoder worker(s) started successfully", enabledProfiles.Count);
                 }
                 catch (Exception ex)
                 {
@@ -545,22 +552,53 @@ namespace OpenBroadcaster.Core.Streaming
                 }
 
                 var client = new TcpClient { NoDelay = true };
-                await client.ConnectAsync(_profile.Host, _profile.Port, cancellationToken).ConfigureAwait(false);
+                _logger.LogDebug("Encoder '{Name}': Initiating TCP connection to {Host}:{Port}", _profile.Name, _profile.Host, _profile.Port);
+                try
+                {
+                    await client.ConnectAsync(_profile.Host, _profile.Port, cancellationToken).ConfigureAwait(false);
+                    _logger.LogDebug("Encoder '{Name}': TCP connection established", _profile.Name);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Encoder '{Name}': TCP connection to {Host}:{Port} failed", _profile.Name, _profile.Host, _profile.Port);
+                    throw;
+                }
                 var networkStream = client.GetStream();
                 Stream writeStream = networkStream;
 
                 if (_profile.UseSsl)
                 {
-                    var ssl = new SslStream(networkStream, leaveInnerStreamOpen: false);
-                    await ssl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                    _logger.LogDebug("Encoder '{Name}': Initiating SSL/TLS handshake", _profile.Name);
+                    try
                     {
-                        TargetHost = _profile.Host,
-                        EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13
-                    }, cancellationToken).ConfigureAwait(false);
-                    writeStream = ssl;
+                        var ssl = new SslStream(networkStream, leaveInnerStreamOpen: false);
+                        await ssl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                        {
+                            TargetHost = _profile.Host,
+                            EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13
+                        }, cancellationToken).ConfigureAwait(false);
+                        writeStream = ssl;
+                        _logger.LogDebug("Encoder '{Name}': SSL/TLS handshake completed", _profile.Name);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Encoder '{Name}': SSL/TLS handshake failed", _profile.Name);
+                        throw;
+                    }
                 }
 
-                await SendHandshakeAsync(writeStream, cancellationToken).ConfigureAwait(false);
+                _logger.LogDebug("Encoder '{Name}': Sending {Protocol} handshake (Format={Format}, Bitrate={Bitrate}kbps)", 
+                    _profile.Name, _profile.Protocol, _profile.Format, _profile.BitrateKbps);
+                try
+                {
+                    await SendHandshakeAsync(writeStream, cancellationToken).ConfigureAwait(false);
+                    _logger.LogDebug("Encoder '{Name}': {Protocol} handshake completed successfully", _profile.Name, _profile.Protocol);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Encoder '{Name}': {Protocol} handshake failed", _profile.Name, _profile.Protocol);
+                    throw;
+                }
                 var buffered = new BufferedStream(writeStream, 16 * 1024);
                 return (client, buffered);
             }
@@ -580,10 +618,21 @@ namespace OpenBroadcaster.Core.Streaming
             private async Task SendIcecastHandshakeAsync(Stream stream, CancellationToken cancellationToken)
             {
                 var request = BuildIcecastSourceRequest();
+                _logger.LogDebug("Encoder '{Name}' sending Icecast handshake request:\n{Request}", _profile.Name, request);
                 var buffer = Encoding.ASCII.GetBytes(request);
                 await stream.WriteAsync(buffer.AsMemory(0, buffer.Length), cancellationToken).ConfigureAwait(false);
                 await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
-                await ValidateResponseAsync(stream, cancellationToken).ConfigureAwait(false);
+                _logger.LogDebug("Encoder '{Name}': Icecast handshake sent, waiting for response...", _profile.Name);
+                try
+                {
+                    await ValidateResponseAsync(stream, cancellationToken).ConfigureAwait(false);
+                    _logger.LogDebug("Encoder '{Name}': Icecast handshake validation passed", _profile.Name);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Encoder '{Name}': Icecast handshake validation failed", _profile.Name);
+                    throw;
+                }
             }
 
             private async Task SendShoutcastHandshakeAsync(Stream stream, CancellationToken cancellationToken)
@@ -594,6 +643,7 @@ namespace OpenBroadcaster.Core.Streaming
                     throw new InvalidOperationException("Shoutcast profiles require a password.");
                 }
 
+                _logger.LogDebug("Encoder '{Name}': Sending Shoutcast password", _profile.Name);
                 var passwordLine = Encoding.ASCII.GetBytes(password + "\r\n");
                 await stream.WriteAsync(passwordLine.AsMemory(0, passwordLine.Length), cancellationToken).ConfigureAwait(false);
                 await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -602,10 +652,12 @@ namespace OpenBroadcaster.Core.Streaming
                 _logger.LogInformation("Encoder '{Name}' shoutcast password response: {Response}", _profile.Name, response ?? "<no response>");
                 if (!string.Equals(response, "OK2", StringComparison.OrdinalIgnoreCase))
                 {
+                    _logger.LogError("Encoder '{Name}': Shoutcast password rejected. Expected 'OK2', got '{Response}'", _profile.Name, response ?? "<no response>");
                     throw new InvalidOperationException($"Shoutcast server rejected password ({response ?? "no response"})");
                 }
 
                 var metadata = BuildShoutcastMetadataHeaders();
+                _logger.LogDebug("Encoder '{Name}': Sending Shoutcast metadata headers", _profile.Name);
                 await stream.WriteAsync(metadata.AsMemory(0, metadata.Length), cancellationToken).ConfigureAwait(false);
                 await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
 
@@ -613,6 +665,7 @@ namespace OpenBroadcaster.Core.Streaming
                 _logger.LogInformation("Encoder '{Name}' shoutcast metadata response: {Response}", _profile.Name, response ?? "<no response>");
                 if (!string.Equals(response, "OK2", StringComparison.OrdinalIgnoreCase))
                 {
+                    _logger.LogError("Encoder '{Name}': Shoutcast metadata rejected. Expected 'OK2', got '{Response}'", _profile.Name, response ?? "<no response>");
                     throw new InvalidOperationException($"Shoutcast server rejected metadata ({response ?? "no response"})");
                 }
             }
@@ -870,15 +923,22 @@ namespace OpenBroadcaster.Core.Streaming
                 _logger.LogInformation("Encoder '{Name}' icecast response: {Response}", _profile.Name, statusLine ?? "<no response>");
                 if (string.IsNullOrWhiteSpace(statusLine) || !statusLine.Contains("200", StringComparison.Ordinal))
                 {
+                    _logger.LogError("Encoder '{Name}': Icecast rejected connection. Status: {Response}", _profile.Name, statusLine ?? "no response");
                     throw new InvalidOperationException($"Encoder rejected connection: {statusLine ?? "no response"}");
                 }
 
+                var headerLines = new List<string>();
                 string? line;
                 do
                 {
                     line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                    if (!string.IsNullOrEmpty(line))
+                    {
+                        headerLines.Add(line);
+                    }
                 }
                 while (!string.IsNullOrEmpty(line));
+                _logger.LogDebug("Encoder '{Name}': Icecast response headers:\n{Headers}", _profile.Name, string.Join("\n", headerLines));
             }
 
             private string BuildIcecastSourceRequest()
