@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <!-- Prevent SDK from auto-generating assembly attributes to avoid duplicate attributes during build -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- Also suppress generation of TargetFrameworkAttribute in auto-generated files (avoids duplicate TF attributes in temp projects) -->
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+  </PropertyGroup>
+</Project>

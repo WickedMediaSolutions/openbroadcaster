@@ -28,9 +28,36 @@ namespace OpenBroadcaster
         {
             InitializeComponent();
             Loaded += MainWindow_Loaded;
+            _radioService = new RadioService(ViewModel);
         }
 
         private MainViewModel? ViewModel => DataContext as MainViewModel;
+
+        private readonly RadioService _radioService;
+
+        private void DeckPlay_Click(object sender, RoutedEventArgs e)
+        {
+            var origin = sender as DependencyObject ?? e.OriginalSource as DependencyObject;
+            var border = FindAncestor<Border>(origin ?? this);
+            if (TryGetDeckIdentifier(border ?? (DependencyObject)this, out var deckId))
+            {
+                _radioService.ActiveDeck = deckId;
+            }
+
+            _radioService.Play();
+        }
+
+        private void DeckStop_Click(object sender, RoutedEventArgs e)
+        {
+            var origin = sender as DependencyObject ?? e.OriginalSource as DependencyObject;
+            var border = FindAncestor<Border>(origin ?? this);
+            if (TryGetDeckIdentifier(border ?? (DependencyObject)this, out var deckId))
+            {
+                _radioService.ActiveDeck = deckId;
+            }
+
+            _radioService.Stop();
+        }
 
         protected override void OnClosed(EventArgs e)
         {
@@ -394,6 +421,53 @@ namespace OpenBroadcaster
             var minX = SystemParameters.MinimumHorizontalDragDistance;
             var minY = SystemParameters.MinimumVerticalDragDistance;
             return Math.Abs(current.X - start.X) >= minX || Math.Abs(current.Y - start.Y) >= minY;
+        }
+
+        private sealed class RadioService
+        {
+            private readonly MainViewModel? _vm;
+
+            public RadioService(MainViewModel? viewModel)
+            {
+                _vm = viewModel;
+                ActiveDeck = DeckIdentifier.A;
+            }
+
+            public DeckIdentifier ActiveDeck { get; set; }
+
+            public void Play()
+            {
+                if (_vm == null)
+                {
+                    return;
+                }
+
+                if (ActiveDeck == DeckIdentifier.A)
+                {
+                    _vm.DeckA.PlayCommand.Execute(null);
+                }
+                else
+                {
+                    _vm.DeckB.PlayCommand.Execute(null);
+                }
+            }
+
+            public void Stop()
+            {
+                if (_vm == null)
+                {
+                    return;
+                }
+
+                if (ActiveDeck == DeckIdentifier.A)
+                {
+                    _vm.DeckA.StopCommand.Execute(null);
+                }
+                else
+                {
+                    _vm.DeckB.StopCommand.Execute(null);
+                }
+            }
         }
 
         [Serializable]

@@ -11,7 +11,7 @@ using OpenBroadcaster.Core.Models;
 
 namespace OpenBroadcaster.Core.Services
 {
-    public sealed class TwitchIrcClient : IDisposable
+    public sealed class TwitchIrcClient : ITwitchIrcClient
     {
         private const string Host = "irc.chat.twitch.tv";
         private const int Port = 6697; // SSL port

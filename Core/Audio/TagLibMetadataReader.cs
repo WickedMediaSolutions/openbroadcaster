@@ -9,7 +9,7 @@ namespace OpenBroadcaster.Core.Audio
         {
             try
             {
-                using var tagFile = File.Create(filePath);
+                using var tagFile = TagLib.File.Create(filePath);
                 var tag = tagFile.Tag;
                 var properties = tagFile.Properties;
 

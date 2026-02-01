@@ -2,10 +2,10 @@
 ; Requires Inno Setup 6.0 or later (https://jrsoftware.org/isinfo.php)
 
 #define MyAppName "OpenBroadcaster"
-#define MyAppVersion "1.5.1"
-#define MyAppPublisher "mcdorgle"
-#define MyAppURL "https://github.com/mcdorgle/openbroadcaster"
-#define MyAppExeName "OpenBroadcaster.exe"
+#define MyAppVersion "3.1"
+#define MyAppPublisher "WickedMediaSolutions"
+#define MyAppURL "https://github.com/WickedMediaSolutions/openbroadcaster"
+#define MyAppExeName "OpenBroadcaster.Avalonia.exe"
 #define MyAppAssocName "OpenBroadcaster Project"
 #define MyAppAssocExt ".obproj"
 #define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
@@ -57,13 +57,15 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 [Files]
 ; Main application files from the publish output
 Source: "..\bin\Installer\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Application icon for shortcuts
+Source: "..\Assets\app-icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\app-icon.ico"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: quicklaunchicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\app-icon.ico"; Tasks: desktopicon
+Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\app-icon.ico"; Tasks: quicklaunchicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

@@ -15,6 +15,8 @@ namespace OpenBroadcaster.Core.Automation
     /// </summary>
     public sealed class SimpleAutoDjService : IDisposable
     {
+        private static readonly Guid LibraryPseudoCategoryId = new("00000000-0000-0000-0000-000000000010");
+        private static readonly Guid UncategorizedPseudoCategoryId = new("00000000-0000-0000-0000-000000000011");
         // CRITICAL CONSTANT: Minimum queue depth AutoDJ must maintain
         private const int MIN_QUEUE_DEPTH = 5;
 
@@ -653,6 +655,23 @@ namespace OpenBroadcaster.Core.Automation
             // Legacy: resolve category by name if Guid is missing
             if (categoryId == Guid.Empty && !string.IsNullOrWhiteSpace(slot.CategoryName))
             {
+                if (string.Equals(slot.CategoryName, "Library", StringComparison.OrdinalIgnoreCase))
+                {
+                    categoryId = LibraryPseudoCategoryId;
+                    slot.CategoryId = categoryId;
+                }
+                else if (string.Equals(slot.CategoryName, "Uncategorized", StringComparison.OrdinalIgnoreCase))
+                {
+                    categoryId = UncategorizedPseudoCategoryId;
+                    slot.CategoryId = categoryId;
+                }
+
+                if (categoryId != Guid.Empty)
+                {
+                    // continue with resolved pseudo category
+                }
+                else
+                {
                 var cat = _libraryService.GetCategories().FirstOrDefault(c => 
                     string.Equals(c.Name, slot.CategoryName, StringComparison.OrdinalIgnoreCase));
                 if (cat != null)
@@ -665,6 +684,7 @@ namespace OpenBroadcaster.Core.Automation
                     _logger.LogWarning("Category '{CategoryName}' not found in library", slot.CategoryName);
                     return null;
                 }
+                }
             }
 
             if (categoryId == Guid.Empty)
@@ -676,7 +696,12 @@ namespace OpenBroadcaster.Core.Automation
             // Get or refresh shuffle bag for this category
             if (!_categoryShuffleBags.TryGetValue(categoryId, out var bag) || bag.Count == 0)
             {
-                var allTracksInCategory = _libraryService.GetTracksByCategory(categoryId);
+                IReadOnlyCollection<Track> allTracksInCategory = categoryId switch
+                {
+                    var id when id == LibraryPseudoCategoryId => _libraryService.GetAllTracks(),
+                    var id when id == UncategorizedPseudoCategoryId => _libraryService.GetUncategorizedTracks(),
+                    _ => _libraryService.GetTracksByCategory(categoryId)
+                };
                 var fresh = allTracksInCategory
                     .Where(t => t != null && t.IsEnabled)
                     .OrderBy(_ => _rng.Next())
@@ -684,7 +709,7 @@ namespace OpenBroadcaster.Core.Automation
 
                 if (fresh.Count == 0)
                 {
-                    _logger.LogWarning("No enabled tracks in category {CategoryId}. Total tracks in category: {TotalTracks}", categoryId, allTracksInCategory?.Count() ?? 0);
+                    _logger.LogWarning("No enabled tracks in category {CategoryId}. Total tracks in category: {TotalTracks}", categoryId, allTracksInCategory?.Count ?? 0);
                     return null;
                 }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
+using OpenBroadcaster.Core.Diagnostics;
 using Timer = System.Timers.Timer;
 using ElapsedEventArgs = System.Timers.ElapsedEventArgs;
 
@@ -119,6 +120,12 @@ namespace OpenBroadcaster.Core.Audio
 
             public CartInstance(string filePath, int deviceNumber, bool loopEnabled, float initialVolume, Action<TimeSpan>? elapsedCallback, Action<CartInstance> completed, Action<float> levelChanged, WaveFormat? tapFormat, AudioSampleBlockHandler? tapHandler)
             {
+                if (!PlatformDetection.SupportsWindowsAudio)
+                {
+                    throw new PlatformNotSupportedException(
+                        $"Audio playback is only supported on Windows. Running on: {PlatformDetection.ArchitectureInfo}");
+                }
+
                 _reader = new AudioFileReader(filePath);
                 _loopEnabled = loopEnabled;
                 _sampleChannel = new SampleChannel(_reader, true);

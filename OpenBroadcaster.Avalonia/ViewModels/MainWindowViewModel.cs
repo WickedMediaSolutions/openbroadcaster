@@ -1,0 +1,1223 @@
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Windows.Input;
+using Avalonia.Threading;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using OpenBroadcaster.Core.Services;
+using OpenBroadcaster.Core.Automation;
+using OpenBroadcaster.Core.Streaming;
+
+namespace OpenBroadcaster.Avalonia.ViewModels
+{
+    public class MainWindowViewModel : INotifyPropertyChanged
+    {
+        private const int ChatHistoryLimit = 200;
+        private enum DeckAction { Play, Stop, Next }
+        private readonly OpenBroadcaster.Core.Services.RadioService _radioService;
+        private readonly OpenBroadcaster.Core.Services.TransportService _transportService;
+        private readonly OpenBroadcaster.Core.Services.AudioService _audioService;
+        private readonly OpenBroadcaster.Core.Messaging.EventBus _eventBus;
+        private string _nowPlaying = string.Empty;
+        private readonly OpenBroadcaster.Core.Services.QueueService _queueService;
+        private readonly OpenBroadcaster.Core.Services.LibraryService _libraryService;
+        private readonly OpenBroadcaster.Core.Services.CartWallService _cartWallService;
+        private readonly OpenBroadcaster.Core.Overlay.OverlayService? _overlayService;
+        private readonly EncoderManager _encoderManager;
+        // Runtime services applied from Settings window
+        private OpenBroadcaster.Core.Services.TwitchIntegrationService? _twitchService;
+        private System.Threading.CancellationTokenSource? _twitchCts;
+        private OpenBroadcaster.Core.Services.DirectServer.DirectHttpServer? _directServer;
+        private OpenBroadcaster.Core.Services.LoyaltyLedger? _loyaltyLedger;
+        private SimpleAutoDjService? _simpleAutoDjService;
+        private Guid? _currentlyPlayingTrackId;
+        private readonly System.Collections.ObjectModel.ObservableCollection<QueueItemViewModel> _queueItems = new();
+        private readonly System.Collections.ObjectModel.ObservableCollection<LibraryItemViewModel> _libraryItems = new();
+        private readonly System.Collections.ObjectModel.ObservableCollection<OpenBroadcaster.Core.Models.LibraryCategory> _libraryCategories = new();
+        private readonly System.Collections.ObjectModel.ObservableCollection<ChatMessageViewModel> _chatMessages = new();
+        private string _librarySearchText = string.Empty;
+        private OpenBroadcaster.Core.Models.LibraryCategory? _selectedLibraryCategory;
+        private string _libraryStatusMessage = string.Empty;
+        private double _twitchChatFontSize = 12.0;
+        private bool _twitchChatEnabled = false;
+        private bool _suppressTwitchToggle = false;
+        private bool _isTwitchConnecting = false;
+        private bool _autoDjEnabled = false;
+        private string _autoDjStatusMessage = string.Empty;
+        private bool _micEnabled = false;
+        private int _micVolume = 50;
+        private int _masterVolume = 80;
+        private int _cartWallVolume = 80;
+        private int _encoderVolume = 100;
+        private readonly System.Func<int, System.Threading.Tasks.Task<string?>>? _filePicker;
+        private OpenBroadcaster.Core.Models.AppSettings _appSettings;
+
+        public MainWindowViewModel(OpenBroadcaster.Core.Services.RadioService radioService, OpenBroadcaster.Core.Services.TransportService transportService, OpenBroadcaster.Core.Services.AudioService audioService, OpenBroadcaster.Core.Messaging.EventBus eventBus, OpenBroadcaster.Core.Services.QueueService queueService, OpenBroadcaster.Core.Services.LibraryService libraryService, OpenBroadcaster.Core.Services.CartWallService cartWallService, OpenBroadcaster.Core.Overlay.OverlayService? overlayService, OpenBroadcaster.Core.Models.AppSettings appSettings, System.Func<int, System.Threading.Tasks.Task<string?>>? filePicker = null)
+        {
+            _radioService = radioService ?? throw new ArgumentNullException(nameof(radioService));
+            _transportService = transportService ?? throw new ArgumentNullException(nameof(transportService));
+            _audioService = audioService ?? throw new ArgumentNullException(nameof(audioService));
+            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            _queueService = queueService ?? throw new ArgumentNullException(nameof(queueService));
+            _libraryService = libraryService ?? throw new ArgumentNullException(nameof(libraryService));
+            _cartWallService = cartWallService ?? throw new ArgumentNullException(nameof(cartWallService));
+            _overlayService = overlayService;
+
+            PlayCommand = new RelayCommand(_ => Play());
+            StopCommand = new RelayCommand(_ => Stop());
+
+            DeckA = new DeckViewModel(OpenBroadcaster.Core.Models.DeckIdentifier.A, _transportService, _eventBus, appSettings);
+            DeckB = new DeckViewModel(OpenBroadcaster.Core.Models.DeckIdentifier.B, _transportService, _eventBus, appSettings);
+
+            DeckPlayCommand = new RelayCommand(p => ExecuteDeckAction(p, DeckAction.Play));
+            DeckStopCommand = new RelayCommand(p => ExecuteDeckAction(p, DeckAction.Stop));
+            DeckNextCommand = new RelayCommand(p => ExecuteDeckAction(p, DeckAction.Next));
+
+            AddToQueueCommand = new RelayCommand(p => { var lv = p as LibraryItemViewModel; if (lv != null) AddLibraryItemToQueue(lv); });
+            RemoveQueueItemCommand = new RelayCommand(p => { var qv = p as QueueItemViewModel; if (qv != null) RemoveQueueItem(qv); });
+            ShuffleQueueCommand = new RelayCommand(_ => _queueService.Shuffle());
+            ClearQueueCommand = new RelayCommand(_ => _queueService.Clear());
+
+            TriggerCartCommand = new RelayCommand(p => { if (p is OpenBroadcaster.Core.Models.CartPad pad) _cartWallService.TogglePad(pad.Id); }, _ => true);
+            AssignPadCommand = new RelayCommand(p =>
+            {
+                if (p is OpenBroadcaster.Core.Models.CartPad pad && _filePicker != null)
+                {
+                    try
+                    {
+                        var task = _filePicker(pad.Id);
+                        _ = task.ContinueWith(t =>
+                        {
+                            if (!string.IsNullOrWhiteSpace(t.Result))
+                            {
+                                _cartWallService.AssignPadFile(pad.Id, t.Result);
+                            }
+                        }, System.Threading.Tasks.TaskScheduler.FromCurrentSynchronizationContext());
+                    }
+                    catch { }
+                }
+            }, _ => true);
+
+            ClearPadCommand = new RelayCommand(p => { if (p is OpenBroadcaster.Core.Models.CartPad pad) _cartWallService.ClearPad(pad.Id); }, _ => true);
+
+            _filePicker = filePicker;
+            _appSettings = appSettings ?? new OpenBroadcaster.Core.Models.AppSettings();
+            _appSettings.Twitch ??= new OpenBroadcaster.Core.Models.TwitchSettings();
+
+            _encoderManager = new EncoderManager();
+            try { _encoderManager.UpdateConfiguration(_appSettings.Encoder, _appSettings.Audio.EncoderDeviceId); } catch { }
+
+            // Initialize Twitch service and hook events
+            EnsureTwitchService();
+
+            // Debug/test helper: when OB_AUTO_TEST_APPLY_SETTINGS=1 is set in the environment,
+            // automatically toggle the main output device to the next available device and
+            // save the settings to exercise ApplyAudioSettings() without UI interaction.
+            try
+            {
+                var autoTest = System.Environment.GetEnvironmentVariable("OB_AUTO_TEST_APPLY_SETTINGS");
+                if (!string.IsNullOrWhiteSpace(autoTest) && autoTest != "0")
+                {
+                    var playbackDevices = _audioService.GetOutputDevices();
+                    if (playbackDevices != null && playbackDevices.Count > 1)
+                    {
+                        var settingsVm = new OpenBroadcaster.Avalonia.ViewModels.SettingsViewModel(_appSettings, _audioService, new OpenBroadcaster.Core.Services.AppSettingsStore(), _libraryService);
+                        // pick the next device after current DeckA setting (wrap)
+                        var current = settingsVm.SelectedMainOutputDevice?.DeviceNumber ?? _appSettings.Audio.DeckADeviceId;
+                        var idx = playbackDevices.ToList().FindIndex(d => d.DeviceNumber == current);
+                        var next = playbackDevices[(idx + 1) % playbackDevices.Count];
+                        settingsVm.SelectedMainOutputDevice = next;
+                        settingsVm.Save();
+                    }
+                }
+            }
+            catch { }
+
+            // subscribe to audio VU updates
+            try
+            {
+                _audioService.VuMetersUpdated += (_, reading) => global::Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    ProgramVuPercent = reading.Program * 100.0;
+                    EncoderVuPercent = reading.Encoder * 100.0;
+                    MicVuPercent = reading.Mic * 100.0;
+                });
+
+                _audioService.CartLevelChanged += (_, level) => global::Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    CartVuPercent = level * 100.0;
+                });
+            }
+            catch { }
+
+            // Subscribe to deck state changes to announce now-playing to Twitch
+            try
+            {
+                _eventBus.Subscribe<OpenBroadcaster.Core.Messaging.Events.DeckStateChangedEvent>(OnDeckStateChanged);
+            }
+            catch { }
+
+            // Ensure audio service has an initial encoder level matching the UI slider
+            try { _audioService.SetEncoderLevel(_encoderVolume / 100.0); } catch { }
+
+            // Menu / other UI commands - minimal implementations to finish wiring
+            ManageCategoriesCommand = new RelayCommand(_ => { /* TODO: open manage categories dialog */ });
+            ImportTracksCommand = new RelayCommand(_ => { /* TODO: show file picker and call _libraryService.ImportFiles(...) */ });
+            ImportFolderCommand = new RelayCommand(_ => { /* TODO: show folder picker and call _libraryService.ImportFolder(...) */ });
+            OpenAboutDialogCommand = new RelayCommand(_ => { /* TODO: show about dialog */ });
+            OpenAppSettingsCommand = new RelayCommand(_ => { /* TODO: show application settings */ });
+            AssignCategoriesCommand = new RelayCommand(_ => { /* TODO: open assign-categories UI for SelectedLibraryItem */ });
+
+            // Import commands now wired to real behaviors
+            ImportTracksCommand = new RelayCommand(async _ =>
+            {
+                var paths = PickFiles(allowMultiple: true);
+                if (paths != null && paths.Any())
+                {
+                    try
+                    {
+                        _libraryService.ImportFiles(paths);
+                        RefreshLibraryItems();
+                    }
+                    catch { }
+                }
+            });
+
+            ImportFolderCommand = new RelayCommand(_ =>
+            {
+                var path = PickFolder();
+                if (!string.IsNullOrWhiteSpace(path))
+                {
+                    try
+                    {
+                        _libraryService.ImportFolder(path, includeSubfolders: true);
+                        RefreshLibraryItems();
+                    }
+                    catch { }
+                }
+            });
+
+            OpenAboutDialogCommand = new RelayCommand(_ => ShowMessage("About OpenBroadcaster", "OpenBroadcaster - Avalonia port\n(placeholder About dialog)"));
+            OpenAppSettingsCommand = new RelayCommand(_ =>
+            {
+                try
+                {
+                    if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop) return;
+                    if (desktop.MainWindow is not Window main) return;
+                    var win = new OpenBroadcaster.Avalonia.Views.SettingsWindow();
+                    var vm = new OpenBroadcaster.Avalonia.ViewModels.SettingsViewModel(_appSettings, _audioService, new OpenBroadcaster.Core.Services.AppSettingsStore(), _libraryService);
+                    win.DataContext = vm;
+
+                    EventHandler<OpenBroadcaster.Core.Models.AppSettings>? settingsHandler = null;
+                    settingsHandler = (_, updated) =>
+                    {
+                        var previous = _appSettings ?? new OpenBroadcaster.Core.Models.AppSettings();
+                        _appSettings = updated ?? new OpenBroadcaster.Core.Models.AppSettings();
+                        try { _encoderManager.UpdateConfiguration(_appSettings.Encoder, _appSettings.Audio.EncoderDeviceId); } catch { }
+                        
+                        // Apply Overlay settings
+                        try
+                        {
+                            _overlayService?.UpdateSettings(_appSettings.Overlay);
+                        }
+                        catch { }
+
+                        // Apply Twitch settings: update and start/stop as indicated
+                        try
+                        {
+                            EnsureTwitchService();
+                            try { _twitchService?.UpdateSettings(_appSettings.Twitch); } catch { }
+
+                            if (TwitchChatEnabled)
+                            {
+                                _ = StartTwitchBridgeAsync();
+                            }
+                        }
+                        catch { }
+
+                        // Apply Direct Server settings: stop existing server and start new one if enabled
+                        try
+                        {
+                            try { _directServer?.Stop(); } catch { }
+                            _directServer = null;
+
+                            var ds = _appSettings.DirectServer;
+                            if (ds != null && ds.Enabled)
+                            {
+                                try
+                                {
+                                    _directServer = new OpenBroadcaster.Core.Services.DirectServer.DirectHttpServer(
+                                        ds,
+                                        getSnapshot: GetDirectServerSnapshot,
+                                        searchLibrary: SearchLibraryForDirectServer,
+                                        onSongRequest: HandleDirectServerSongRequest,
+                                        getStationName: () => _appSettings.Overlay?.ApiUsername ?? "OpenBroadcaster"
+                                    );
+                                    System.Threading.Tasks.Task.Run(() =>
+                                    {
+                                        try { _directServer?.Start(); } catch { }
+                                    });
+                                }
+                                catch { }
+                            }
+                        }
+                        catch { }
+
+                        // Apply AutoDJ settings: reload persisted AutoDJ config and update runtime service
+                        try
+                        {
+                            try
+                            {
+                                if (_simpleAutoDjService == null)
+                                {
+                                    var starter = new OpenBroadcaster.Core.Services.AutoDjSettingsService();
+                                    var rots = starter.Rotations ?? new System.Collections.Generic.List<OpenBroadcaster.Core.Automation.SimpleRotation>();
+                                    var sched = starter.Schedule ?? new System.Collections.Generic.List<OpenBroadcaster.Core.Automation.SimpleSchedulerEntry>();
+                                    var def = starter.DefaultRotationId;
+                                    _simpleAutoDjService = new SimpleAutoDjService(_queueService, _libraryService, rots, sched, _appSettings?.Automation?.TargetQueueDepth ?? 5, def);
+                                    _simpleAutoDjService.StatusChanged += (_, status) => global::Avalonia.Threading.Dispatcher.UIThread.Post(() => AutoDjStatusMessage = status);
+                                }
+
+                                var loader = new OpenBroadcaster.Core.Services.AutoDjSettingsService();
+                                var rotations = loader.Rotations ?? new System.Collections.Generic.List<OpenBroadcaster.Core.Automation.SimpleRotation>();
+                                var schedule = loader.Schedule ?? new System.Collections.Generic.List<OpenBroadcaster.Core.Automation.SimpleSchedulerEntry>();
+                                var defaultRotationId = loader.DefaultRotationId;
+
+                                try { _simpleAutoDjService?.UpdateConfiguration(rotations, schedule, defaultRotationId); } catch { }
+                                try { _simpleAutoDjService!.Enabled = _appSettings?.Automation?.AutoStartAutoDj ?? false; } catch { }
+                                System.Threading.Tasks.Task.Run(() => _simpleAutoDjService?.EnsureQueueDepth());
+                            }
+                            catch { }
+                        }
+                        catch { }
+                    };
+
+                    vm.SettingsChanged += settingsHandler;
+                    // Wire dialog invokers so SettingsViewModel can open Avalonia dialogs with an owner
+                    vm.RotationDialogInvoker = async (rot, categoryOptions, existingNames) =>
+                    {
+                        try
+                        {
+                            var dlg = new OpenBroadcaster.Avalonia.Views.RotationDialog(rot, categoryOptions, existingNames);
+                            return await dlg.ShowDialog<bool?>(main).ConfigureAwait(true);
+                        }
+                        catch { return null; }
+                    };
+                    vm.SchedulerDialogInvoker = async (entry, rotations) =>
+                    {
+                        try
+                        {
+                            var dlg = new OpenBroadcaster.Avalonia.Views.SchedulerDialog(entry, rotations.ToList());
+                            return await dlg.ShowDialog<bool?>(main).ConfigureAwait(true);
+                        }
+                        catch { return null; }
+                    };
+                    win.ShowDialog(main);
+                    vm.SettingsChanged -= settingsHandler;
+                }
+                catch { }
+            });
+
+            ManageCategoriesCommand = new RelayCommand(_ =>
+            {
+                try
+                {
+                    if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop) return;
+                    if (desktop.MainWindow is not Window main) return;
+                    var win = new OpenBroadcaster.Avalonia.Views.CategoryManagerWindow();
+                    var vm = new OpenBroadcaster.Avalonia.ViewModels.CategoryManagerViewModel(_libraryService);
+                    win.DataContext = vm;
+                    win.ShowDialog(main);
+                    // refresh library view after potential changes
+                    RefreshLibraryItems();
+                }
+                catch { }
+            });
+
+            AssignCategoriesCommand = new RelayCommand(_ =>
+            {
+                if (SelectedLibraryItem == null)
+                {
+                    ShowMessage("Assign Categories", "Select a library item first.");
+                    return;
+                }
+                try
+                {
+                    if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop) return;
+                    if (desktop.MainWindow is not Window main) return;
+                    var win = new OpenBroadcaster.Avalonia.Views.AssignCategoriesWindow();
+                    var vm = new OpenBroadcaster.Avalonia.ViewModels.AssignCategoriesViewModel(_libraryService, SelectedLibraryItem.Id);
+                    win.DataContext = vm;
+                    win.ShowDialog(main);
+                    RefreshLibraryItems();
+                }
+                catch { }
+            });
+
+            _radioService.NowPlayingChanged += (s, e) =>
+            {
+                NowPlaying = _radioService.NowPlaying ?? string.Empty;
+            };
+
+            // Initialize observable collections from core services
+            RefreshQueueItems();
+            RefreshLibraryItems();
+
+            _queueService.QueueChanged += (_, __) => RefreshQueueItems();
+            _libraryService.TracksChanged += (_, __) => RefreshLibraryItems();
+            _libraryService.CategoriesChanged += (_, __) => RefreshLibraryCategories();
+
+            // Initialize categories and chat
+            RefreshLibraryCategories();
+
+            // Start Direct Server at startup if enabled in settings
+            try
+            {
+                var ds = _appSettings?.DirectServer;
+                if (ds != null && ds.Enabled)
+                {
+                    try
+                    {
+                        _directServer = new OpenBroadcaster.Core.Services.DirectServer.DirectHttpServer(
+                            ds,
+                            getSnapshot: GetDirectServerSnapshot,
+                            searchLibrary: SearchLibraryForDirectServer,
+                            onSongRequest: HandleDirectServerSongRequest,
+                            getStationName: () => _appSettings.Overlay?.ApiUsername ?? "OpenBroadcaster"
+                        );
+
+                        _directServer.ServerStarted += (_, _) => { /* no-op for now */ };
+                        _directServer.ServerStopped += (_, _) => { /* no-op for now */ };
+                        _directServer.RequestReceived += (_, endpoint) => { /* no-op */ };
+
+                        try { _directServer.Start(); } catch { }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+
+            // Initialize SimpleAutoDjService (use persisted AutoDJ settings)
+            try
+            {
+                try
+                {
+                    var autoDjSettings = new OpenBroadcaster.Core.Services.AutoDjSettingsService();
+                    var rotations = autoDjSettings.Rotations ?? new System.Collections.Generic.List<OpenBroadcaster.Core.Automation.SimpleRotation>();
+                    var schedule = autoDjSettings.Schedule ?? new System.Collections.Generic.List<OpenBroadcaster.Core.Automation.SimpleSchedulerEntry>();
+                    var defaultRotationId = autoDjSettings.DefaultRotationId;
+
+                    _simpleAutoDjService = new SimpleAutoDjService(_queueService, _libraryService, rotations, schedule, _appSettings?.Automation?.TargetQueueDepth ?? 5, defaultRotationId);
+                    _simpleAutoDjService.StatusChanged += (_, status) => global::Avalonia.Threading.Dispatcher.UIThread.Post(() => AutoDjStatusMessage = status);
+
+                    // Always ensure queue is seeded on startup
+                    System.Threading.Tasks.Task.Run(() => _simpleAutoDjService!.EnsureQueueDepth());
+
+                    // Apply auto-start setting from app settings
+                    try { _simpleAutoDjService.Enabled = _appSettings?.Automation?.AutoStartAutoDj ?? false; } catch { }
+                }
+                catch { }
+            }
+            catch { }
+        }
+
+        public ICommand PlayCommand { get; }
+        public ICommand StopCommand { get; }
+        public ICommand DeckPlayCommand { get; }
+        public ICommand DeckStopCommand { get; }
+        public ICommand DeckNextCommand { get; }
+        public ICommand AddToQueueCommand { get; }
+        public ICommand RemoveQueueItemCommand { get; }
+        public ICommand ShuffleQueueCommand { get; }
+        public ICommand ClearQueueCommand { get; }
+        public ICommand TriggerCartCommand { get; }
+        public ICommand AssignPadCommand { get; }
+        public ICommand ClearPadCommand { get; }
+        // Additional UI commands (menu/buttons)
+        public ICommand ManageCategoriesCommand { get; }
+        public ICommand ImportTracksCommand { get; }
+        public ICommand ImportFolderCommand { get; }
+        public ICommand OpenAboutDialogCommand { get; }
+        public ICommand OpenAppSettingsCommand { get; }
+        public ICommand AssignCategoriesCommand { get; }
+
+        public DeckViewModel DeckA { get; }
+        public DeckViewModel DeckB { get; }
+        public System.Collections.ObjectModel.ReadOnlyObservableCollection<QueueItemViewModel> QueueItems => new(_queueItems);
+        public System.Collections.ObjectModel.ReadOnlyObservableCollection<LibraryItemViewModel> LibraryItems => new(_libraryItems);
+        public System.Collections.ObjectModel.ReadOnlyObservableCollection<OpenBroadcaster.Core.Models.CartPad> CartPads => _cartWallService?.Pads ?? new System.Collections.ObjectModel.ReadOnlyObservableCollection<OpenBroadcaster.Core.Models.CartPad>(new System.Collections.ObjectModel.ObservableCollection<OpenBroadcaster.Core.Models.CartPad>());
+        private QueueItemViewModel? _selectedQueueItem;
+        private LibraryItemViewModel? _selectedLibraryItem;
+        private global::Avalonia.Media.Imaging.Bitmap? _selectedLibraryItemArt;
+
+        public QueueItemViewModel? SelectedQueueItem
+        {
+            get => _selectedQueueItem;
+            set
+            {
+                if (_selectedQueueItem != value)
+                {
+                    _selectedQueueItem = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public LibraryItemViewModel? SelectedLibraryItem
+        {
+            get => _selectedLibraryItem;
+            set
+            {
+                if (_selectedLibraryItem != value)
+                {
+                    _selectedLibraryItem = value;
+                    OnPropertyChanged();
+                    // Load preview art for selected library item asynchronously
+                    LoadSelectedLibraryArtAsync(_selectedLibraryItem);
+                }
+            }
+        }
+
+        public global::Avalonia.Media.Imaging.Bitmap? SelectedLibraryItemArt { get => _selectedLibraryItemArt; private set { if (_selectedLibraryItemArt != value) { _selectedLibraryItemArt = value; OnPropertyChanged(); } } }
+
+        private void LoadSelectedLibraryArtAsync(LibraryItemViewModel? item)
+        {
+            // fire-and-forget background load
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try
+                {
+                    if (item == null) return;
+                    var path = item.Underlying.FilePath;
+                    var bmp = OpenBroadcaster.Avalonia.Services.AlbumArtService.FetchArtFor(path, item.Title, item.Artist);
+                    if (bmp != null)
+                    {
+                        global::Avalonia.Threading.Dispatcher.UIThread.Post(() => SelectedLibraryItemArt = bmp);
+                    }
+                    else
+                    {
+                        global::Avalonia.Threading.Dispatcher.UIThread.Post(() => SelectedLibraryItemArt = null);
+                    }
+                }
+                catch { }
+            });
+        }
+
+        public string NowPlaying
+        {
+            get => _nowPlaying;
+            set
+            {
+                if (_nowPlaying != value)
+                {
+                    _nowPlaying = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        // --- New properties expected by XAML bindings
+        public string LibrarySearchText { get => _librarySearchText; set { if (_librarySearchText != value) { _librarySearchText = value; OnPropertyChanged(); RefreshLibraryItems(); } } }
+        // Expose stable collections so bindings can observe the same instance
+        public System.Collections.ObjectModel.ObservableCollection<OpenBroadcaster.Core.Models.LibraryCategory> LibraryCategories => _libraryCategories;
+        public OpenBroadcaster.Core.Models.LibraryCategory? SelectedLibraryCategory { get => _selectedLibraryCategory; set { if (_selectedLibraryCategory != value) { _selectedLibraryCategory = value; OnPropertyChanged(); RefreshLibraryItems(); } } }
+        public string LibraryStatusMessage { get => _libraryStatusMessage; set { if (_libraryStatusMessage != value) { _libraryStatusMessage = value; OnPropertyChanged(); } } }
+
+        public double TwitchChatFontSize { get => _twitchChatFontSize; set { if (Math.Abs(_twitchChatFontSize - value) > 0.01) { _twitchChatFontSize = value; OnPropertyChanged(); } } }
+        public System.Collections.ObjectModel.ObservableCollection<ChatMessageViewModel> ChatMessages => _chatMessages;
+
+        public bool TwitchChatEnabled
+        {
+            get => _twitchChatEnabled;
+            set
+            {
+                if (_suppressTwitchToggle)
+                {
+                    if (_twitchChatEnabled != value)
+                    {
+                        _twitchChatEnabled = value;
+                        OnPropertyChanged();
+                    }
+                    return;
+                }
+
+                if (_twitchChatEnabled != value)
+                {
+                    _twitchChatEnabled = value;
+                    OnPropertyChanged();
+                    if (value)
+                    {
+                        _ = StartTwitchBridgeAsync();
+                    }
+                    else
+                    {
+                        StopTwitchBridge();
+                    }
+                }
+            }
+        }
+        public bool AutoDjEnabled
+        {
+            get => _autoDjEnabled;
+            set
+            {
+                if (_autoDjEnabled == value) return;
+                _autoDjEnabled = value;
+                OnPropertyChanged();
+                try
+                {
+                    if (_simpleAutoDjService != null)
+                    {
+                        _simpleAutoDjService.Enabled = value;
+                    }
+                }
+                catch { }
+            }
+        }
+        public string AutoDjStatusMessage { get => _autoDjStatusMessage; set { if (_autoDjStatusMessage != value) { _autoDjStatusMessage = value; OnPropertyChanged(); } } }
+
+        public bool MicEnabled { get => _micEnabled; set { if (_micEnabled != value) { _micEnabled = value; OnPropertyChanged(); try { _audioService.SetMicEnabled(value); } catch { } } } }
+
+        public int MicVolume
+        {
+            get => _micVolume;
+            set
+            {
+                if (_micVolume != value)
+                {
+                    _micVolume = value;
+                    OnPropertyChanged();
+                    try { _audioService.SetMicVolume(_micVolume / 100.0); } catch { }
+                }
+            }
+        }
+
+        public int MasterVolume
+        {
+            get => _masterVolume;
+            set
+            {
+                if (_masterVolume != value)
+                {
+                    _masterVolume = value;
+                    OnPropertyChanged();
+                    try
+                    {
+                        _audioService.SetDeckVolume(OpenBroadcaster.Core.Models.DeckIdentifier.A, _masterVolume / 100.0);
+                        _audioService.SetDeckVolume(OpenBroadcaster.Core.Models.DeckIdentifier.B, _masterVolume / 100.0);
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        public int CartWallVolume
+        {
+            get => _cartWallVolume;
+            set
+            {
+                if (_cartWallVolume != value)
+                {
+                    _cartWallVolume = value;
+                    OnPropertyChanged();
+                    try { _audioService.SetCartVolume(_cartWallVolume / 100.0); } catch { }
+                }
+            }
+        }
+
+        public int EncoderVolume
+        {
+            get => _encoderVolume;
+            set
+            {
+                if (_encoderVolume != value)
+                {
+                    _encoderVolume = value;
+                    OnPropertyChanged();
+                    try { _audioService.SetEncoderLevel(_encoderVolume / 100.0); } catch { }
+                }
+            }
+        }
+
+        // VU meter percent properties (0..100)
+        private double _programVuPercent;
+        public double ProgramVuPercent { get => _programVuPercent; private set { if (_programVuPercent != value) { _programVuPercent = value; OnPropertyChanged(); } } }
+        private double _encoderVuPercent;
+        public double EncoderVuPercent { get => _encoderVuPercent; private set { if (_encoderVuPercent != value) { _encoderVuPercent = value; OnPropertyChanged(); } } }
+        private double _micVuPercent;
+        public double MicVuPercent { get => _micVuPercent; private set { if (_micVuPercent != value) { _micVuPercent = value; OnPropertyChanged(); } } }
+        private double _cartVuPercent;
+        public double CartVuPercent { get => _cartVuPercent; private set { if (_cartVuPercent != value) { _cartVuPercent = value; OnPropertyChanged(); } } }
+
+        public void Play()
+        {
+            _radioService.Play();
+        }
+
+        public void Stop()
+        {
+            _radioService.Stop();
+        }
+
+        public void AddLibraryItemToQueue(LibraryItemViewModel item)
+        {
+            if (item == null) return;
+            var track = _libraryService.GetTrack(item.Id);
+            if (track == null) return;
+            var qi = new OpenBroadcaster.Core.Models.QueueItem(track, OpenBroadcaster.Core.Models.QueueSource.Manual, "Library", "Host");
+            _queueService.Enqueue(qi);
+        }
+
+        private void RemoveQueueItem(QueueItemViewModel item)
+        {
+            if (item == null) return;
+            var snapshot = _queueService.Snapshot();
+            for (var i = 0; i < snapshot.Count; i++)
+            {
+                if (ReferenceEquals(snapshot[i], item.Underlying))
+                {
+                    _queueService.RemoveAt(i);
+                    return;
+                }
+            }
+        }
+
+        private void RefreshQueueItems()
+        {
+            _queueItems.Clear();
+            foreach (var q in _queueService.Snapshot())
+            {
+                _queueItems.Add(new QueueItemViewModel(q));
+            }
+            OnPropertyChanged(nameof(QueueItems));
+        }
+
+        private void RefreshLibraryItems()
+        {
+            _libraryItems.Clear();
+
+            var all = _library_service_get_all();
+
+            // Apply category filter if selected
+            if (SelectedLibraryCategory != null)
+            {
+                var cid = SelectedLibraryCategory.Id;
+                all = all.Where(t => t.CategoryIds.Contains(cid)).ToArray();
+            }
+
+            // Apply search text filter
+            var search = LibrarySearchText?.Trim();
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search;
+                all = all.Where(t => (!string.IsNullOrWhiteSpace(t.Title) && t.Title.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0)
+                                || (!string.IsNullOrWhiteSpace(t.Artist) && t.Artist.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0)
+                                || (!string.IsNullOrWhiteSpace(t.Album) && t.Album.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0)
+                                || (!string.IsNullOrWhiteSpace(t.Genre) && t.Genre.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0))
+                          .ToArray();
+            }
+
+            foreach (var t in all)
+            {
+                _libraryItems.Add(new LibraryItemViewModel(t));
+            }
+
+            OnPropertyChanged(nameof(LibraryItems));
+        }
+
+        private void RefreshLibraryCategories()
+        {
+            _libraryCategories.Clear();
+            try
+            {
+                var cats = _libraryService.GetCategories();
+                foreach (var c in cats)
+                {
+                    _libraryCategories.Add(c);
+                }
+            }
+            catch { }
+            OnPropertyChanged(nameof(LibraryCategories));
+            try
+                {
+                    var logDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenBroadcaster", "logs");
+                    System.IO.Directory.CreateDirectory(logDir);
+                    var dumpPath = System.IO.Path.Combine(logDir, "categories-dump.txt");
+                    var dump = new System.Text.StringBuilder();
+                    dump.AppendLine($"CategoriesCount: {_libraryCategories.Count}");
+                    foreach (var c in _libraryCategories)
+                    {
+                        dump.AppendLine($"{c.Id} | {c.Name} | {c.Type}");
+                    }
+                    System.IO.File.AppendAllText(dumpPath, dump.ToString());
+                }
+            catch { }
+        }
+
+        // Helper to avoid large public API changes: call GetTracks()
+        private System.Collections.Generic.IReadOnlyCollection<OpenBroadcaster.Core.Models.Track> _library_service_get_all()
+            => _libraryService.GetTracks();
+
+        private OpenBroadcaster.Core.Services.DirectServer.DirectServerSnapshot GetDirectServerSnapshot()
+        {
+            var snapshot = new OpenBroadcaster.Core.Services.DirectServer.DirectServerSnapshot();
+
+            try
+            {
+                var queue = _queueService.Snapshot();
+                var now = queue.FirstOrDefault();
+                if (now != null && now.Track != null)
+                {
+                    snapshot.NowPlaying = new OpenBroadcaster.Core.Services.DirectServer.DirectServerDtos.NowPlayingResponse
+                    {
+                        TrackId = now.Track.Id.ToString(),
+                        Title = now.Track.Title ?? "Unknown",
+                        Artist = now.Track.Artist ?? "Unknown",
+                        Album = now.Track.Album ?? string.Empty,
+                        Duration = (int)(now.Track.Duration.TotalSeconds),
+                        Position = 0,
+                        IsPlaying = true,
+                        RequestedBy = now.Source,
+                        Type = "track"
+                    };
+                }
+
+                snapshot.Queue = queue.Select(q => new OpenBroadcaster.Core.Services.DirectServer.DirectServerDtos.QueueItem
+                {
+                    Id = q.Track?.Id.ToString(),
+                    Title = q.Track?.Title ?? "Unknown",
+                    Artist = q.Track?.Artist ?? "Unknown",
+                    Album = q.Track?.Album ?? string.Empty,
+                    Duration = (int)(q.Track?.Duration.TotalSeconds ?? 0),
+                    RequestedBy = q.Source,
+                    Type = "track"
+                }).ToList();
+            }
+            catch { }
+
+            return snapshot;
+        }
+
+        private System.Collections.Generic.IEnumerable<OpenBroadcaster.Core.Services.DirectServer.DirectServerLibraryItem> SearchLibraryForDirectServer(string query, int page, int perPage)
+        {
+            try
+            {
+                var tracks = _libraryService.GetTracks();
+                var filtered = tracks
+                    .Where(t => string.IsNullOrWhiteSpace(query)
+                                || (t.Title?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
+                                || (t.Artist?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
+                                || (t.Album?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false))
+                    .OrderBy(t => t.Title ?? string.Empty)
+                    .Skip(Math.Max(0, (page - 1)) * perPage)
+                    .Take(perPage);
+
+                return filtered.Select(t => new OpenBroadcaster.Core.Services.DirectServer.DirectServerLibraryItem
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Artist = t.Artist,
+                    Album = t.Album,
+                    Duration = t.Duration,
+                    FilePath = t.FilePath
+                });
+            }
+            catch
+            {
+                return Array.Empty<OpenBroadcaster.Core.Services.DirectServer.DirectServerLibraryItem>();
+            }
+        }
+
+        private void HandleDirectServerSongRequest(OpenBroadcaster.Core.Services.DirectServer.SongRequest request)
+        {
+            try
+            {
+                var track = _libraryService.GetTracks().FirstOrDefault(t => t.Id == request.TrackId);
+                if (track != null)
+                {
+                    var queueItem = new OpenBroadcaster.Core.Models.QueueItem(
+                        track,
+                        OpenBroadcaster.Core.Models.QueueSource.WebRequest,
+                        "Website Request",
+                        request.RequesterName ?? "Website",
+                        rotationName: null,
+                        categoryName: null,
+                        requestMessage: request.Message);
+                    _queueService.Enqueue(queueItem);
+                }
+            }
+            catch { }
+        }
+
+        private void ExecuteDeckAction(object? parameter, DeckAction action)
+        {
+            if (parameter == null) return;
+            var id = parameter.ToString();
+            var deckId = id == "B" ? OpenBroadcaster.Core.Models.DeckIdentifier.B : OpenBroadcaster.Core.Models.DeckIdentifier.A;
+            _radioService.ActiveDeck = deckId;
+            switch (action)
+            {
+                case DeckAction.Play:
+                    _radioService.Play();
+                    break;
+                case DeckAction.Stop:
+                    _radioService.Stop();
+                    break;
+                case DeckAction.Next:
+                    // Request next from queue then play
+                    _transportService.RequestNextFromQueue(deckId);
+                    _radioService.Play();
+                    break;
+            }
+        }
+
+        // --- UI helpers: file/folder picking via MainWindow.StorageProvider (reflection-safe)
+        private System.Collections.Generic.List<string>? PickFiles(bool allowMultiple)
+        {
+            try
+            {
+                if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop) return null;
+                if (desktop.MainWindow is not Window main) return null;
+                var sp = main.StorageProvider;
+                if (sp == null) return null;
+
+                // Try FilePickerOpenOptions if available
+                var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
+                var optsType = assemblies.SelectMany(a => { try { return a.GetTypes(); } catch { return System.Type.EmptyTypes; } }).FirstOrDefault(t => t.Name == "FilePickerOpenOptions");
+                object? opts = null;
+                if (optsType != null)
+                {
+                    opts = System.Activator.CreateInstance(optsType);
+                    var allowProp = optsType.GetProperty("AllowMultiple");
+                    allowProp?.SetValue(opts, allowMultiple);
+                    var titleProp = optsType.GetProperty("Title");
+                    titleProp?.SetValue(opts, "Select audio files to import");
+                }
+
+                var spType = sp.GetType();
+                var method = opts != null
+                    ? spType.GetMethods().FirstOrDefault(m => m.Name == "OpenFilePickerAsync" && m.GetParameters().Length == 1)
+                    : spType.GetMethods().FirstOrDefault(m => m.Name == "OpenFilePickerAsync" && m.GetParameters().Length == 0);
+                if (method == null) return null;
+
+                var task = method.Invoke(sp, opts != null ? new object[] { opts } : Array.Empty<object>());
+                if (task == null) return null;
+
+                var getAwaiter = task.GetType().GetMethod("GetAwaiter");
+                if (getAwaiter == null) return null;
+                var awaiter = getAwaiter.Invoke(task, null);
+                if (awaiter == null) return null;
+                var getResult = awaiter.GetType().GetMethod("GetResult");
+                if (getResult == null) return null;
+                var picked = getResult.Invoke(awaiter, null) as System.Collections.IEnumerable;
+                var results = new System.Collections.Generic.List<string>();
+                if (picked != null)
+                {
+                    foreach (var f in picked)
+                    {
+                        if (f == null) continue;
+                        try
+                        {
+                            var tryGetLocal = f.GetType().GetMethod("TryGetLocalPath");
+                            if (tryGetLocal != null)
+                            {
+                                var args = new object?[] { null };
+                                var ok = (bool)tryGetLocal.Invoke(f, args)!;
+                                if (ok && args[0] is string path && !string.IsNullOrWhiteSpace(path))
+                                {
+                                    results.Add(path);
+                                    continue;
+                                }
+                            }
+                        }
+                        catch { }
+
+                        var pathProp = f.GetType().GetProperty("Path");
+                        if (pathProp != null)
+                        {
+                            var val = pathProp.GetValue(f) as string;
+                            if (!string.IsNullOrWhiteSpace(val)) results.Add(val);
+                        }
+                    }
+                }
+
+                return results.Count > 0 ? results : null;
+            }
+            catch { return null; }
+        }
+
+        private string? PickFolder()
+        {
+            try
+            {
+                if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop) return null;
+                if (desktop.MainWindow is not Window main) return null;
+                var sp = main.StorageProvider;
+                if (sp == null) return null;
+
+                var spType = sp.GetType();
+                var method = spType.GetMethods().FirstOrDefault(m => m.Name == "OpenFolderPickerAsync");
+                if (method == null) return null;
+
+                var task = method.Invoke(sp, Array.Empty<object>());
+                if (task == null) return null;
+
+                var getAwaiter = task.GetType().GetMethod("GetAwaiter");
+                if (getAwaiter == null) return null;
+                var awaiter = getAwaiter.Invoke(task, null);
+                if (awaiter == null) return null;
+                var getResult = awaiter.GetType().GetMethod("GetResult");
+                if (getResult == null) return null;
+                var picked = getResult.Invoke(awaiter, null) as System.Collections.IEnumerable;
+                if (picked != null)
+                {
+                    foreach (var f in picked)
+                    {
+                        if (f == null) continue;
+                        var tryGetLocal = f.GetType().GetMethod("TryGetLocalPath");
+                        if (tryGetLocal != null)
+                        {
+                            var args = new object?[] { null };
+                            var ok = (bool)tryGetLocal.Invoke(f, args)!;
+                            if (ok && args[0] is string path && !string.IsNullOrWhiteSpace(path))
+                            {
+                                return path;
+                            }
+                        }
+                        var pathProp = f.GetType().GetProperty("Path");
+                        if (pathProp != null)
+                        {
+                            var val = pathProp.GetValue(f) as string;
+                            if (!string.IsNullOrWhiteSpace(val)) return val;
+                        }
+                    }
+                }
+
+                return null;
+            }
+            catch { return null; }
+        }
+
+        private void ShowMessage(string title, string message)
+        {
+            try
+            {
+                if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop) return;
+                if (desktop.MainWindow is not Window main) return;
+                var win = new OpenBroadcaster.Avalonia.Views.SimpleMessageWindow(title, message);
+                win.ShowDialog(main);
+            }
+            catch { }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
+
+        private void EnsureTwitchService()
+        {
+            if (_twitchService != null)
+            {
+                return;
+            }
+
+            if (_loyaltyLedger == null)
+            {
+                _loyaltyLedger = new OpenBroadcaster.Core.Services.LoyaltyLedger();
+            }
+
+            _twitchService = new OpenBroadcaster.Core.Services.TwitchIntegrationService(
+                _queueService,
+                _transportService,
+                _loyaltyLedger,
+                _libraryService);
+
+            _twitchService.ChatMessageReceived += OnTwitchChatMessage;
+            _twitchService.StatusChanged += (_, status) => Dispatcher.UIThread.Post(() => AppendChatMessage("System", status, true));
+        }
+
+        private async System.Threading.Tasks.Task StartTwitchBridgeAsync()
+        {
+            if (_isTwitchConnecting)
+            {
+                return;
+            }
+
+            _isTwitchConnecting = true;
+            AppendChatMessage("System", "Connecting to Twitch chat...", true);
+
+            _twitchCts?.Cancel();
+            _twitchCts?.Dispose();
+            _twitchCts = new System.Threading.CancellationTokenSource();
+
+            try
+            {
+                EnsureTwitchService();
+
+                var settings = _appSettings.Twitch ?? new OpenBroadcaster.Core.Models.TwitchSettings();
+                _appSettings.Twitch = settings;
+                _twitchService?.UpdateSettings(settings);
+
+                if (!IsTwitchSettingsValid(settings))
+                {
+                    AppendChatMessage("System", "Open Twitch settings to configure username, token, and channel.", true);
+                    ForceDisableTwitchToggle();
+                    return;
+                }
+
+                var options = settings.ToChatOptions();
+                await _twitchService!.StartAsync(settings, _twitchCts.Token);
+                AppendChatMessage("System", $"Connected to #{options.NormalizedChannel}.", true);
+            }
+            catch (System.OperationCanceledException)
+            {
+                AppendChatMessage("System", "Twitch chat connection canceled.", true);
+            }
+            catch (System.Exception ex)
+            {
+                AppendChatMessage("System", $"Twitch connect failed: {ex.Message}", true);
+                ForceDisableTwitchToggle();
+            }
+            finally
+            {
+                _isTwitchConnecting = false;
+            }
+        }
+
+        private void StopTwitchBridge()
+        {
+            try
+            {
+                _twitchCts?.Cancel();
+                _twitchCts?.Dispose();
+                _twitchCts = null;
+                _ = _twitchService?.StopAsync();
+            }
+            catch { }
+
+            AppendChatMessage("System", "Twitch chat offline.", true);
+        }
+
+        private void ForceDisableTwitchToggle()
+        {
+            if (_twitchChatEnabled)
+            {
+                _suppressTwitchToggle = true;
+                _twitchChatEnabled = false;
+                OnPropertyChanged(nameof(TwitchChatEnabled));
+                _suppressTwitchToggle = false;
+            }
+
+            StopTwitchBridge();
+        }
+
+        private void OnTwitchChatMessage(object? sender, OpenBroadcaster.Core.Models.TwitchChatMessage message)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                AppendChatMessage(message.UserName, message.Message, message.IsSystem, message.TimestampUtc);
+            });
+        }
+
+        private void OnDeckStateChanged(OpenBroadcaster.Core.Messaging.Events.DeckStateChangedEvent e)
+        {
+            // Only announce when a track is actively playing
+            if (!e.IsPlaying || e.QueueItem?.Track == null || e.Status != OpenBroadcaster.Core.Models.DeckStatus.Playing)
+            {
+                return;
+            }
+
+            var trackId = e.QueueItem.Track.Id;
+
+            // Skip if this is the same track we've already announced
+            if (_currentlyPlayingTrackId == trackId)
+            {
+                return;
+            }
+
+            // Skip if track hasn't been playing for at least 3 seconds (prevents rapid re-announcements)
+            if (e.Elapsed.TotalSeconds < 3)
+            {
+                return;
+            }
+
+            // Update currently playing track ID
+            _currentlyPlayingTrackId = trackId;
+
+            // Announce to Twitch if enabled and connected
+            if (_twitchChatEnabled && _twitchService != null && _twitchService.IsConnected)
+            {
+                _twitchService.AnnounceNowPlaying(e.QueueItem);
+            }
+        }
+
+        private void AppendChatMessage(string userName, string message, bool isSystem, System.DateTime? timestampUtc = null)
+        {
+            var chat = new ChatMessageViewModel
+            {
+                UserName = userName,
+                Message = message,
+                Timestamp = FormatTimestamp(timestampUtc ?? System.DateTime.UtcNow)
+            };
+
+            _chatMessages.Add(chat);
+            TrimChatHistory();
+        }
+
+        private void TrimChatHistory()
+        {
+            while (_chatMessages.Count > ChatHistoryLimit)
+            {
+                _chatMessages.RemoveAt(0);
+            }
+        }
+
+        private static string FormatTimestamp(System.DateTime timestampUtc)
+        {
+            return timestampUtc.ToLocalTime().ToString("HH:mm");
+        }
+
+        private static bool IsTwitchSettingsValid(OpenBroadcaster.Core.Models.TwitchSettings settings)
+        {
+            if (settings == null)
+            {
+                return false;
+            }
+
+            return !string.IsNullOrWhiteSpace(settings.UserName)
+                && !string.IsNullOrWhiteSpace(settings.OAuthToken)
+                && !string.IsNullOrWhiteSpace(settings.Channel);
+        }
+    }
+
+        public class ChatMessageViewModel
+        {
+            public string Timestamp { get; set; } = string.Empty;
+            public string UserName { get; set; } = string.Empty;
+            public string Message { get; set; } = string.Empty;
+        }
+
+    // Minimal RelayCommand implementation
+    public class RelayCommand : ICommand
+    {
+        private readonly System.Action<object?> _execute;
+        private readonly System.Func<object?, bool>? _canExecute;
+
+        public RelayCommand(System.Action<object?> execute, System.Func<object?, bool>? canExecute = null)
+        {
+            _execute = execute;
+            _canExecute = canExecute;
+        }
+
+        public event System.EventHandler? CanExecuteChanged;
+
+        public bool CanExecute(object? parameter) => _canExecute?.Invoke(parameter) ?? true;
+
+        public void Execute(object? parameter) => _execute(parameter);
+
+        public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, System.EventArgs.Empty);
+    }
+}

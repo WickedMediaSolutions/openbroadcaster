@@ -40,13 +40,13 @@ Direct Mode connects your WordPress site directly to the OpenBroadcaster desktop
 
 **Requirements:**
 - OpenBroadcaster desktop app with Direct Server enabled (Settings → Web Server)
-- Port forwarding on your router (default port: 8585), OR
+-- Port forwarding on your router (default port: 8586), OR
 - Both WordPress and OpenBroadcaster on the same local network
 
 **Configuration:**
-1. In OpenBroadcaster Settings, enable "Direct Server" and note the port (default: 8585)
+1. In OpenBroadcaster Settings, enable "Direct Server" and note the port (default: 8586)
 2. In WordPress, select "Direct" connection mode
-3. Enter the URL to your OpenBroadcaster PC (e.g., `http://yourstation.ddns.net:8585` or `http://192.168.1.100:8585`)
+3. Enter the URL to your OpenBroadcaster PC (e.g., `http://yourstation.ddns.net:8586` or `http://192.168.1.100:8586`)
 4. Optionally set an API key (must match OpenBroadcaster settings)
 
 ### Relay Mode (NAT-Safe / Advanced)
@@ -132,7 +132,7 @@ The plugin uses CSS custom properties for easy theming. You can override these i
 
 ## API Integration
 
-In **Direct** mode the plugin talks to the desktop app's built-in HTTP API (for example `http://yourpc:8585/api/now-playing`, `/api/queue`, `/api/library/search`, `/api/requests`).
+In **Direct** mode the plugin talks to the desktop app's built-in HTTP API (for example `http://yourpc:8586/api/now-playing`, `/api/queue`, `/api/library/search`, `/api/requests`).
 
 In **Relay** mode the plugin communicates with the OpenBroadcaster Relay Service REST API:
 

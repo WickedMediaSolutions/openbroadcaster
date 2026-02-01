@@ -132,6 +132,29 @@ namespace OpenBroadcaster.Core.Services
             }
         }
 
+        public IReadOnlyCollection<Track> GetAllTracks()
+        {
+            lock (_syncRoot)
+            {
+                return _tracks.Values
+                    .OrderBy(static track => track.Title, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(static track => track.Id)
+                    .ToArray();
+            }
+        }
+
+        public IReadOnlyCollection<Track> GetUncategorizedTracks()
+        {
+            lock (_syncRoot)
+            {
+                return _tracks.Values
+                    .Where(static track => track.CategoryIds == null || track.CategoryIds.Count == 0)
+                    .OrderBy(static track => track.Title, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(static track => track.Id)
+                    .ToArray();
+            }
+        }
+
         public Track? GetTrack(Guid trackId)
         {
             if (trackId == Guid.Empty)

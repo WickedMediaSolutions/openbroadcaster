@@ -1642,8 +1642,10 @@ namespace OpenBroadcaster.ViewModels
                 return;
             }
 
-            if (_cartWallService.TryAssignPadFromFilePicker(pad.Id))
+            var path = SelectAudioFile();
+            if (!string.IsNullOrWhiteSpace(path))
             {
+                _cartWallService.AssignPadFile(pad.Id, path);
                 if (SelectedCart != pad)
                 {
                     SelectedCart = pad;
@@ -1703,11 +1705,25 @@ namespace OpenBroadcaster.ViewModels
                 return;
             }
 
-            if (_cartWallService.TryAssignPadFromFilePicker(SelectedCart.Id))
+            var path = SelectAudioFile();
+            if (!string.IsNullOrWhiteSpace(path))
             {
+                _cartWallService.AssignPadFile(SelectedCart.Id, path);
                 UpdateCartStatus(SelectedCart);
                 CommandManager.InvalidateRequerySuggested();
             }
+        }
+
+        private static string? SelectAudioFile()
+        {
+            using var dlg = new WinForms.OpenFileDialog()
+            {
+                Filter = "Audio files|*.mp3;*.wav;*.flac;*.aac;*.m4a|All files|*.*",
+                Multiselect = false
+            };
+
+            var res = dlg.ShowDialog();
+            return res == WinForms.DialogResult.OK ? dlg.FileName : null;
         }
 
         private void PersistCartPads()
@@ -2959,7 +2975,33 @@ namespace OpenBroadcaster.ViewModels
             Artist = track.Artist;
             Album = track.Album;
             Year = track.Year.ToString();
-            AlbumArt = AlbumArtExtractor.ExtractAlbumArt(track.FilePath);
+            var artBytes = OpenBroadcaster.Core.Audio.AlbumArtExtractor.ExtractAlbumArt(track.FilePath);
+            if (artBytes != null && artBytes.Length > 0)
+            {
+                try
+                {
+                    var image = new System.Windows.Media.Imaging.BitmapImage();
+                    using (var ms = new System.IO.MemoryStream(artBytes))
+                    {
+                        image.BeginInit();
+                        image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                        image.StreamSource = ms;
+                        image.DecodePixelWidth = 120;
+                        image.EndInit();
+                        image.Freeze();
+                    }
+
+                    AlbumArt = image;
+                }
+                catch
+                {
+                    AlbumArt = null;
+                }
+            }
+            else
+            {
+                AlbumArt = null;
+            }
         }
 
         private static string FormatTime(TimeSpan value)

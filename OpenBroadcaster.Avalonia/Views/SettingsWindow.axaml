@@ -1,0 +1,232 @@
+<Window xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  x:Class="OpenBroadcaster.Avalonia.Views.SettingsWindow"
+  Title="Application Settings"
+  Width="900" Height="600" MinWidth="700" MinHeight="480">
+  <Grid Margin="12">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <TabControl Grid.Row="0">
+      <TabItem Header="Audio">
+        <ScrollViewer Margin="8">
+          <StackPanel Spacing="8">
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <TextBlock Text="Master Volume" Width="180" />
+            <Slider Minimum="0" Maximum="100" Value="{Binding Settings.Audio.MasterVolumePercent, Mode=TwoWay}" Width="220" />
+            <TextBlock Text="{Binding Settings.Audio.MasterVolumePercent, StringFormat='{}{0}%'}" Margin="8,0,0,0" />
+          </StackPanel>
+
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <TextBlock Text="Main Output Device" Width="180" />
+            <ComboBox Width="300" Items="{Binding PlaybackDeviceOptions}" SelectedItem="{Binding SelectedMainOutputDevice, Mode=TwoWay}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding ProductName}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </StackPanel>
+
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <TextBlock Text="Mic Input" Width="180" />
+            <ComboBox Width="300" Items="{Binding InputDeviceOptions}" SelectedItem="{Binding SelectedMicInputDevice, Mode=TwoWay}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding ProductName}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Twitch">
+        <ScrollViewer Margin="8">
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="User Name" Width="180" />
+              <TextBox Text="{Binding Settings.Twitch.UserName, Mode=TwoWay}" Width="320" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="OAuth Token" Width="180" />
+              <TextBox Text="{Binding Settings.Twitch.OAuthToken, Mode=TwoWay}" Width="320" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Channel" Width="180" />
+              <TextBox Text="{Binding Settings.Twitch.Channel, Mode=TwoWay}" Width="320" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Radio Station Name" Width="180" />
+              <TextBox Text="{Binding Settings.Twitch.RadioStationName, Mode=TwoWay}" Width="320" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Points Name" Width="180" />
+              <TextBox Text="{Binding Settings.Twitch.PointsName, Mode=TwoWay}" Width="200" />
+              <TextBlock Text="Request Cost" Width="120" Margin="12,0,0,0" />
+              <NumericUpDown Value="{Binding Settings.Twitch.RequestCost, Mode=TwoWay}" Minimum="0" Maximum="10000" Width="100" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Play Next Cost" Width="180" />
+              <NumericUpDown Value="{Binding Settings.Twitch.PlayNextCost, Mode=TwoWay}" Minimum="0" Maximum="10000" Width="100" />
+              <TextBlock Text="Search Results Limit" Width="160" Margin="12,0,0,0" />
+              <NumericUpDown Value="{Binding Settings.Twitch.SearchResultsLimit, Mode=TwoWay}" Minimum="1" Maximum="25" Width="100" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Request Cooldown (s)" Width="180" />
+              <NumericUpDown Value="{Binding Settings.Twitch.RequestCooldownSeconds, Mode=TwoWay}" Minimum="0" Maximum="3600" Width="100" />
+              <TextBlock Text="Chat Award" Width="120" Margin="12,0,0,0" />
+              <NumericUpDown Value="{Binding Settings.Twitch.ChatMessageAwardPoints, Mode=TwoWay}" Minimum="0" Maximum="1000" Width="100" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Idle Award Points" Width="180" />
+              <NumericUpDown Value="{Binding Settings.Twitch.IdleAwardPoints, Mode=TwoWay}" Minimum="0" Maximum="1000" Width="100" />
+              <TextBlock Text="Idle Interval (min)" Width="140" Margin="12,0,0,0" />
+              <NumericUpDown Value="{Binding Settings.Twitch.IdleAwardIntervalMinutes, Mode=TwoWay}" Minimum="1" Maximum="1440" Width="100" />
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Encoders">
+        <Grid Margin="8">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="3*" />
+          </Grid.ColumnDefinitions>
+
+          <StackPanel Grid.Column="0" Spacing="8">
+            <ListBox Items="{Binding EncoderProfiles}" SelectedItem="{Binding SelectedEncoder, Mode=TwoWay}" Height="320" MinWidth="220">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Name}" />
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="Add" Command="{Binding AddEncoderCommand}" Width="90" />
+              <Button Content="Remove" Command="{Binding RemoveEncoderCommand}" Width="90" />
+            </StackPanel>
+          </StackPanel>
+
+          <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Name" Width="120" />
+              <TextBox Text="{Binding SelectedEncoder.Name, Mode=TwoWay}" Width="220" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Host" Width="120" />
+              <TextBox Text="{Binding SelectedEncoder.Host, Mode=TwoWay}" Width="220" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Port" Width="120" />
+              <NumericUpDown Value="{Binding SelectedEncoder.Port, Mode=TwoWay}" Minimum="1" Maximum="65535" Width="120" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Bitrate (kbps)" Width="120" />
+              <NumericUpDown Value="{Binding SelectedEncoder.BitrateKbps, Mode=TwoWay}" Minimum="16" Maximum="512" Width="120" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Enabled" Width="120" />
+              <CheckBox IsChecked="{Binding SelectedEncoder.Enabled, Mode=TwoWay}" />
+            </StackPanel>
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="Overlay">
+        <StackPanel Margin="8" Spacing="8">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="Enable Overlay" Width="180" />
+            <CheckBox IsChecked="{Binding Settings.Overlay.Enabled, Mode=TwoWay}" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="Overlay Port" Width="180" />
+            <TextBox Text="{Binding Settings.Overlay.Port, Mode=TwoWay}" Width="120" />
+          </StackPanel>
+        </StackPanel>
+      </TabItem>
+      
+      <TabItem Header="Automation">
+        <ScrollViewer Margin="8">
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock Text="Auto start AutoDJ when OpenBroadcaster launches" Width="420" />
+              <CheckBox IsChecked="{Binding Settings.Automation.AutoStartAutoDj, Mode=TwoWay}" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock Text="Target queue depth" Width="180" />
+              <TextBox Text="{Binding Settings.Automation.TargetQueueDepth, Mode=TwoWay}" Width="120" />
+            </StackPanel>
+
+            <Border Margin="0,8,0,0" BorderBrush="#1C2534" BorderThickness="1" CornerRadius="4" Padding="8">
+              <StackPanel>
+                <TextBlock Text="Rotations (Simple)" FontWeight="SemiBold" Margin="0,0,0,8" />
+                <ListBox Items="{Binding Settings.Automation.SimpleRotations}" SelectedItem="{Binding SelectedSimpleRotation, Mode=TwoWay}" Height="160">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                          <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}" Margin="0,0,8,0" />
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding CategoryNamesString}" Foreground="#888888" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                  <Button Content="Add" Command="{Binding AddSimpleRotationCommand}" Width="80" />
+                  <Button Content="Edit" Command="{Binding EditSimpleRotationCommand}" Width="80" />
+                  <Button Content="Remove" Command="{Binding RemoveSimpleRotationCommand}" Width="80" />
+                  <Button Content="Set Default" Command="{Binding SetDefaultSimpleRotationCommand}" Width="100" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+
+            <Border Margin="0,8,0,0" BorderBrush="#1C2534" BorderThickness="1" CornerRadius="4" Padding="8">
+              <StackPanel>
+                <TextBlock Text="Schedule (Simple)" FontWeight="SemiBold" Margin="0,0,0,8" />
+                <ListBox Items="{Binding Settings.Automation.SimpleSchedule}" SelectedItem="{Binding SelectedSimpleScheduleEntry, Mode=TwoWay}" Height="160">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                          <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}" Margin="0,0,8,0" />
+                          <TextBlock Text="{Binding RotationName}" FontWeight="SemiBold" />
+                          <TextBlock Text=" · " Foreground="#888888" />
+                          <TextBlock Text="{Binding StartTimeString}" />
+                          <TextBlock Text=" - " />
+                          <TextBlock Text="{Binding EndTimeString}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Day}" Foreground="#888888" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                  <Button Content="Add" Command="{Binding AddSimpleScheduleEntryCommand}" Width="80" />
+                  <Button Content="Edit" Command="{Binding EditSimpleScheduleEntryCommand}" Width="80" />
+                  <Button Content="Remove" Command="{Binding RemoveSimpleScheduleEntryCommand}" Width="80" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+
+            <TextBlock Text="Use the editor to set rotation names and category slots, then schedule them by day and time." Margin="0,12,0,0" Foreground="#888888" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+    </TabControl>
+
+    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+      <Button Name="BtnCancel" Content="Cancel" Width="90" />
+      <Button Name="BtnSave" Content="Save" Width="90" />
+    </StackPanel>
+  </Grid>
+</Window>

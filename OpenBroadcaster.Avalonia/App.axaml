@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OpenBroadcaster.Avalonia.App">
+  <Application.Styles>
+    <!-- Use FluentTheme so Avalonia controls have default styles -->
+    <FluentTheme />
+  </Application.Styles>
+</Application>

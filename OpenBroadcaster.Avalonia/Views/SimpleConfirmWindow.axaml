@@ -1,0 +1,13 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenBroadcaster.Avalonia.Views.SimpleConfirmWindow"
+        Width="420" Height="160">
+  <StackPanel Margin="12">
+    <TextBlock Name="PromptBlock" FontWeight="Bold" FontSize="14" TextWrapping="Wrap" />
+    <TextBlock Name="DetailBlock" Margin="0,8,0,8" TextWrapping="Wrap" />
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+      <Button Name="YesButton" Width="90" Margin="6,0" Click="YesClicked">Yes</Button>
+      <Button Width="90" Margin="6,0" Click="NoClicked">No</Button>
+    </StackPanel>
+  </StackPanel>
+</Window>

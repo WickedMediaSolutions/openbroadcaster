@@ -60,6 +60,7 @@ namespace OpenBroadcaster.Core.Services
         private IAudioEncoderTap? _encoderTap;
         private WaveFormat _encoderTapFormat = WaveFormat.CreateIeeeFloatWaveFormat(44100, 2);
         private int _encoderDeviceId = -1;
+        private double _encoderLevel = 1.0;
 
         public AudioService(ILogger<AudioService>? logger = null, IAudioDeviceResolver? deviceResolver = null)
         {
@@ -92,7 +93,16 @@ namespace OpenBroadcaster.Core.Services
             };
 
             _cartPlayer = new CartPlayer();
-            _cartPlayer.LevelChanged += (_, level) => _vuMeterService.UpdateSourceLevel(AudioSourceType.Cartwall, NormalizeLevel(level));
+            _cartPlayer.LevelChanged += (_, level) =>
+            {
+                var norm = NormalizeLevel(level);
+                _vuMeterService.UpdateSourceLevel(AudioSourceType.Cartwall, norm);
+                try
+                {
+                    CartLevelChanged?.Invoke(this, norm);
+                }
+                catch { }
+            };
             _logger.LogInformation("AudioService ready: DeckA={DeckA}, DeckB={DeckB}", DeckIdentifier.A, DeckIdentifier.B);
         }
 
@@ -100,6 +110,7 @@ namespace OpenBroadcaster.Core.Services
         public AudioDeck DeckB { get; }
 
         public event EventHandler<VuMeterReading>? VuMetersUpdated;
+        public event EventHandler<double>? CartLevelChanged;
         public event EventHandler<DeckIdentifier>? DeckPlaybackCompleted;
 
         public AudioRoutingGraph RoutingGraph => _routingGraph;
@@ -108,9 +119,45 @@ namespace OpenBroadcaster.Core.Services
         {
             _encoderTap = encoderTap;
             _encoderTapFormat = encoderTap?.TargetFormat ?? WaveFormat.CreateIeeeFloatWaveFormat(44100, 2);
-            DeckA.SetEncoderTap(_encoderTapFormat, encoderTap?.CreateSourceTap(AudioSourceType.DeckA));
-            DeckB.SetEncoderTap(_encoderTapFormat, encoderTap?.CreateSourceTap(AudioSourceType.DeckB));
-            _cartPlayer.SetEncoderTap(_encoderTapFormat, encoderTap?.CreateSourceTap(AudioSourceType.Cartwall));
+
+            // Wrap source taps so we can apply encoder level scaling before forwarding
+            AudioSampleBlockHandler? WrapTap(AudioSampleBlockHandler? raw)
+            {
+                if (raw == null) return null;
+                return (format, samples) =>
+                {
+                    try
+                    {
+                        if (Math.Abs(_encoderLevel - 1.0) < 1e-9)
+                        {
+                            raw(format, samples);
+                            return;
+                        }
+
+                        var buffer = new float[samples.Length];
+                        for (int i = 0; i < samples.Length; i++) buffer[i] = (float)(samples[i] * _encoderLevel);
+                        raw(format, buffer);
+                    }
+                    catch { }
+                };
+            }
+
+            var aTap = encoderTap?.CreateSourceTap(AudioSourceType.DeckA);
+            var bTap = encoderTap?.CreateSourceTap(AudioSourceType.DeckB);
+            var cTap = encoderTap?.CreateSourceTap(AudioSourceType.Cartwall);
+
+            DeckA.SetEncoderTap(_encoderTapFormat, WrapTap(aTap));
+            DeckB.SetEncoderTap(_encoderTapFormat, WrapTap(bTap));
+            _cartPlayer.SetEncoderTap(_encoderTapFormat, WrapTap(cTap));
+        }
+
+        /// <summary>
+        /// Sets the encoder mix level (0.0 - 1.0). This scales samples sent to the encoder tap.
+        /// </summary>
+        public double SetEncoderLevel(double level)
+        {
+            _encoderLevel = Math.Clamp(level, 0d, 1d);
+            return _encoderLevel;
         }
 
         public IReadOnlyList<AudioDeviceInfo> GetOutputDevices()
@@ -280,6 +327,8 @@ namespace OpenBroadcaster.Core.Services
         {
             resolvedDeviceId = requestedDeviceId;
 
+            // If the setting requests the system default (-1), resolve to the first available
+            // playback device so callers receive a concrete device id to apply per-role.
             if (requestedDeviceId == -1)
             {
                 if (devices.Count == 0)
@@ -288,6 +337,8 @@ namespace OpenBroadcaster.Core.Services
                     return false;
                 }
 
+                resolvedDeviceId = devices[0].DeviceNumber;
+                _logger.LogInformation("{Role} defaulting to device {Device} ({Name}).", role, resolvedDeviceId, devices[0].ProductName);
                 return true;
             }
 
@@ -367,7 +418,17 @@ namespace OpenBroadcaster.Core.Services
                     return;
                 }
 
-                tap.SubmitMicrophoneSamples(e.Format, e.GetSamplesSpan());
+                var span = e.GetSamplesSpan();
+                if (Math.Abs(_encoderLevel - 1.0) < 1e-9)
+                {
+                    tap.SubmitMicrophoneSamples(e.Format, span);
+                }
+                else
+                {
+                    var buffer = new float[span.Length];
+                    for (int i = 0; i < span.Length; i++) buffer[i] = (float)(span[i] * _encoderLevel);
+                    tap.SubmitMicrophoneSamples(e.Format, buffer);
+                }
             }
             finally
             {

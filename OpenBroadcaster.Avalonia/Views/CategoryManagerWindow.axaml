@@ -1,0 +1,47 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:conv="clr-namespace:OpenBroadcaster.Avalonia.Converters"
+        x:Class="OpenBroadcaster.Avalonia.Views.CategoryManagerWindow"
+        Width="600" Height="400" Title="Manage Categories">
+  <Window.Resources>
+    <conv:BoolToBrushConverter x:Key="BoolToBrushConverter" TrueBrush="LightYellow" FalseBrush="Transparent" />
+  </Window.Resources>
+  <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,260">
+    <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal" Margin="8" Spacing="6">
+      <TextBox Width="260" Name="NewCategoryName" Watermark="Category name"/>
+      <TextBox Width="140" Name="NewCategoryType" Margin="0" Watermark="Type (General)" />
+      <Button Content="Add" Width="80" Margin="6,0" Click="AddClicked" />
+    </StackPanel>
+
+    <StackPanel Grid.Column="0" Grid.Row="1" Orientation="Horizontal" Margin="8" Spacing="6">
+      <Button x:Name="EditButton" Content="Edit" Width="80" Margin="0,0,6,0" Click="EditClicked" IsEnabled="False" />
+      <Button x:Name="RemoveButton" Content="Remove" Width="80" Click="RemoveClicked" IsEnabled="False" />
+      <TextBlock VerticalAlignment="Center" Margin="12,0,0,0" Foreground="Gray">Select a category to edit or remove</TextBlock>
+    </StackPanel>
+
+    <ListBox Grid.Row="2" Grid.Column="0" Name="CategoriesList" Margin="8" SelectedIndex="-1">
+      <ListBox.ItemTemplate>
+        <DataTemplate>
+          <Border Padding="6" Background="{Binding IsToh, Converter={StaticResource BoolToBrushConverter}}" CornerRadius="4">
+            <StackPanel>
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="6">
+                <TextBlock Text="★" Foreground="DarkOrange" FontSize="14" VerticalAlignment="Center" IsVisible="{Binding IsToh}" />
+                <TextBlock Text="{Binding Name}" FontWeight="Bold" />
+                <TextBlock Text=" (TOH)" Foreground="DarkRed" Margin="6,0,0,0" IsVisible="{Binding IsToh}" />
+              </StackPanel>
+              <TextBlock Text="{Binding Type}" FontSize="12" Foreground="Gray" />
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+    <StackPanel Grid.Column="1" Grid.Row="0" Grid.RowSpan="3" Margin="8">
+      <TextBlock Text="Selected Category" FontWeight="Bold" />
+      <TextBlock Name="SelectedInfo" Margin="0,8" TextWrapping="Wrap" />
+      <TextBlock Text="Hints" FontWeight="Bold" Margin="0,12,0,6" />
+      <TextBlock Text="- Add categories with a type (e.g. 'Rotation', 'TOH')." TextWrapping="Wrap" />
+      <TextBlock Text="- Use Assign Categories in the main window to tag tracks." Margin="0,6,0,0" TextWrapping="Wrap" />
+    </StackPanel>
+  </Grid>
+</Window>

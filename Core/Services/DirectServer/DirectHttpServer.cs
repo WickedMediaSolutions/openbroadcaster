@@ -134,6 +134,16 @@ public class DirectHttpServer : IDisposable
         _onSongRequest = onSongRequest;
         _getStationName = getStationName;
         _logger = logger;
+        // create a single listener instance for the lifetime of this service to avoid recreated HttpListener disposal issues
+        try
+        {
+            _listener = new HttpListener();
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Failed to create HttpListener in constructor");
+            _listener = null;
+        }
     }
 
     /// <summary>
@@ -151,12 +161,39 @@ public class DirectHttpServer : IDisposable
 
             try
             {
-                _listener = new HttpListener();
-                _listener.Prefixes.Add(GetBaseUrl());
-                _listener.Start();
+                // Use the single listener instance created in the constructor. Clear and re-add prefixes each start.
+                if (_listener == null)
+                {
+                    _listener = new HttpListener();
+                }
+                var baseUrl = GetBaseUrl();
+                try
+                {
+                    _listener.Prefixes.Clear();
+                    _listener.Prefixes.Add(baseUrl);
+                    _listener.Start();
+                }
+                catch (HttpListenerException ex) when (ex.ErrorCode == 5 && baseUrl.Contains("+"))
+                {
+                    // Access denied when attempting to bind to '+' (all interfaces). Try localhost-only fallback
+                    _logger?.LogWarning(ex, "Access denied binding to {BaseUrl}; falling back to localhost-only binding", baseUrl);
+                    var localUrl = $"http://localhost:{_settings.Port}/";
+                    _listener.Prefixes.Clear();
+                    _listener.Prefixes.Add(localUrl);
+                    _listener.Start();
+                }
+
+                // If the listen loop is already running, just flip the running flag so it begins handling requests again.
+                if (_listenerTask != null && !_listenerTask.IsCompleted)
+                {
+                    _isRunning = true;
+                    _logger?.LogDebug("Direct HTTP server resumed on {Url}", GetLocalUrl());
+                    ServerStarted?.Invoke(this, EventArgs.Empty);
+                    return;
+                }
 
                 _cts = new CancellationTokenSource();
-                _listenerTask = Task.Run(() => ListenLoop(_cts.Token));
+                _listenerTask = Task.Run(() => ListenLoop(_listener, _cts.Token));
                 _isRunning = true;
 
                 _logger?.LogInformation("Direct HTTP server started on {Url}", GetLocalUrl());
@@ -173,6 +210,11 @@ public class DirectHttpServer : IDisposable
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Failed to start direct HTTP server");
+                // Ensure partially-initialized listener is cleaned up
+                try { _listener?.Close(); } catch { }
+                _listener = null;
+                _cts = null;
+                _listenerTask = null;
                 throw;
             }
         }
@@ -189,10 +231,13 @@ public class DirectHttpServer : IDisposable
 
             try
             {
-                _cts?.Cancel();
-                _listener?.Stop();
-                _listener?.Close();
-                _listenerTask?.Wait(TimeSpan.FromSeconds(2));
+                // Rather than disposing/closing the underlying HttpListener (which can cause ObjectDisposed errors
+                // when creating new instances), we simply mark the server as not running. The listen loop stays
+                // active and will return 503 for incoming requests while stopped. This allows fast Stop/Start
+                // cycles on the same DirectHttpServer instance without recreating the HttpListener.
+                _isRunning = false;
+                _logger?.LogDebug("Direct HTTP server paused");
+                return;
             }
             catch (Exception ex)
             {
@@ -201,7 +246,6 @@ public class DirectHttpServer : IDisposable
             finally
             {
                 _isRunning = false;
-                _listener = null;
                 _cts = null;
                 _listenerTask = null;
                 
@@ -211,16 +255,16 @@ public class DirectHttpServer : IDisposable
         }
     }
 
-    private async Task ListenLoop(CancellationToken cancellationToken)
+    private async Task ListenLoop(HttpListener listener, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-                if (_listener == null || !_listener.IsListening)
+                if (listener == null || !listener.IsListening)
                     break;
 
-                var context = await _listener.GetContextAsync().ConfigureAwait(false);
+                var context = await listener.GetContextAsync().ConfigureAwait(false);
                 _ = Task.Run(() => HandleRequest(context), cancellationToken);
             }
             catch (HttpListenerException) when (cancellationToken.IsCancellationRequested)
@@ -234,6 +278,8 @@ public class DirectHttpServer : IDisposable
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Error in HTTP listener loop");
+                // Small delay to avoid tight loop on repeated errors
+                try { await Task.Delay(1000, cancellationToken).ConfigureAwait(false); } catch { break; }
             }
         }
     }
@@ -245,6 +291,12 @@ public class DirectHttpServer : IDisposable
 
         try
         {
+            // If server is paused, return 503 Service Unavailable
+            if (!_isRunning)
+            {
+                await SendError(response, 503, "Server is stopped");
+                return;
+            }
             // Log request
             var endpoint = $"{request.HttpMethod} {request.Url?.PathAndQuery}";
             RequestReceived?.Invoke(this, endpoint);
@@ -484,6 +536,9 @@ public class DirectHttpServer : IDisposable
 
     public void Dispose()
     {
+        // Stop and then close the listener instance for good.
         Stop();
+        try { _listener?.Close(); } catch { }
+        _listener = null;
     }
 }

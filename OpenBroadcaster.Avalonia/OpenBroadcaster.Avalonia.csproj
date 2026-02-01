@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.0.0-preview6" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.0.0-preview6" />
+    <PackageReference Include="Avalonia.ReactiveUI" Version="11.0.0-preview6" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.0-preview6" />
+    <PackageReference Include="TagLibSharp" Version="2.3.0" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenBroadcaster.Core\OpenBroadcaster.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Copy Overlay HTML/CSS/JS files for OBS Browser Source -->
+    <None Include="..\Overlay\**\*" CopyToOutputDirectory="PreserveNewest" LinkBase="Overlay\" />
+  </ItemGroup>
+</Project>

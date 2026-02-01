@@ -17,6 +17,7 @@ namespace OpenBroadcaster.Core.Models
         public EncoderSettings Encoder { get; set; } = new EncoderSettings();
         public CartWallSettings CartWall { get; set; } = new CartWallSettings();
         public OverlaySettings Overlay { get; set; } = new OverlaySettings();
+        public LastFmSettings LastFm { get; set; } = new LastFmSettings();
         public AutomationSettings Automation { get; set; } = new AutomationSettings();
         public RequestSettings Requests { get; set; } = new RequestSettings();
         public DirectServerSettings DirectServer { get; set; } = new DirectServerSettings();
@@ -32,6 +33,7 @@ namespace OpenBroadcaster.Core.Models
             Encoder ??= new EncoderSettings();
             Encoder.Profiles ??= new ObservableCollection<EncoderProfile>();
             Overlay ??= new OverlaySettings();
+            LastFm ??= new LastFmSettings();
             Automation ??= new AutomationSettings();
             Automation.ClockwheelSlots ??= new ObservableCollection<ClockwheelSlotSettings>();
             Automation.Rotations ??= new ObservableCollection<RotationDefinitionSettings>();
@@ -53,6 +55,14 @@ namespace OpenBroadcaster.Core.Models
             Requests ??= new RequestSettings();
             DirectServer ??= new DirectServerSettings();
         }
+    }
+
+    public sealed class LastFmSettings
+    {
+        /// <summary>
+        /// Optional Last.fm API key. Leave blank to disable Last.fm lookups.
+        /// </summary>
+        public string ApiKey { get; set; } = string.Empty;
     }
 
     public sealed class AudioSettings
@@ -100,7 +110,7 @@ namespace OpenBroadcaster.Core.Models
 
     public sealed class OverlaySettings
     {
-        public bool Enabled { get; set; }
+        public bool Enabled { get; set; } = true;  // Enable by default for OBS integration
         public int Port { get; set; } = 9750;
         public int RequestListLimit { get; set; } = 5;
         public int RecentListLimit { get; set; } = 5;
@@ -255,9 +265,9 @@ namespace OpenBroadcaster.Core.Models
         public bool Enabled { get; set; }
 
         /// <summary>
-        /// The port to listen on. Default is 8585.
+        /// The port to listen on. Default is 8586.
         /// </summary>
-        public int Port { get; set; } = 8585;
+        public int Port { get; set; } = 8586;
 
         /// <summary>
         /// Whether to allow connections from remote machines (not just localhost).

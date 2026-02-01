@@ -6,7 +6,9 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using Microsoft.Extensions.Logging;
-using Microsoft.Win32;
+using NAudio.Wave;
+using OpenBroadcaster.Core.Diagnostics;
+// UI file pickers belong in the platform UI layer; keep core platform-neutral
 using OpenBroadcaster.Core.Audio;
 using OpenBroadcaster.Core.Diagnostics;
 using OpenBroadcaster.Core.Models;
@@ -68,25 +70,10 @@ namespace OpenBroadcaster.Core.Services
             return pad;
         }
 
-        public bool TryAssignPadFromFilePicker(int padId)
-        {
-            var pad = GetPad(padId);
-
-            var dialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Filter = "Audio Files|*.mp3;*.wav;*.flac;*.aac;*.wma;*.ogg|All Files|*.*",
-                Title = $"Assign audio to {pad.Label}"
-            };
-
-            var result = dialog.ShowDialog();
-            if (result == true && !string.IsNullOrWhiteSpace(dialog.FileName))
-            {
-                AssignPadFile(padId, dialog.FileName);
-                return true;
-            }
-
-            return false;
-        }
+        // NOTE: File picker/dialog APIs are part of the UI layer and
+        // should not live in the core library. Use `AssignPadFile(int,string)`
+        // from UI code after collecting a file path from the platform-specific
+        // file picker.
 
         public void AssignPadFile(int padId, string filePath)
         {
@@ -100,7 +87,22 @@ namespace OpenBroadcaster.Core.Services
 
             pad.FilePath = filePath;
             pad.Label = Path.GetFileNameWithoutExtension(filePath);
-            _logger.LogInformation("Assigned file {FilePath} to cart pad {PadId}", filePath, padId);
+            
+            // Extract audio duration
+            try
+            {
+                using (var reader = new AudioFileReader(filePath))
+                {
+                    pad.Duration = reader.TotalTime;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to read duration from {FilePath}", filePath);
+                pad.Duration = TimeSpan.Zero;
+            }
+            
+            _logger.LogInformation("Assigned file {FilePath} to cart pad {PadId} (Duration: {Duration})", filePath, padId, pad.Duration);
         }
 
         public void ClearPad(int padId)
@@ -168,6 +170,29 @@ namespace OpenBroadcaster.Core.Services
                 if (snapshot != null && !string.IsNullOrWhiteSpace(snapshot.FilePath))
                 {
                     pad.FilePath = snapshot.FilePath;
+                    
+                    // Extract audio duration for stored files (Windows only)
+                    if (PlatformDetection.SupportsWindowsAudio)
+                    {
+                        try
+                        {
+                            if (File.Exists(snapshot.FilePath))
+                            {
+                                using (var reader = new AudioFileReader(snapshot.FilePath))
+                                {
+                                    pad.Duration = reader.TotalTime;
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Failed to read duration from stored cart pad {PadId} file {FilePath}", id, snapshot.FilePath);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Audio duration reading not supported on {Platform}; cart pad {PadId} will not show countdown timer", PlatformDetection.PlatformName, id);
+                    }
                 }
 
                 if (snapshot != null && !string.IsNullOrWhiteSpace(snapshot.Hotkey))
@@ -225,7 +250,30 @@ namespace OpenBroadcaster.Core.Services
 
             try
             {
-                var playback = _audioService.PlayCart(pad.FilePath, pad.LoopEnabled);
+                // Callback to update remaining time during playback
+                // Wrap in sync context to ensure UI thread updates
+                Action<TimeSpan> elapsedCallback = (elapsedTime) =>
+                {
+                    if (_syncContext != null)
+                    {
+                        _syncContext.Post(_ =>
+                        {
+                            if (pad.Duration > TimeSpan.Zero)
+                            {
+                                pad.RemainingTime = pad.Duration - elapsedTime;
+                            }
+                        }, null);
+                    }
+                    else
+                    {
+                        if (pad.Duration > TimeSpan.Zero)
+                        {
+                            pad.RemainingTime = pad.Duration - elapsedTime;
+                        }
+                    }
+                };
+
+                var playback = _audioService.PlayCart(pad.FilePath, pad.LoopEnabled, elapsedCallback);
                 EventHandler handler = (_, __) => OnPlaybackCompleted(pad.Id);
                 playback.Completed += handler;
                 _active[pad.Id] = new PlaybackEntry(playback, handler);
@@ -262,6 +310,8 @@ namespace OpenBroadcaster.Core.Services
             var pad = _pads.FirstOrDefault(p => p.Id == padId);
             if (pad != null)
             {
+                pad.RemainingTime = TimeSpan.Zero;
+                pad.Duration = TimeSpan.Zero;
                 UpdatePadIsPlaying(pad, false);
             }
 

@@ -78,10 +78,10 @@ if (isset($_GET['test_connection']) && wp_verify_nonce($_GET['_wpnonce'], 'obw_t
                             <td>
                                 <input type="url" id="obw_direct_url" name="obw_direct_url" 
                                        value="<?php echo esc_attr(get_option('obw_direct_url')); ?>" 
-                                       class="regular-text" placeholder="http://192.168.1.100:8585" />
+                                       class="regular-text" placeholder="http://192.168.1.100:8586" />
                                 <p class="description">
-                                    <?php _e('The URL of your OpenBroadcaster PC. Default port is 8585.', 'openbroadcaster-web'); ?><br>
-                                    <?php _e('Examples: http://192.168.1.100:8585 or http://yourstation.ddns.net:8585', 'openbroadcaster-web'); ?>
+                                    <?php _e('The URL of your OpenBroadcaster PC. Default port is 8586.', 'openbroadcaster-web'); ?><br>
+                                    <?php _e('Examples: http://192.168.1.100:8586 or http://yourstation.ddns.net:8586', 'openbroadcaster-web'); ?>
                                 </p>
                             </td>
                         </tr>

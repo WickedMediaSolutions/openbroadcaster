@@ -21,7 +21,7 @@ namespace OpenBroadcaster.Core.Services
         private readonly TransportService _transportService;
         private readonly LoyaltyLedger _loyaltyLedger;
         private readonly LibraryService _libraryService;
-        private readonly TwitchIrcClient _ircClient;
+        private readonly ITwitchIrcClient _ircClient;
         private readonly ILogger<TwitchIntegrationService> _logger;
 
         private readonly Dictionary<string, SearchSession> _searchSessions = new(StringComparer.OrdinalIgnoreCase);
@@ -46,7 +46,7 @@ namespace OpenBroadcaster.Core.Services
             TransportService transportService,
             LoyaltyLedger loyaltyLedger,
             LibraryService libraryService,
-            TwitchIrcClient? ircClient = null,
+            ITwitchIrcClient? ircClient = null,
             ILogger<TwitchIntegrationService>? logger = null)
         {
             _queueService = queueService ?? throw new ArgumentNullException(nameof(queueService));
@@ -64,6 +64,8 @@ namespace OpenBroadcaster.Core.Services
         public event EventHandler<TwitchChatMessage>? ChatMessageReceived;
         public event EventHandler? QueueChanged;
         public event EventHandler<string>? StatusChanged;
+
+        public bool IsConnected => _ircClient.IsConnected;
 
         public void UpdateSettings(TwitchSettings settings)
         {
@@ -87,14 +89,16 @@ namespace OpenBroadcaster.Core.Services
             }
 
             var track = queueItem.Track;
+            var stationName = _settings?.RadioStationName ?? "the station";
             string message;
+            
             if (queueItem.HasRequester)
             {
-                message = $"Now playing: {track.Artist} - {track.Title} requested by @{queueItem.RequestedBy}";
+                message = $"{track.Artist} - {track.Title} is jamming on {stationName} (requested by @{queueItem.RequestedBy}) turn it up!";
             }
             else
             {
-                message = $"Now playing: {track.Artist} - {track.Title}";
+                message = $"{track.Artist} - {track.Title} is jamming on {stationName} turn it up!";
             }
 
             RespondToChat(message, echo: true);
@@ -210,7 +214,7 @@ namespace OpenBroadcaster.Core.Services
             HandleCommand(e, command.ToLowerInvariant(), arguments);
         }
 
-        internal void HandleCommand(TwitchChatMessage context, string command, string arguments)
+        public void HandleCommand(TwitchChatMessage context, string command, string arguments)
         {
             if (TryHandleSelectionCommand(context, command))
             {

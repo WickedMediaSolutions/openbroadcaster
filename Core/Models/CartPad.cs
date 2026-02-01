@@ -13,6 +13,8 @@ namespace OpenBroadcaster.Core.Models
         private string _colorHex;
         private string _hotkey = string.Empty;
         private bool _loopEnabled;
+        private TimeSpan _remainingTime = TimeSpan.Zero;
+        private TimeSpan _duration = TimeSpan.Zero;
 
         public CartPad(int id, string label, string colorHex)
         {
@@ -52,7 +54,13 @@ namespace OpenBroadcaster.Core.Models
         public bool IsPlaying
         {
             get => _isPlaying;
-            set => SetProperty(ref _isPlaying, value);
+            set
+            {
+                if (SetProperty(ref _isPlaying, value))
+                {
+                    OnPropertyChanged(nameof(RemainingTimeDisplay));
+                }
+            }
         }
 
         public string ColorHex
@@ -72,6 +80,34 @@ namespace OpenBroadcaster.Core.Models
             get => _loopEnabled;
             set => SetProperty(ref _loopEnabled, value);
         }
+
+        public TimeSpan RemainingTime
+        {
+            get => _remainingTime;
+            set
+            {
+                if (SetProperty(ref _remainingTime, value))
+                {
+                    OnPropertyChanged(nameof(RemainingTimeDisplay));
+                }
+            }
+        }
+
+        public TimeSpan Duration
+        {
+            get => _duration;
+            set
+            {
+                if (SetProperty(ref _duration, value))
+                {
+                    OnPropertyChanged(nameof(RemainingTimeDisplay));
+                }
+            }
+        }
+
+        public string RemainingTimeDisplay => IsPlaying && Duration.TotalSeconds > 0
+            ? $"{(int)RemainingTime.TotalSeconds}s"
+            : string.Empty;
 
         public bool HasAudio => !string.IsNullOrWhiteSpace(FilePath);
         public bool IsPlayable => HasAudio && File.Exists(FilePath);

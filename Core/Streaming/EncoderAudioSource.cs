@@ -209,6 +209,7 @@ namespace OpenBroadcaster.Core.Streaming
         {
             try
             {
+#if WINDOWS
                 using var enumerator = new MMDeviceEnumerator();
                 if (deviceNumber < 0)
                 {
@@ -225,6 +226,10 @@ namespace OpenBroadcaster.Core.Streaming
                 }
 
                 return enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+#else
+                throw new PlatformNotSupportedException(
+                    $"Loopback audio capture is only supported on Windows. Running on: {PlatformDetection.ArchitectureInfo}");
+#endif
             }
             catch
             {

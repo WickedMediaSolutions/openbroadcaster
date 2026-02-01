@@ -1,0 +1,12 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenBroadcaster.Avalonia.Views.SimpleMessageWindow"
+        Width="400" Height="200" Title="SimpleMessageWindow">
+  <StackPanel Margin="12">
+    <TextBlock Name="TitleBlock" FontWeight="Bold" FontSize="16" TextWrapping="Wrap" />
+    <ScrollViewer Margin="0,8,0,8" VerticalScrollBarVisibility="Auto">
+      <TextBlock Name="MessageBlock" TextWrapping="Wrap" />
+    </ScrollViewer>
+    <Button HorizontalAlignment="Right" Width="90" Click="CloseClicked">OK</Button>
+  </StackPanel>
+</Window>

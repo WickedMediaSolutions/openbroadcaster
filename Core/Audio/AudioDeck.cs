@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using OpenBroadcaster.Core.Models;
+using OpenBroadcaster.Core.Diagnostics;
 using Timer = System.Timers.Timer;
 using ElapsedEventArgs = System.Timers.ElapsedEventArgs;
 
@@ -169,6 +170,12 @@ namespace OpenBroadcaster.Core.Audio
         {
             if (_waveOut == null)
             {
+                if (!PlatformDetection.SupportsWindowsAudio)
+                {
+                    throw new PlatformNotSupportedException(
+                        $"Audio playback is only supported on Windows. Running on: {PlatformDetection.ArchitectureInfo}");
+                }
+
                 _waveOut = new WaveOutEvent { DeviceNumber = _deviceNumber };
                 _waveOut.Volume = _volume;
                 _waveOut.PlaybackStopped += OnPlaybackStopped;
