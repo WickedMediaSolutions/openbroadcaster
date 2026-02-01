@@ -268,6 +268,7 @@
                   <RowDefinition Height="Auto" />
                   <RowDefinition Height="Auto" />
                   <RowDefinition Height="Auto" />
+                  <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <!-- Program / Main Output -->
@@ -316,6 +317,33 @@
                     <Slider Minimum="0" Maximum="100" Value="{Binding EncoderVolume, Mode=TwoWay}" Width="160" />
                     <TextBlock Text="{Binding EncoderVolume, StringFormat='{}{0}%'}" Width="44" Foreground="#9AA6B3" Margin="8,0,0,0" VerticalAlignment="Center" />
                   </StackPanel>
+                  <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <ToggleButton IsChecked="{Binding EncodersEnabled}" Width="140">
+                      <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="10" Height="10" Margin="0,0,6,0" VerticalAlignment="Center"
+                                 Stroke="#2F343F" StrokeThickness="1"
+                                 Fill="{Binding EncodersEnabled, Converter={x:Static conv:BoolToBrushConverter.Instance}, ConverterParameter='#00FF00|#3A4252'}" />
+                        <TextBlock Text="Enable Encoders" />
+                      </StackPanel>
+                    </ToggleButton>
+                    <TextBlock Text="{Binding EncoderStatusMessage}" Foreground="#9AA6B3" Margin="8,0,0,0" VerticalAlignment="Center" />
+                  </StackPanel>
+                </StackPanel>
+
+                <!-- Encoder Console -->
+                <StackPanel Grid.Row="4" Orientation="Vertical" Margin="0,10,0,0">
+                  <TextBlock Text="Encoder Console" Foreground="#9AA6B3" />
+                  <Border Background="#121826" CornerRadius="4" Padding="6" Margin="0,6,0,0">
+                    <ScrollViewer Height="140">
+                      <ListBox Items="{Binding EncoderLog}">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate>
+                            <TextBlock Text="{Binding}" Foreground="#DDE7F3" FontSize="12" />
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                    </ScrollViewer>
+                  </Border>
                 </StackPanel>
               </Grid>
             </StackPanel>

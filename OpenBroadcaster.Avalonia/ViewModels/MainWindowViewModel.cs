@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Avalonia.Threading;
@@ -36,6 +37,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         private readonly System.Collections.ObjectModel.ObservableCollection<LibraryItemViewModel> _libraryItems = new();
         private readonly System.Collections.ObjectModel.ObservableCollection<OpenBroadcaster.Core.Models.LibraryCategory> _libraryCategories = new();
         private readonly System.Collections.ObjectModel.ObservableCollection<ChatMessageViewModel> _chatMessages = new();
+        private readonly System.Collections.ObjectModel.ObservableCollection<string> _encoderLog = new();
         private string _librarySearchText = string.Empty;
         private OpenBroadcaster.Core.Models.LibraryCategory? _selectedLibraryCategory;
         private string _libraryStatusMessage = string.Empty;
@@ -45,6 +47,8 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         private bool _isTwitchConnecting = false;
         private bool _autoDjEnabled = false;
         private string _autoDjStatusMessage = string.Empty;
+        private bool _encodersEnabled = false;
+        private string _encoderStatusMessage = "Encoders offline.";
         private bool _micEnabled = false;
         private int _micVolume = 50;
         private int _masterVolume = 80;
@@ -107,6 +111,28 @@ namespace OpenBroadcaster.Avalonia.ViewModels
 
             _encoderManager = new EncoderManager();
             try { _encoderManager.UpdateConfiguration(_appSettings.Encoder, _appSettings.Audio.EncoderDeviceId); } catch { }
+            try
+            {
+                _encoderManager.StatusChanged += (_, args) => Dispatcher.UIThread.Post(() =>
+                {
+                    AppendEncoderLog(args.Status);
+                    UpdateEncoderStatusSummary();
+                });
+                foreach (var status in _encoderManager.SnapshotStatuses())
+                {
+                    AppendEncoderLog(status);
+                }
+            }
+            catch { }
+
+            try
+            {
+                if (_appSettings.Encoder?.AutoStart == true && HasEnabledEncoderProfiles())
+                {
+                    EncodersEnabled = true;
+                }
+            }
+            catch { }
 
             // Initialize Twitch service and hook events
             EnsureTwitchService();
@@ -526,6 +552,41 @@ namespace OpenBroadcaster.Avalonia.ViewModels
 
         public double TwitchChatFontSize { get => _twitchChatFontSize; set { if (Math.Abs(_twitchChatFontSize - value) > 0.01) { _twitchChatFontSize = value; OnPropertyChanged(); } } }
         public System.Collections.ObjectModel.ObservableCollection<ChatMessageViewModel> ChatMessages => _chatMessages;
+        public System.Collections.ObjectModel.ObservableCollection<string> EncoderLog => _encoderLog;
+
+        public bool EncodersEnabled
+        {
+            get => _encodersEnabled;
+            set
+            {
+                if (_encodersEnabled != value)
+                {
+                    _encodersEnabled = value;
+                    OnPropertyChanged();
+                    if (_encodersEnabled)
+                    {
+                        StartEncoders();
+                    }
+                    else
+                    {
+                        StopEncoders();
+                    }
+                }
+            }
+        }
+
+        public string EncoderStatusMessage
+        {
+            get => _encoderStatusMessage;
+            private set
+            {
+                if (_encoderStatusMessage != value)
+                {
+                    _encoderStatusMessage = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         public bool TwitchChatEnabled
         {
@@ -658,6 +719,101 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         public void Stop()
         {
             _radioService.Stop();
+        }
+
+        private bool HasEnabledEncoderProfiles()
+        {
+            var profiles = _appSettings?.Encoder?.Profiles;
+            return profiles != null && profiles.Any(profile => profile.Enabled);
+        }
+
+        private void StartEncoders()
+        {
+            if (!HasEnabledEncoderProfiles())
+            {
+                AppendEncoderLog(new EncoderStatus(Guid.Empty, "Encoders", EncoderState.Stopped, "No enabled encoder profiles.", null));
+                EncoderStatusMessage = "No encoder profiles enabled.";
+                _encodersEnabled = false;
+                OnPropertyChanged(nameof(EncodersEnabled));
+                return;
+            }
+
+            try
+            {
+                _encoderManager.Start();
+                UpdateEncoderStatusSummary();
+            }
+            catch (Exception ex)
+            {
+                AppendEncoderLog(new EncoderStatus(Guid.Empty, "Encoders", EncoderState.Failed, ex.Message, null));
+                EncoderStatusMessage = $"Encoder start failed: {ex.Message}";
+                _encodersEnabled = false;
+                OnPropertyChanged(nameof(EncodersEnabled));
+            }
+        }
+
+        private void StopEncoders()
+        {
+            try
+            {
+                _encoderManager.Stop();
+                UpdateEncoderStatusSummary();
+            }
+            catch { }
+        }
+
+        private void UpdateEncoderStatusSummary()
+        {
+            var statuses = _encoderManager.SnapshotStatuses()?.ToList() ?? new List<EncoderStatus>();
+            if (statuses.Count == 0)
+            {
+                EncoderStatusMessage = "No encoder profiles configured.";
+                return;
+            }
+
+            if (statuses.Any(status => status.State == EncoderState.Connecting))
+            {
+                EncoderStatusMessage = "Encoders connecting...";
+                return;
+            }
+
+            var streamingCount = statuses.Count(status => status.State == EncoderState.Streaming);
+            if (streamingCount > 0)
+            {
+                EncoderStatusMessage = streamingCount == 1
+                    ? "Streaming to 1 target."
+                    : $"Streaming to {streamingCount} targets.";
+                return;
+            }
+
+            var failed = statuses.FirstOrDefault(status => status.State == EncoderState.Failed);
+            if (failed != null)
+            {
+                EncoderStatusMessage = $"Encoder error: {failed.Message}";
+                return;
+            }
+
+            EncoderStatusMessage = _encodersEnabled ? "Encoders armed." : "Encoders offline.";
+        }
+
+        private void AppendEncoderLog(OpenBroadcaster.Core.Streaming.EncoderStatus status)
+        {
+            if (status == null)
+            {
+                return;
+            }
+
+            var timestamp = DateTime.Now.ToString("HH:mm:ss");
+            var line = $"[{timestamp}] {status.Name}: {status.State} - {status.Message}";
+            _encoderLog.Add(line);
+
+            const int maxLines = 200;
+            while (_encoderLog.Count > maxLines)
+            {
+                _encoderLog.RemoveAt(0);
+            }
+
+            OnPropertyChanged(nameof(EncoderLog));
         }
 
         public void AddLibraryItemToQueue(LibraryItemViewModel item)

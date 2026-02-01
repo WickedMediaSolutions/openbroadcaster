@@ -127,6 +127,26 @@
               <NumericUpDown Value="{Binding SelectedEncoder.Port, Mode=TwoWay}" Minimum="1" Maximum="65535" Width="120" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Mount" Width="120" />
+              <TextBox Text="{Binding SelectedEncoder.Mount, Mode=TwoWay}" Width="220" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Source User" Width="120" />
+              <TextBox Text="{Binding SelectedEncoder.Username, Mode=TwoWay}" Width="220" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Source Password" Width="120" />
+              <TextBox Text="{Binding SelectedEncoder.Password, Mode=TwoWay}" Width="220" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Admin User" Width="120" />
+              <TextBox Text="{Binding SelectedEncoder.AdminUser, Mode=TwoWay}" Width="220" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Admin Password" Width="120" />
+              <TextBox Text="{Binding SelectedEncoder.AdminPassword, Mode=TwoWay}" Width="220" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
               <TextBlock Text="Bitrate (kbps)" Width="120" />
               <NumericUpDown Value="{Binding SelectedEncoder.BitrateKbps, Mode=TwoWay}" Minimum="16" Maximum="512" Width="120" />
             </StackPanel>

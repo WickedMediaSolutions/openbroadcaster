@@ -20,9 +20,9 @@ if not exist %ISCC% (
 )
 
 REM Build the application first
-echo [1/3] Building OpenBroadcaster in Release mode...
+echo [1/3] Building OpenBroadcaster Avalonia in Release mode...
 cd /d "%~dp0.."
-dotnet publish OpenBroadcaster.csproj -c Release -r win-x64 --self-contained true -o "bin\Installer"
+dotnet publish OpenBroadcaster.Avalonia\OpenBroadcaster.Avalonia.csproj -c Release -r win-x64 --self-contained true -o "bin\Installer"
 if errorlevel 1 (
     echo ERROR: Build failed!
     pause
