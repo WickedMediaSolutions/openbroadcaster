@@ -121,23 +121,22 @@ echo ""
 
 echo "[3/3] Verifying libraries..."
 
-# Verify key libraries
+# Check for key audio libraries
 MISSING=0
-for lib in libmp3lame libopus libvorbis libflac libopenal; do
-    if ! find /usr -name "${lib}*.so*" 2>/dev/null | grep -q .; then
-        echo "✗ Missing: $lib"
-        MISSING=1
-    else
+
+for lib in libmp3lame libopus libvorbis libFLAC libopenal; do
+    if find /usr/lib -name "${lib}*.so*" 2>/dev/null | grep -q .; then
         echo "✓ Found: $lib"
+    else
+        echo "⚠ Warning: $lib not found in standard location"
     fi
 done
 
 echo ""
 
 if [ $MISSING -eq 1 ]; then
-    echo "⚠ Some libraries are missing!"
-    echo "The application may not work correctly."
-    echo "Try running: sudo apt-get install --reinstall libmp3lame0"
+    echo "⚠ Some libraries may be missing!"
+    echo "Try running: sudo apt-get install libmp3lame0 libopenal1"
     exit 1
 fi
 
