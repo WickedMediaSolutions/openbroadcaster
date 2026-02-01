@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:OpenBroadcaster.Avalonia.Converters"
              x:Class="OpenBroadcaster.Avalonia.App">
+  <Application.Resources>
+    <converters:EnumToIndexConverter x:Key="EnumToIndexConverter" />
+    <converters:TohCategoryConverter x:Key="TohCategoryConverter" />
+  </Application.Resources>
   <Application.Styles>
     <!-- Use FluentTheme so Avalonia controls have default styles -->
     <FluentTheme />

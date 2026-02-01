@@ -26,7 +26,6 @@ namespace OpenBroadcaster.Avalonia.Views
         {
             try
             {
-                // If DataContext is SettingsViewModel, ask it to save; otherwise fall back to AppSettings
                 if (this.DataContext is OpenBroadcaster.Avalonia.ViewModels.SettingsViewModel svm)
                 {
                     svm.Save();

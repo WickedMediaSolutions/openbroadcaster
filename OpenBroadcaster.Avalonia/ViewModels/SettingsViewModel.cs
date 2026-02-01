@@ -47,9 +47,14 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             Settings.Automation ??= new OpenBroadcaster.Core.Models.AutomationSettings();
             Settings.Automation.SimpleRotations ??= new System.Collections.ObjectModel.ObservableCollection<SimpleRotation>();
             Settings.Automation.SimpleSchedule ??= new System.Collections.ObjectModel.ObservableCollection<SimpleSchedulerEntry>();
+            Settings.Automation.TopOfHour ??= new TohSettings();
+            Settings.Automation.TopOfHour.Slots ??= new System.Collections.ObjectModel.ObservableCollection<TohSlot>();
+            Settings.Automation.TopOfHour.SequentialIndices ??= new System.Collections.ObjectModel.ObservableCollection<TohSequentialIndex>();
 
             // Build category options from library
             RotationCategoryOptions = BuildCategoryOptions(_libraryService?.GetCategories());
+            TohCategoryOptions = BuildTohCategoryOptions(_libraryService?.GetCategories());
+            TohCategoryOptionsProvider.Options = TohCategoryOptions;
 
             // Load persisted AutoDJ rotations/schedule/default into in-memory settings
             SyncFromAutoDjSettings();
@@ -65,6 +70,12 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             AddSimpleScheduleEntryCommand = new AsyncRelayCommand(async _ => await AddSimpleScheduleEntryAsync());
             RemoveSimpleScheduleEntryCommand = new RelayCommand(_ => RemoveSelectedSimpleScheduleEntry(), _ => SelectedSimpleScheduleEntry != null);
             EditSimpleScheduleEntryCommand = new AsyncRelayCommand(async _ => await EditSimpleScheduleEntryAsync(), _ => SelectedSimpleScheduleEntry != null);
+
+            // Top-of-Hour commands
+            AddTohSlotCommand = new RelayCommand(_ => AddTohSlot());
+            RemoveTohSlotCommand = new RelayCommand(_ => RemoveSelectedTohSlot(), _ => SelectedTohSlot != null);
+            MoveTohSlotUpCommand = new RelayCommand(_ => MoveTohSlotUp(), _ => CanMoveTohSlotUp());
+            MoveTohSlotDownCommand = new RelayCommand(_ => MoveTohSlotDown(), _ => CanMoveTohSlotDown());
         }
 
         public AppSettings Settings { get; }
@@ -73,6 +84,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         public ObservableCollection<AudioDeviceInfo> InputDeviceOptions { get; }
 
         public IReadOnlyList<string> RotationCategoryOptions { get; }
+        public IReadOnlyList<TohCategoryOption> TohCategoryOptions { get; }
 
         public AudioDeviceInfo? SelectedDeckADevice
         {
@@ -201,6 +213,21 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             }
         }
 
+        // Top-of-Hour properties
+        private TohSlot? _selectedTohSlot;
+        public TohSlot? SelectedTohSlot
+        {
+            get => _selectedTohSlot;
+            set
+            {
+                if (!ReferenceEquals(_selectedTohSlot, value))
+                {
+                    _selectedTohSlot = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public ICommand AddSimpleRotationCommand { get; private set; }
         public ICommand RemoveSimpleRotationCommand { get; private set; }
         public ICommand EditSimpleRotationCommand { get; private set; }
@@ -208,6 +235,10 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         public ICommand AddSimpleScheduleEntryCommand { get; private set; }
         public ICommand RemoveSimpleScheduleEntryCommand { get; private set; }
         public ICommand EditSimpleScheduleEntryCommand { get; private set; }
+        public ICommand AddTohSlotCommand { get; private set; }
+        public ICommand RemoveTohSlotCommand { get; private set; }
+        public ICommand MoveTohSlotUpCommand { get; private set; }
+        public ICommand MoveTohSlotDownCommand { get; private set; }
 
         private EncoderProfile? _selectedEncoder;
         public EncoderProfile? SelectedEncoder
@@ -394,6 +425,102 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             OnPropertyChanged(nameof(Settings));
         }
 
+        // ----- Top-of-Hour helpers -----
+        private void AddTohSlot()
+        {
+            var slots = Settings?.Automation?.TopOfHour?.Slots;
+            if (slots == null) return;
+
+            var newSlot = new TohSlot
+            {
+                SlotOrder = slots.Count + 1,
+                CategoryId = LibraryService.TohCategoryStationIds,
+                CategoryName = "Station IDs",
+                TrackCount = 1,
+                SelectionMode = TohSelectionMode.Random,
+                PreventRepeat = true
+            };
+
+            slots.Add(newSlot);
+            SelectedTohSlot = newSlot;
+            OnPropertyChanged(nameof(Settings));
+        }
+
+        private void RemoveSelectedTohSlot()
+        {
+            var slots = Settings?.Automation?.TopOfHour?.Slots;
+            if (slots == null || SelectedTohSlot == null) return;
+
+            var index = slots.IndexOf(SelectedTohSlot);
+            slots.Remove(SelectedTohSlot);
+            ReorderTohSlots();
+
+            if (slots.Count > 0)
+            {
+                SelectedTohSlot = slots[Math.Min(index, slots.Count - 1)];
+            }
+            else
+            {
+                SelectedTohSlot = null;
+            }
+
+            OnPropertyChanged(nameof(Settings));
+        }
+
+        private bool CanMoveTohSlotUp()
+        {
+            var slots = Settings?.Automation?.TopOfHour?.Slots;
+            if (slots == null || SelectedTohSlot == null) return false;
+            return slots.IndexOf(SelectedTohSlot) > 0;
+        }
+
+        private bool CanMoveTohSlotDown()
+        {
+            var slots = Settings?.Automation?.TopOfHour?.Slots;
+            if (slots == null || SelectedTohSlot == null) return false;
+            var index = slots.IndexOf(SelectedTohSlot);
+            return index >= 0 && index < slots.Count - 1;
+        }
+
+        private void MoveTohSlotUp()
+        {
+            var slots = Settings?.Automation?.TopOfHour?.Slots;
+            if (slots == null || SelectedTohSlot == null) return;
+
+            var index = slots.IndexOf(SelectedTohSlot);
+            if (index > 0)
+            {
+                slots.Move(index, index - 1);
+                ReorderTohSlots();
+                OnPropertyChanged(nameof(Settings));
+            }
+        }
+
+        private void MoveTohSlotDown()
+        {
+            var slots = Settings?.Automation?.TopOfHour?.Slots;
+            if (slots == null || SelectedTohSlot == null) return;
+
+            var index = slots.IndexOf(SelectedTohSlot);
+            if (index >= 0 && index < slots.Count - 1)
+            {
+                slots.Move(index, index + 1);
+                ReorderTohSlots();
+                OnPropertyChanged(nameof(Settings));
+            }
+        }
+
+        private void ReorderTohSlots()
+        {
+            var slots = Settings?.Automation?.TopOfHour?.Slots;
+            if (slots == null) return;
+
+            for (int i = 0; i < slots.Count; i++)
+            {
+                slots[i].SlotOrder = i + 1;
+            }
+        }
+
         private static SimpleRotation CloneSimpleRotation(SimpleRotation source)
         {
             return new SimpleRotation
@@ -484,7 +611,24 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             return options;
         }
 
+        private static IReadOnlyList<TohCategoryOption> BuildTohCategoryOptions(IReadOnlyCollection<LibraryCategory>? categories)
+        {
+            var options = new List<TohCategoryOption>();
+
+            // TOH only uses built-in categories, not library categories
+            options.Add(new TohCategoryOption(LibraryService.TohCategoryStationIds, "Station IDs"));
+            options.Add(new TohCategoryOption(LibraryService.TohCategoryCommercials, "Commercials"));
+            options.Add(new TohCategoryOption(LibraryService.TohCategoryJingles, "Jingles"));
+
+            return options;
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+
+    public sealed record TohCategoryOption(Guid CategoryId, string Name)
+    {
+        public override string ToString() => Name;
     }
 }

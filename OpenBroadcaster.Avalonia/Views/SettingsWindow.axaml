@@ -9,7 +9,7 @@
       <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
 
-    <TabControl Grid.Row="0">
+    <TabControl Grid.Row="0" x:Name="TabControl">
       <TabItem Header="Audio">
         <ScrollViewer Margin="8">
           <StackPanel Spacing="8">
@@ -235,6 +235,68 @@
                   <Button Content="Edit" Command="{Binding EditSimpleScheduleEntryCommand}" Width="80" />
                   <Button Content="Remove" Command="{Binding RemoveSimpleScheduleEntryCommand}" Width="80" />
                 </StackPanel>
+              </StackPanel>
+            </Border>
+
+            <Border Margin="0,8,0,0" BorderBrush="#1C2534" BorderThickness="1" CornerRadius="4" Padding="8">
+              <StackPanel>
+                <TextBlock Text="Top of Hour" FontWeight="SemiBold" Margin="0,0,0,8" />
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                  <TextBlock Text="Enable TOH injection" Width="200" />
+                  <CheckBox IsChecked="{Binding Settings.Automation.TopOfHour.Enabled, Mode=TwoWay}" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8" Margin="0,6,0,0">
+                  <TextBlock Text="Fire offset (seconds)" Width="200" />
+                  <NumericUpDown Value="{Binding Settings.Automation.TopOfHour.FireSecondOffset, Mode=TwoWay}" Minimum="0" Maximum="60" Width="90" />
+                  <TextBlock Text="(0 = :00:00)" Foreground="#888888" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="12" Margin="0,6,0,0">
+                  <CheckBox IsChecked="{Binding Settings.Automation.TopOfHour.AllowDuringAutoDj, Mode=TwoWay}" Content="Allow during AutoDJ" />
+                  <CheckBox IsChecked="{Binding Settings.Automation.TopOfHour.AllowDuringLiveAssist, Mode=TwoWay}" Content="Allow during Live Assist" />
+                </StackPanel>
+
+                <TextBlock Text="TOH Sequence" FontWeight="SemiBold" Margin="0,10,0,6" />
+                <ListBox Items="{Binding Settings.Automation.TopOfHour.Slots}" SelectedItem="{Binding SelectedTohSlot, Mode=TwoWay}" Height="200">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <Border BorderBrush="#1F2734" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,2">
+                        <Grid ColumnDefinitions="30,*,90,120,110">
+                          <TextBlock Grid.Column="0" Text="{Binding SlotOrder}" FontWeight="Bold" VerticalAlignment="Center" />
+                          <ComboBox Grid.Column="1"
+                                    SelectedIndex="{Binding CategoryIndex, Mode=TwoWay}"
+                                    Margin="4,0" MinWidth="140">
+                            <ComboBoxItem Content="Station IDs" />
+                            <ComboBoxItem Content="Commercials" />
+                            <ComboBoxItem Content="Jingles" />
+                          </ComboBox>
+                          <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4">
+                            <TextBlock Text="×" VerticalAlignment="Center" />
+                            <NumericUpDown Value="{Binding TrackCount, Mode=TwoWay}" Minimum="1" Maximum="25" Width="55" />
+                          </StackPanel>
+                          <ComboBox Grid.Column="3"
+                                    SelectedIndex="{Binding SelectionMode, Mode=TwoWay, Converter={StaticResource EnumToIndexConverter}}"
+                                    Margin="4,0">
+                            <ComboBoxItem Content="Sequential" />
+                            <ComboBoxItem Content="Random" />
+                          </ComboBox>
+                          <CheckBox Grid.Column="4" Content="No Repeat" IsChecked="{Binding PreventRepeat, Mode=TwoWay}" VerticalAlignment="Center" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                  <Button Content="▲" Width="40" Command="{Binding MoveTohSlotUpCommand}" ToolTip.Tip="Move Up" />
+                  <Button Content="▼" Width="40" Command="{Binding MoveTohSlotDownCommand}" ToolTip.Tip="Move Down" />
+                  <Button Content="Add Slot" Width="100" Command="{Binding AddTohSlotCommand}" Margin="12,0,0,0" />
+                  <Button Content="Remove" Width="100" Command="{Binding RemoveTohSlotCommand}" />
+                </StackPanel>
+
+                <TextBlock Text="Configure slots to play at the top of each hour using built-in TOH categories. Choose track count, selection mode, and whether repeats are allowed." Margin="0,8,0,0" Foreground="#888888" />
               </StackPanel>
             </Border>
 
