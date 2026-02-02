@@ -23,7 +23,14 @@ namespace OpenBroadcaster.Core.Audio
                 return new WaveOutAudioOutput(deviceNumber);
             }
 
-            return new OpenAlAudioOutput(deviceNumber);
+            if (OperatingSystem.IsLinux())
+            {
+                // Use paplay (PulseAudio CLI) for Linux audio output
+                return new PaplayAudioOutput();
+            }
+
+            // Fallback for unknown platforms
+            return new NullAudioOutput();
         }
     }
 }

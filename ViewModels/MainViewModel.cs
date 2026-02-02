@@ -577,6 +577,8 @@ namespace OpenBroadcaster.ViewModels
             _audioService.ApplyAudioSettings(_appSettings.Audio);
             ApplyQueueSettings(_appSettings.Queue);
             _twitchSettings = _twitchSettingsStore.Load();
+            // Sync Twitch settings to AppSettings so they stay in sync
+            _appSettings.Twitch = _twitchSettings.Clone();
             _twitchService = new TwitchIntegrationService(_queueService, _transportService, _loyaltyLedger, _libraryService);
             _twitchService.UpdateSettings(_twitchSettings);
             _twitchService.ChatMessageReceived += OnTwitchChatMessage;
@@ -2022,6 +2024,10 @@ namespace OpenBroadcaster.ViewModels
                 categories = _libraryCategoryLookup.Values.ToList();
             }
 
+            // Sync Twitch settings from the authoritative TwitchSettingsStore to AppSettings
+            // so the SettingsWindow sees the latest values
+            _appSettings.Twitch = _twitchSettings.Clone();
+
             var settingsVm = new SettingsViewModel(_appSettings, playbackDevices, inputDevices, categories);
             var window = new SettingsWindow
             {
@@ -2112,16 +2118,26 @@ namespace OpenBroadcaster.ViewModels
                 _simpleAutoDjService.UpdateConfiguration(simpleRotations, simpleSchedule, defaultRotationId);
             }
 
-            if (settings.Twitch != null)
+            if (settings.Twitch != null && !ReferenceEquals(settings.Twitch, _twitchSettings))
             {
-                _twitchSettings = settings.Twitch.Clone();
-                _twitchSettingsStore.Save(_twitchSettings);
-                _twitchService.UpdateSettings(_twitchSettings);
-
-                if (TwitchChatEnabled)
+                // Only update Twitch settings if they were actually modified
+                // (i.e., the settings came from a source that edited them, not just applying general settings)
+                // This prevents stale AppSettings.Twitch from overwriting the authoritative TwitchSettingsStore
+                var currentTwitchJson = System.Text.Json.JsonSerializer.Serialize(_twitchSettings);
+                var newTwitchJson = System.Text.Json.JsonSerializer.Serialize(settings.Twitch);
+                
+                if (!string.Equals(currentTwitchJson, newTwitchJson, StringComparison.Ordinal))
                 {
-                    StopTwitchBridge();
-                    _ = StartTwitchBridgeAsync();
+                    // Twitch settings were explicitly changed
+                    _twitchSettings = settings.Twitch.Clone();
+                    _twitchSettingsStore.Save(_twitchSettings);
+                    _twitchService.UpdateSettings(_twitchSettings);
+
+                    if (TwitchChatEnabled)
+                    {
+                        StopTwitchBridge();
+                        _ = StartTwitchBridgeAsync();
+                    }
                 }
             }
 

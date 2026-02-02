@@ -39,11 +39,6 @@ if [ -d "$PROJECT_ROOT/Overlay" ]; then
     cp -r "$PROJECT_ROOT/Overlay" "$PUBLISH_DIR/"
 fi
 
-# Remove Windows-specific DLL files
-echo "       Cleaning up Windows DLLs..."
-find "$PUBLISH_DIR" -name "*.dll" -path "*/libmp3lame*" -o -name "*.dll" -path "*/libvorbis*" | xargs rm -f 2>/dev/null || true
-rm -f "$PUBLISH_DIR"/libmp3lame*.dll 2>/dev/null || true
-
 # Create .desktop file
 echo "[4/5] Creating desktop entry..."
 cat > "$PUBLISH_DIR/openbroadcaster.desktop" << 'EOF'

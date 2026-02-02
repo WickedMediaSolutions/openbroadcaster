@@ -426,6 +426,81 @@ OpenBroadcaster/
 - **Logs**: `%AppData%/OpenBroadcaster/logs/`
 - **Library Database**: `%AppData%/OpenBroadcaster/library.json`
 
+## Building & Running
+
+### Windows
+
+```bash
+dotnet build -c Release
+dotnet run
+```
+
+### Linux (New - Experimental)
+
+**⚠️ IMPORTANT: Linux support is experimental and not fully tested.**
+If you encounter any issues, please [report them on GitHub](https://github.com/rundleshow/OpenBroadcaster/issues).
+
+#### Prerequisites
+
+- **.NET 8.0 Runtime** or SDK
+- **FFmpeg** - for audio codec support
+- **PulseAudio** or **ALSA** - audio system
+- **Audio Tools**: `ffplay`, `paplay`, `pactl`
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+  dotnet-sdk-8.0 \
+  ffmpeg \
+  pulseaudio-utils \
+  alsa-utils
+```
+
+**Fedora:**
+```bash
+sudo dnf install -y \
+  dotnet-sdk-8.0 \
+  ffmpeg \
+  pulseaudio-utils \
+  alsa-utils
+```
+
+#### Build & Run
+
+```bash
+# Build
+dotnet build -c Release
+
+# Run
+dotnet run --configuration Release
+```
+
+#### Application Data
+
+- **Settings**: `~/.config/OpenBroadcaster/`
+- **Logs**: `~/.config/OpenBroadcaster/logs/`
+- **Library Database**: `~/.config/OpenBroadcaster/library.json`
+
+#### Known Limitations
+
+- Desktop audio capture not implemented (use microphone input or line-in)
+- WASAPI loopback not available (use PulseAudio or ALSA)
+- Tested on Ubuntu 22.04 LTS and Debian 12
+
+#### Linux Documentation
+
+For detailed information about Linux implementation and architecture, see:
+
+- [LINUX_COMPATIBILITY_DOCUMENTATION_INDEX.md](LINUX_COMPATIBILITY_DOCUMENTATION_INDEX.md) - Start here
+- [LINUX_AUDIT_SUMMARY.md](LINUX_AUDIT_SUMMARY.md) - Executive summary
+- [LINUX_COMPATIBILITY_CHECKLIST.md](LINUX_COMPATIBILITY_CHECKLIST.md) - Deployment guide
+- [LINUX_COMPATIBILITY_ARCHITECTURE.md](LINUX_COMPATIBILITY_ARCHITECTURE.md) - Technical details
+- [QUICK_REFERENCE_LINUX_COMPATIBILITY.md](QUICK_REFERENCE_LINUX_COMPATIBILITY.md) - Code patterns
+
+For AutoDJ, Rotation, and Scheduler verification:
+- [AUTODJ_ROTATION_SCHEDULER_VERIFICATION.md](AUTODJ_ROTATION_SCHEDULER_VERIFICATION.md) - System verification
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues and pull requests.
@@ -435,6 +510,16 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+### Testing
+
+**Important**: Linux support is experimental. When testing on Linux, please:
+- Document your Linux distribution and version
+- Note any audio-related issues
+- Report device detection problems
+- Submit any streaming or encoder issues
+
+**Open an Issue** if you encounter problems - your feedback helps improve Linux support!
 
 ## License
 

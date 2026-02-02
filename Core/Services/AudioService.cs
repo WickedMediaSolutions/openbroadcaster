@@ -26,9 +26,15 @@ namespace OpenBroadcaster.Core.Services
                 {
                     // Route microphone to both Mic bus (for VU) and Encoder bus (for output)
                     _routingGraph.Route(AudioSourceType.Microphone, new[] { AudioBus.Mic, AudioBus.Encoder });
-                    if (_lastMicDeviceNumber >= 0)
+                    // On Linux, -1 means use default device which is valid
+                    // On Windows, we require an explicit device selection
+                    if (_lastMicDeviceNumber >= 0 || OperatingSystem.IsLinux())
                     {
                         StartMicInput(_lastMicDeviceNumber);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Microphone enabled but no device selected. Please select a mic input device in Settings.");
                     }
                     _logger.LogInformation("Microphone enabled for encoder audio.");
                 }
@@ -348,7 +354,9 @@ namespace OpenBroadcaster.Core.Services
         {
             try
             {
+                _logger.LogInformation("Starting mic input on device number {DeviceNumber}", deviceNumber);
                 _micInputService.Start(deviceNumber);
+                _logger.LogInformation("Mic input started successfully");
             }
             catch (Exception ex)
             {

@@ -87,7 +87,7 @@ namespace OpenBroadcaster.ViewModels
             AddScheduleEntryCommand = new RelayCommand(_ => AddScheduleEntry());
             RemoveScheduleEntryCommand = new RelayCommand(_ => RemoveSelectedScheduleEntry(), _ => CanRemoveScheduleEntry());
             PlaybackDeviceOptions = BuildDeviceOptions(playbackDevices, "System Default");
-            InputDeviceOptions = BuildDeviceOptions(inputDevices, "Mic Not Connected");
+            InputDeviceOptions = BuildDeviceOptions(inputDevices, "Default Microphone");
             RotationCategoryOptions = BuildCategoryOptions(libraryCategories);
             EncoderProtocolValues = Enum.GetValues<EncoderProtocol>();
             EncoderFormatValues = Enum.GetValues<EncoderFormat>();

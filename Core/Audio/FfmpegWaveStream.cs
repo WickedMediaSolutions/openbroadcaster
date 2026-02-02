@@ -63,16 +63,33 @@ namespace OpenBroadcaster.Core.Audio
                 throw new ObjectDisposedException(nameof(FfmpegWaveStream));
             }
 
-            if (_stdout == null)
+            if (_stdout == null || _process == null)
             {
                 return 0;
             }
 
-            var read = _stdout.Read(buffer, offset, count);
-            if (read > 0)
+            // Check if process has exited
+            if (_process.HasExited)
             {
-                _position += read;
-                return read;
+                return 0;
+            }
+
+            try
+            {
+                var read = _stdout.Read(buffer, offset, count);
+                if (read > 0)
+                {
+                    _position += read;
+                    return read;
+                }
+            }
+            catch (IOException)
+            {
+                // Process likely terminated
+            }
+            catch (ObjectDisposedException)
+            {
+                // Stream was disposed
             }
 
             return 0;

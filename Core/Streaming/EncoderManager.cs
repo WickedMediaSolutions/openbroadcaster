@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Security;
@@ -11,7 +12,9 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+#if NET8_0_WINDOWS
 using NAudio.Lame;
+#endif
 using NAudio.Wave;
 using OpenBroadcaster.Core.Diagnostics;
 using OpenBroadcaster.Core.Models;
@@ -122,26 +125,19 @@ namespace OpenBroadcaster.Core.Streaming
                 _cts = new CancellationTokenSource();
                 try
                 {
-                    _logger.LogDebug("EncoderManager: Creating audio source (device ID: {DeviceId})", _captureDeviceId);
                     _audioSource = _audioSourceFactory.Create(_captureDeviceId);
-                    _logger.LogDebug("EncoderManager: Audio source created. Format: {SampleRate}Hz, {Channels} channels, {Bits}-bit", 
-                        _audioSource.Format.SampleRate, _audioSource.Format.Channels, _audioSource.Format.BitsPerSample);
                     _audioSource.FrameReady += OnAudioFrameReady;
                     _audioSource.Start();
-                    _logger.LogInformation("EncoderManager: Audio source started");
 
                     foreach (var profile in enabledProfiles)
                     {
-                        _logger.LogDebug("EncoderManager: Starting encoder worker for '{Name}'", profile.Name);
                         var worker = new EncoderWorker(profile, _audioSource.Format, this, _logger, _cts.Token);
                         _workers[profile.Id] = worker;
                         worker.Start();
                         worker.UpdateMetadata(_metadata);
-                        _logger.LogDebug("EncoderManager: Encoder worker started for '{Name}'", profile.Name);
                     }
 
                     _isRunning = true;
-                    _logger.LogInformation("EncoderManager: All {Count} encoder worker(s) started successfully", enabledProfiles.Count);
                 }
                 catch (Exception ex)
                 {
@@ -552,53 +548,22 @@ namespace OpenBroadcaster.Core.Streaming
                 }
 
                 var client = new TcpClient { NoDelay = true };
-                _logger.LogDebug("Encoder '{Name}': Initiating TCP connection to {Host}:{Port}", _profile.Name, _profile.Host, _profile.Port);
-                try
-                {
-                    await client.ConnectAsync(_profile.Host, _profile.Port, cancellationToken).ConfigureAwait(false);
-                    _logger.LogDebug("Encoder '{Name}': TCP connection established", _profile.Name);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Encoder '{Name}': TCP connection to {Host}:{Port} failed", _profile.Name, _profile.Host, _profile.Port);
-                    throw;
-                }
+                await client.ConnectAsync(_profile.Host, _profile.Port, cancellationToken).ConfigureAwait(false);
                 var networkStream = client.GetStream();
                 Stream writeStream = networkStream;
 
                 if (_profile.UseSsl)
                 {
-                    _logger.LogDebug("Encoder '{Name}': Initiating SSL/TLS handshake", _profile.Name);
-                    try
+                    var ssl = new SslStream(networkStream, leaveInnerStreamOpen: false);
+                    await ssl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                     {
-                        var ssl = new SslStream(networkStream, leaveInnerStreamOpen: false);
-                        await ssl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
-                        {
-                            TargetHost = _profile.Host,
-                            EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13
-                        }, cancellationToken).ConfigureAwait(false);
-                        writeStream = ssl;
-                        _logger.LogDebug("Encoder '{Name}': SSL/TLS handshake completed", _profile.Name);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Encoder '{Name}': SSL/TLS handshake failed", _profile.Name);
-                        throw;
-                    }
+                        TargetHost = _profile.Host,
+                        EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13
+                    }, cancellationToken).ConfigureAwait(false);
+                    writeStream = ssl;
                 }
 
-                _logger.LogDebug("Encoder '{Name}': Sending {Protocol} handshake (Format={Format}, Bitrate={Bitrate}kbps)", 
-                    _profile.Name, _profile.Protocol, _profile.Format, _profile.BitrateKbps);
-                try
-                {
-                    await SendHandshakeAsync(writeStream, cancellationToken).ConfigureAwait(false);
-                    _logger.LogDebug("Encoder '{Name}': {Protocol} handshake completed successfully", _profile.Name, _profile.Protocol);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Encoder '{Name}': {Protocol} handshake failed", _profile.Name, _profile.Protocol);
-                    throw;
-                }
+                await SendHandshakeAsync(writeStream, cancellationToken).ConfigureAwait(false);
                 var buffered = new BufferedStream(writeStream, 16 * 1024);
                 return (client, buffered);
             }
@@ -618,21 +583,10 @@ namespace OpenBroadcaster.Core.Streaming
             private async Task SendIcecastHandshakeAsync(Stream stream, CancellationToken cancellationToken)
             {
                 var request = BuildIcecastSourceRequest();
-                _logger.LogDebug("Encoder '{Name}' sending Icecast handshake request:\n{Request}", _profile.Name, request);
                 var buffer = Encoding.ASCII.GetBytes(request);
                 await stream.WriteAsync(buffer.AsMemory(0, buffer.Length), cancellationToken).ConfigureAwait(false);
                 await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
-                _logger.LogDebug("Encoder '{Name}': Icecast handshake sent, waiting for response...", _profile.Name);
-                try
-                {
-                    await ValidateResponseAsync(stream, cancellationToken).ConfigureAwait(false);
-                    _logger.LogDebug("Encoder '{Name}': Icecast handshake validation passed", _profile.Name);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Encoder '{Name}': Icecast handshake validation failed", _profile.Name);
-                    throw;
-                }
+                await ValidateResponseAsync(stream, cancellationToken).ConfigureAwait(false);
             }
 
             private async Task SendShoutcastHandshakeAsync(Stream stream, CancellationToken cancellationToken)
@@ -643,7 +597,6 @@ namespace OpenBroadcaster.Core.Streaming
                     throw new InvalidOperationException("Shoutcast profiles require a password.");
                 }
 
-                _logger.LogDebug("Encoder '{Name}': Sending Shoutcast password", _profile.Name);
                 var passwordLine = Encoding.ASCII.GetBytes(password + "\r\n");
                 await stream.WriteAsync(passwordLine.AsMemory(0, passwordLine.Length), cancellationToken).ConfigureAwait(false);
                 await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -652,12 +605,10 @@ namespace OpenBroadcaster.Core.Streaming
                 _logger.LogInformation("Encoder '{Name}' shoutcast password response: {Response}", _profile.Name, response ?? "<no response>");
                 if (!string.Equals(response, "OK2", StringComparison.OrdinalIgnoreCase))
                 {
-                    _logger.LogError("Encoder '{Name}': Shoutcast password rejected. Expected 'OK2', got '{Response}'", _profile.Name, response ?? "<no response>");
                     throw new InvalidOperationException($"Shoutcast server rejected password ({response ?? "no response"})");
                 }
 
                 var metadata = BuildShoutcastMetadataHeaders();
-                _logger.LogDebug("Encoder '{Name}': Sending Shoutcast metadata headers", _profile.Name);
                 await stream.WriteAsync(metadata.AsMemory(0, metadata.Length), cancellationToken).ConfigureAwait(false);
                 await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
 
@@ -665,7 +616,6 @@ namespace OpenBroadcaster.Core.Streaming
                 _logger.LogInformation("Encoder '{Name}' shoutcast metadata response: {Response}", _profile.Name, response ?? "<no response>");
                 if (!string.Equals(response, "OK2", StringComparison.OrdinalIgnoreCase))
                 {
-                    _logger.LogError("Encoder '{Name}': Shoutcast metadata rejected. Expected 'OK2', got '{Response}'", _profile.Name, response ?? "<no response>");
                     throw new InvalidOperationException($"Shoutcast server rejected metadata ({response ?? "no response"})");
                 }
             }
@@ -923,22 +873,15 @@ namespace OpenBroadcaster.Core.Streaming
                 _logger.LogInformation("Encoder '{Name}' icecast response: {Response}", _profile.Name, statusLine ?? "<no response>");
                 if (string.IsNullOrWhiteSpace(statusLine) || !statusLine.Contains("200", StringComparison.Ordinal))
                 {
-                    _logger.LogError("Encoder '{Name}': Icecast rejected connection. Status: {Response}", _profile.Name, statusLine ?? "no response");
                     throw new InvalidOperationException($"Encoder rejected connection: {statusLine ?? "no response"}");
                 }
 
-                var headerLines = new List<string>();
                 string? line;
                 do
                 {
                     line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-                    if (!string.IsNullOrEmpty(line))
-                    {
-                        headerLines.Add(line);
-                    }
                 }
                 while (!string.IsNullOrEmpty(line));
-                _logger.LogDebug("Encoder '{Name}': Icecast response headers:\n{Headers}", _profile.Name, string.Join("\n", headerLines));
             }
 
             private string BuildIcecastSourceRequest()
@@ -1031,7 +974,10 @@ namespace OpenBroadcaster.Core.Streaming
 
             private sealed class Mp3Encoder : IDisposable
             {
-                private readonly LameMP3FileWriter _writer;
+                private readonly Stream _destination;
+                private readonly Process? _ffmpegProcess;
+                private readonly Stream? _ffmpegStdin;
+                private readonly bool _useFfmpeg;
 
                 public Mp3Encoder(WaveFormat sourceFormat, int bitrateKbps, Stream destination)
                 {
@@ -1040,23 +986,160 @@ namespace OpenBroadcaster.Core.Streaming
                         throw new InvalidOperationException("MP3 encoder requires 16-bit PCM input.");
                     }
 
+                    _destination = destination;
                     var sanitizedBitrate = Math.Max(32, bitrateKbps);
-                    _writer = new LameMP3FileWriter(new NonClosingStreamWrapper(destination), sourceFormat, sanitizedBitrate);
+
+                    // On Linux, use ffmpeg for MP3 encoding; on Windows, use LAME
+                    if (OperatingSystem.IsLinux())
+                    {
+                        _useFfmpeg = true;
+                        var psi = new ProcessStartInfo
+                        {
+                            FileName = "ffmpeg",
+                            RedirectStandardInput = true,
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = false,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        };
+
+                        psi.ArgumentList.Add("-hide_banner");
+                        psi.ArgumentList.Add("-loglevel");
+                        psi.ArgumentList.Add("error");
+                        psi.ArgumentList.Add("-f");
+                        psi.ArgumentList.Add("s16le");
+                        psi.ArgumentList.Add("-ar");
+                        psi.ArgumentList.Add(sourceFormat.SampleRate.ToString());
+                        psi.ArgumentList.Add("-ac");
+                        psi.ArgumentList.Add(sourceFormat.Channels.ToString());
+                        psi.ArgumentList.Add("-i");
+                        psi.ArgumentList.Add("pipe:0");
+                        psi.ArgumentList.Add("-c:a");
+                        psi.ArgumentList.Add("libmp3lame");
+                        psi.ArgumentList.Add("-b:a");
+                        psi.ArgumentList.Add($"{sanitizedBitrate}k");
+                        psi.ArgumentList.Add("-f");
+                        psi.ArgumentList.Add("mp3");
+                        psi.ArgumentList.Add("pipe:1");
+
+                        _ffmpegProcess = Process.Start(psi);
+                        if (_ffmpegProcess == null)
+                        {
+                            throw new InvalidOperationException("Failed to start ffmpeg for MP3 encoding.");
+                        }
+
+                        _ffmpegStdin = _ffmpegProcess.StandardInput.BaseStream;
+                        
+                        // Start a thread to copy ffmpeg output to the destination stream
+                        var stdout = _ffmpegProcess.StandardOutput.BaseStream;
+                        _ = Task.Run(() => CopyOutputAsync(stdout, destination));
+                    }
+                    else
+                    {
+                        _useFfmpeg = false;
+#if NET8_0_WINDOWS
+                        _lameWriter = new LameMP3FileWriter(new NonClosingStreamWrapper(destination), sourceFormat, sanitizedBitrate);
+#else
+                        throw new PlatformNotSupportedException("MP3 encoding requires ffmpeg on this platform.");
+#endif
+                    }
+                }
+
+#if NET8_0_WINDOWS
+                private readonly LameMP3FileWriter? _lameWriter;
+#endif
+
+                private static async Task CopyOutputAsync(Stream source, Stream destination)
+                {
+                    try
+                    {
+                        var buffer = new byte[8192];
+                        int bytesRead;
+                        while ((bytesRead = await source.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
+                        {
+                            await destination.WriteAsync(buffer, 0, bytesRead).ConfigureAwait(false);
+                            await destination.FlushAsync().ConfigureAwait(false);
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore errors during shutdown
+                    }
                 }
 
                 public void Encode(byte[] buffer, int length)
                 {
-                    _writer.Write(buffer, 0, length);
+                    if (_useFfmpeg)
+                    {
+                        try
+                        {
+                            _ffmpegStdin?.Write(buffer, 0, length);
+                        }
+                        catch
+                        {
+                            // Process may have terminated
+                        }
+                    }
+#if NET8_0_WINDOWS
+                    else
+                    {
+                        _lameWriter?.Write(buffer, 0, length);
+                    }
+#endif
                 }
 
                 public void Flush()
                 {
-                    _writer.Flush();
+                    if (_useFfmpeg)
+                    {
+                        try
+                        {
+                            _ffmpegStdin?.Flush();
+                        }
+                        catch
+                        {
+                            // Ignore
+                        }
+                    }
+#if NET8_0_WINDOWS
+                    else
+                    {
+                        _lameWriter?.Flush();
+                    }
+#endif
                 }
 
                 public void Dispose()
                 {
-                    _writer.Dispose();
+                    if (_useFfmpeg)
+                    {
+                        try
+                        {
+                            _ffmpegStdin?.Close();
+                        }
+                        catch { }
+
+                        try
+                        {
+                            if (_ffmpegProcess != null && !_ffmpegProcess.HasExited)
+                            {
+                                _ffmpegProcess.WaitForExit(2000);
+                                if (!_ffmpegProcess.HasExited)
+                                {
+                                    _ffmpegProcess.Kill();
+                                }
+                            }
+                        }
+                        catch { }
+
+                        _ffmpegProcess?.Dispose();
+                    }
+#if NET8_0_WINDOWS
+                    else
+                    {
+                        _lameWriter?.Dispose();
+                    }
+#endif
                 }
             }
         }

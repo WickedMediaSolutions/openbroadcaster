@@ -59,7 +59,6 @@ namespace OpenBroadcaster.Core.Audio
 
             lock (_sync)
             {
-                EnsureContext();
                 if (_state == PlaybackState.Playing)
                 {
                     return;
@@ -71,7 +70,7 @@ namespace OpenBroadcaster.Core.Audio
                     _thread = new Thread(PlaybackLoop) { IsBackground = true, Name = "OpenAL Playback" };
                     _thread.Start();
                 }
-                else
+                else if (_source != 0)
                 {
                     AL.SourcePlay(_source);
                     _state = PlaybackState.Playing;
@@ -124,6 +123,15 @@ namespace OpenBroadcaster.Core.Audio
             byte[]? byteBuffer = null;
             try
             {
+                // Try to initialize OpenAL on background thread with timeout
+                if (!TryEnsureContextWithTimeout(5000))
+                {
+                    // OpenAL initialization timed out or failed
+                    _state = PlaybackState.Stopped;
+                    RaiseStopped();
+                    return;
+                }
+
                 var format = ResolveFormat();
                 var waveFormat = _provider!.WaveFormat;
                 var samplesPerBuffer = (waveFormat.SampleRate * waveFormat.Channels * BufferMilliseconds) / 1000;
@@ -251,6 +259,41 @@ namespace OpenBroadcaster.Core.Audio
             }
             ALC.MakeContextCurrent(_context);
             _source = AL.GenSource();
+        }
+
+        private bool TryEnsureContextWithTimeout(int timeoutMs)
+        {
+            // Run EnsureContext on a separate thread with timeout to prevent hanging
+            bool success = false;
+            Exception? error = null;
+
+            var initThread = new Thread(() =>
+            {
+                try
+                {
+                    EnsureContext();
+                    success = true;
+                }
+                catch (Exception ex)
+                {
+                    error = ex;
+                }
+            })
+            {
+                IsBackground = true,
+                Name = "OpenAL Init"
+            };
+
+            initThread.Start();
+            if (initThread.Join(timeoutMs))
+            {
+                // Thread completed within timeout
+                return success;
+            }
+
+            // Timeout - OpenAL initialization is hanging
+            System.Diagnostics.Debug.WriteLine("[OpenAL] Initialization timeout - likely headless system with no audio devices");
+            return false;
         }
 
         private void TearDown()

@@ -33,15 +33,7 @@
         <TabItem Header="Audio">
           <StackPanel>
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <TextBlock Text="Master Volume" Width="200" />
-              <Slider Minimum="0"
-                      Maximum="100"
-                      Value="{Binding Settings.Audio.MasterVolumePercent, Mode=TwoWay}"
-                      Width="220" />
-              <TextBlock Text="{Binding Settings.Audio.MasterVolumePercent, StringFormat='{}{0}%'}" Margin="12,0,0,0" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,8,0,0">
-              <TextBlock Text="Deck A Output" Width="200" />
+              <TextBlock Text="Main Audio Output" Width="200" />
               <ComboBox Width="260"
                         ItemsSource="{Binding PlaybackDeviceOptions}"
                         SelectedValueBinding="{Binding DeviceNumber}"
@@ -53,54 +45,7 @@
                 </ComboBox.ItemTemplate>
               </ComboBox>
             </StackPanel>
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,4,0,0">
-              <TextBlock Text="Deck B Output" Width="200" />
-              <ComboBox Width="260"
-                        ItemsSource="{Binding PlaybackDeviceOptions}"
-                        SelectedValueBinding="{Binding DeviceNumber}"
-                        SelectedValue="{Binding Settings.Audio.DeckBDeviceId, Mode=TwoWay}">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding Label}" />
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,4,0,0">
-              <TextBlock Text="Cart Wall Output" Width="200" />
-              <ComboBox Width="260"
-                        ItemsSource="{Binding PlaybackDeviceOptions}"
-                        SelectedValueBinding="{Binding DeviceNumber}"
-                        SelectedValue="{Binding Settings.Audio.CartWallDeviceId, Mode=TwoWay}">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding Label}" />
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,4,0,0">
-              <TextBlock Text="Cart Wall Volume" Width="200" />
-              <Slider Minimum="0"
-                      Maximum="100"
-                      Value="{Binding Settings.Audio.CartWallVolumePercent, Mode=TwoWay}"
-                      Width="220" />
-              <TextBlock Text="{Binding Settings.Audio.CartWallVolumePercent, StringFormat='{}{0}%'}" Margin="12,0,0,0" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,4,0,0">
-              <TextBlock Text="Encoder Bus Capture" Width="200" />
-              <ComboBox Width="260"
-                        ItemsSource="{Binding PlaybackDeviceOptions}"
-                        SelectedValueBinding="{Binding DeviceNumber}"
-                        SelectedValue="{Binding Settings.Audio.EncoderDeviceId, Mode=TwoWay}">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding Label}" />
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,4,0,0">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,8,0,0">
               <TextBlock Text="Mic Input" Width="200" />
               <ComboBox Width="260"
                         ItemsSource="{Binding InputDeviceOptions}"
@@ -113,7 +58,7 @@
                 </ComboBox.ItemTemplate>
               </ComboBox>
             </StackPanel>
-            <TextBlock Text="Changes apply immediately after clicking OK/Apply." FontSize="11" Margin="0,8,0,0" Foreground="{StaticResource MutedTextBrush}" />
+            <TextBlock Text="Changes apply immediately after clicking OK/Apply." FontSize="11" Margin="0,12,0,0" Foreground="{StaticResource MutedTextBrush}" />
           </StackPanel>
         </TabItem>
 

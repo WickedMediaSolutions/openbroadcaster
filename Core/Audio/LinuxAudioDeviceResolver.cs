@@ -32,24 +32,28 @@ namespace OpenBroadcaster.Core.Audio
 
         public IReadOnlyList<AudioDeviceInfo> GetInputDevices()
         {
+            // First try PulseAudio/PipeWire sources (more reliable on modern Linux)
+            var devices = TryPulseDevices("sources");
+            if (devices.Count > 0)
+            {
+                return devices;
+            }
+
+            // Fall back to OpenAL capture devices
             var openAlDevices = OpenAlDeviceLookup.GetCaptureDevices();
             if (openAlDevices.Count > 0)
             {
                 return openAlDevices.Select((name, index) => new AudioDeviceInfo(index, name)).ToList();
             }
 
-            var devices = TryPulseDevices("sources");
-            if (devices.Count == 0)
+            // Fall back to ALSA
+            devices = TryAlsaDevices("arecord");
+            if (devices.Count > 0)
             {
-                devices = TryAlsaDevices("arecord");
+                return devices;
             }
 
-            if (devices.Count == 0)
-            {
-                devices = FallbackDefault("Default Input");
-            }
-
-            return devices;
+            return FallbackDefault("Default Input");
         }
 
         private static List<AudioDeviceInfo> TryPulseDevices(string listType)
