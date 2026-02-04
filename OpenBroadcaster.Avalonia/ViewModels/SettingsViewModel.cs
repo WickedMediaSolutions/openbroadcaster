@@ -1,18 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using OpenBroadcaster.Core.Audio;
 using OpenBroadcaster.Core.Automation;
-using OpenBroadcaster.Core.Services;
-using System.Collections.Generic;
-using System.Linq;
 using OpenBroadcaster.Core.Models;
 using OpenBroadcaster.Core.Services;
-using OpenBroadcaster.Core.Audio;
-using System.Linq;
-using System.Collections.ObjectModel;
-using System.Windows.Input;
 
 namespace OpenBroadcaster.Avalonia.ViewModels
 {

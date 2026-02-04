@@ -14,6 +14,11 @@ namespace OpenBroadcaster.Avalonia.Views
         private readonly SchedulerDialogViewModel _viewModel;
         private readonly SimpleSchedulerEntry _entry;
 
+        // Parameterless constructor for XAML designer support
+        public SchedulerDialog() : this(new SimpleSchedulerEntry(), new List<SimpleRotation>())
+        {
+        }
+
         public SchedulerDialog(SimpleSchedulerEntry entry, List<SimpleRotation> rotations)
         {
             InitializeComponent();
@@ -61,6 +66,17 @@ namespace OpenBroadcaster.Avalonia.Views
             Enabled = entry.Enabled;
             SelectedRotation = rotations.FirstOrDefault(r => r.Id == entry.RotationId) ?? rotations.FirstOrDefault();
         }
+
+        public IReadOnlyList<DayOfWeek> DaysOfWeek { get; } = new[]
+        {
+            DayOfWeek.Monday,
+            DayOfWeek.Tuesday,
+            DayOfWeek.Wednesday,
+            DayOfWeek.Thursday,
+            DayOfWeek.Friday,
+            DayOfWeek.Saturday,
+            DayOfWeek.Sunday
+        };
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -131,12 +147,6 @@ namespace OpenBroadcaster.Avalonia.Views
                 return false;
             }
 
-            if (EndTime <= StartTime)
-            {
-                error = "End time must be after start time.";
-                return false;
-            }
-
             return true;
         }
 
@@ -144,7 +154,7 @@ namespace OpenBroadcaster.Avalonia.Views
         {
             entry.Day = Day;
             entry.StartTime = StartTime;
-            entry.EndTime = EndTime;
+            entry.EndTime = TimeSpan.FromHours(24); // Run until end of day or next schedule entry
             entry.Enabled = Enabled;
             if (SelectedRotation != null)
             {

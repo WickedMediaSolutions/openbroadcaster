@@ -1,0 +1,72 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenBroadcaster.Avalonia.Views.AboutDialog"
+        Width="500" Height="420" 
+        Title="About OpenBroadcaster"
+        CanResize="False"
+        Background="#0E1118"
+        SystemDecorations="BorderOnly"
+        WindowStartupLocation="CenterOwner">
+  <Border Background="#0F1220" Padding="24" Margin="12" CornerRadius="8">
+    <StackPanel Spacing="16">
+      <TextBlock Text="OpenBroadcaster" 
+                 FontSize="28" 
+                 FontWeight="Bold" 
+                 Foreground="#DDE7F3" 
+                 HorizontalAlignment="Center" />
+      
+      <TextBlock Text="Professional Radio Automation Software" 
+                 FontSize="14" 
+                 Foreground="#9AA6B3" 
+                 HorizontalAlignment="Center" 
+                 Margin="0,0,0,8" />
+      
+      <Border Background="#121826" Padding="16" CornerRadius="6">
+        <StackPanel Spacing="12">
+          <StackPanel>
+            <TextBlock Text="Created by" Foreground="#7C8793" FontSize="12" />
+            <TextBlock Text="Josh Rundle" FontSize="16" Foreground="#DDE7F3" FontWeight="SemiBold" />
+          </StackPanel>
+          
+          <Separator Background="#2D313B" />
+          
+          <StackPanel>
+            <TextBlock Text="Support" Foreground="#7C8793" FontSize="12" />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="Twitch:" FontSize="14" Foreground="#9AA6B3" />
+              <TextBlock Text="twitch.tv/bluntforcejosh" 
+                         FontSize="14" 
+                         Foreground="#9147FF" 
+                         FontWeight="SemiBold"
+                         Cursor="Hand"
+                         PointerPressed="OnTwitchClick" />
+            </StackPanel>
+          </StackPanel>
+          
+          <Separator Background="#2D313B" />
+          
+          <StackPanel>
+            <TextBlock Text="Source Code" Foreground="#7C8793" FontSize="12" />
+            <TextBlock Text="github.com/WickedMediaSolutions/openbroadcaster" 
+                       FontSize="14" 
+                       Foreground="#58A6FF" 
+                       FontWeight="SemiBold"
+                       Cursor="Hand"
+                       PointerPressed="OnGitHubClick" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+      
+      <Button Content="Close" 
+              Width="120" 
+              Height="32"
+              HorizontalAlignment="Center" 
+              Click="OnCloseClick"
+              Margin="0,8,0,0"
+              Background="#2D313B"
+              Foreground="#DDE7F3"
+              FontSize="14"
+              FontWeight="SemiBold" />
+    </StackPanel>
+  </Border>
+</Window>

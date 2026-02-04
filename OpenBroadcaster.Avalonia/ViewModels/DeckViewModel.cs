@@ -15,6 +15,45 @@ using System.Text;
 
 namespace OpenBroadcaster.Avalonia.ViewModels
 {
+    // LRU Cache for album art with size limit
+    internal class LruAlbumArtCache
+    {
+        private const int MaxCacheSize = 100;
+        private readonly object _lock = new object();
+        private readonly System.Collections.Generic.Dictionary<string, (Bitmap? Bitmap, DateTime LastAccess)> _cache = 
+            new System.Collections.Generic.Dictionary<string, (Bitmap?, DateTime)>();
+
+        public bool TryGet(string key, out Bitmap? value)
+        {
+            lock (_lock)
+            {
+                if (_cache.TryGetValue(key, out var entry))
+                {
+                    // Update access time
+                    _cache[key] = (entry.Bitmap, DateTime.UtcNow);
+                    value = entry.Bitmap;
+                    return true;
+                }
+                value = null;
+                return false;
+            }
+        }
+
+        public void Set(string key, Bitmap? value)
+        {
+            lock (_lock)
+            {
+                // Evict least recently used if cache is full
+                if (_cache.Count >= MaxCacheSize && !_cache.ContainsKey(key))
+                {
+                    var lru = System.Linq.Enumerable.OrderBy(_cache, kvp => kvp.Value.LastAccess).First();
+                    _cache.Remove(lru.Key);
+                }
+                _cache[key] = (value, DateTime.UtcNow);
+            }
+        }
+    }
+
     public class DeckViewModel : INotifyPropertyChanged, IDisposable
     {
         private readonly DeckIdentifier _deckId;
@@ -26,8 +65,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         private string _elapsed = "00:00";
         private string _remaining = "00:00";
         private Bitmap? _albumArt;
-        private static readonly object _artCacheLock = new object();
-        private static readonly System.Collections.Generic.Dictionary<string, Bitmap?> _artCache = new System.Collections.Generic.Dictionary<string, Bitmap?>();
+        private static readonly LruAlbumArtCache _artCache = new LruAlbumArtCache();
         private static readonly System.Collections.Generic.HashSet<string> _artLoading = new System.Collections.Generic.HashSet<string>();
 
         public DeckViewModel(DeckIdentifier deckId, OpenBroadcaster.Core.Services.TransportService transportService, IEventBus eventBus, OpenBroadcaster.Core.Models.AppSettings? appSettings = null)
@@ -199,12 +237,12 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             {
                 if (!string.IsNullOrWhiteSpace(path))
                 {
-                    lock (_artCacheLock)
+                    if (_artCache.TryGet(path, out var cached))
                     {
-                        if (_artCache.TryGetValue(path, out var cached))
-                        {
-                            return cached;
-                        }
+                        return cached;
+                    }
+                    lock (_artLoading)
+                    {
                         if (_artLoading.Contains(path))
                         {
                             // Another thread is already loading this path; avoid duplicate work
@@ -247,7 +285,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                                 var itunesBmp = TryFetchItunes(lookupTitle, lookupArtist, path);
                                 if (itunesBmp != null)
                                 {
-                                    lock (_artCacheLock) { if (!string.IsNullOrWhiteSpace(path)) _artCache[path] = itunesBmp; }
+                                    if (!string.IsNullOrWhiteSpace(path)) _artCache.Set(path, itunesBmp);
                                     return itunesBmp;
                                 }
                             }
@@ -262,7 +300,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                                 var lastBmp = TryFetchLastFm(lookupTitle, lookupArtist, path);
                                 if (lastBmp != null)
                                 {
-                                    lock (_artCacheLock) { if (!string.IsNullOrWhiteSpace(path)) _artCache[path] = lastBmp; }
+                                    if (!string.IsNullOrWhiteSpace(path)) _artCache.Set(path, lastBmp);
                                     return lastBmp;
                                 }
                             }
@@ -322,7 +360,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                                     {
                                         var bmp = new Bitmap(tmp);
                                         LogDebug($"TryLoadAlbumArt: loaded Bitmap from temp file '{tmp}' for '{path}'");
-                                        lock (_artCacheLock) { _artCache[path] = bmp; }
+                                        _artCache.Set(path, bmp);
                                         return bmp;
                                     }
                                 }
@@ -341,7 +379,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                                             {
                                                 var bmp2 = new Bitmap(normalized);
                                                 LogDebug($"TryLoadAlbumArt: loaded Bitmap from normalized PNG '{normalized}' for '{path}'");
-                                                lock (_artCacheLock) { _artCache[path] = bmp2; }
+                                                _artCache.Set(path, bmp2);
                                                 return bmp2;
                                             }
                                             catch (Exception ex2)
@@ -366,7 +404,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                                         {
                                             using var ms = new MemoryStream(data);
                                             var bmpStream = new Bitmap(ms);
-                                            lock (_artCacheLock) { _artCache[path] = bmpStream; }
+                                            _artCache.Set(path, bmpStream);
                                             return bmpStream;
                                         }
                                     }
@@ -405,7 +443,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                                 {
                                     LogDebug($"TryLoadAlbumArt: trying candidate file '{fp}'");
                                     var cand = new Bitmap(fp);
-                                    lock (_artCacheLock) { if (!string.IsNullOrWhiteSpace(path)) _artCache[path] = cand; }
+                                    if (!string.IsNullOrWhiteSpace(path)) _artCache.Set(path, cand);
                                     return cand;
                                 }
                                 catch (Exception ex)
@@ -432,7 +470,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                     var lastfmBmp = TryFetchLastFm(Title ?? title, Artist ?? artistGuess, path);
                     if (lastfmBmp != null)
                     {
-                        lock (_artCacheLock) { if (!string.IsNullOrWhiteSpace(path)) _artCache[path] = lastfmBmp; }
+                        if (!string.IsNullOrWhiteSpace(path)) _artCache.Set(path, lastfmBmp);
                         return lastfmBmp;
                     }
                 }
@@ -442,14 +480,14 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                 }
 
                 // Do not attempt to load the audio file itself as an image — record null and return.
-                if (!string.IsNullOrWhiteSpace(path)) lock (_artCacheLock) { _artCache[path] = null; }
+                if (!string.IsNullOrWhiteSpace(path)) _artCache.Set(path, null);
                 return null;
                 }
                 finally
                 {
                     if (!string.IsNullOrWhiteSpace(path))
                     {
-                        lock (_artCacheLock)
+                        lock (_artLoading)
                         {
                             _artLoading.Remove(path);
                         }
@@ -459,7 +497,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             catch (Exception ex)
             {
                 LogDebug($"TryLoadAlbumArt: unexpected error for '{path}': {ex.Message}");
-                if (!string.IsNullOrWhiteSpace(path)) lock (_artCacheLock) { _artCache[path] = null; }
+                if (!string.IsNullOrWhiteSpace(path)) _artCache.Set(path, null);
                 return null;
             }
         }

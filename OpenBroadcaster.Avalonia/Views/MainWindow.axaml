@@ -48,10 +48,31 @@
           <Button Content="App Settings" Command="{Binding OpenAppSettingsCommand}" Width="140" Margin="8,0" />
         </StackPanel>
 
-        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="12,0,0,0">
-          <Button Width="36" Height="24" Click="MinimizeButton_Click" Margin="0,0,6,0">_</Button>
-          <Button Width="36" Height="24" Click="MaximizeRestoreButton_Click" Margin="0,0,6,0">▢</Button>
-          <Button Width="36" Height="24" Click="CloseButton_Click" Background="#FFAA3333">X</Button>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="1">
+          <Button Width="44" Height="32" Click="MinimizeButton_Click" 
+                  Background="#1E2530" 
+                  BorderThickness="0"
+                  CornerRadius="4"
+                  FontSize="16"
+                  Foreground="#DDE7F3">
+            <TextBlock Text="─" VerticalAlignment="Center" Margin="0,-4,0,0" />
+          </Button>
+          <Button Width="44" Height="32" Click="MaximizeRestoreButton_Click" 
+                  Background="#1E2530" 
+                  BorderThickness="0"
+                  CornerRadius="4"
+                  FontSize="14"
+                  Foreground="#DDE7F3">
+            <TextBlock Text="▢" VerticalAlignment="Center" />
+          </Button>
+          <Button Width="44" Height="32" Click="CloseButton_Click" 
+                  Background="#AA3333" 
+                  BorderThickness="0"
+                  CornerRadius="4"
+                  FontSize="16"
+                  Foreground="#FFFFFF">
+            <TextBlock Text="✕" VerticalAlignment="Center" />
+          </Button>
         </StackPanel>
       </Grid>
     </Border>
@@ -66,12 +87,7 @@
       <!-- Left Column: Library + Twitch -->
       <Border Grid.Column="0" Background="#0F1220" CornerRadius="8" Padding="12" Margin="0,0,14,0">
         <StackPanel>
-          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-            <TextBlock Text="Song Library" Foreground="#DDE7F3" FontSize="18" FontWeight="SemiBold" />
-            <Border Background="#0F1218" BorderBrush="#2C6F9A" BorderThickness="0,0,0,2" Margin="12,0,0,0" Padding="6,2">
-              <TextBlock Text="Ripped Graphite" Foreground="#2C6F9A" FontSize="12" />
-            </Border>
-          </StackPanel>
+          <TextBlock Text="Song Library" Foreground="#DDE7F3" FontSize="18" FontWeight="SemiBold" />
 
           <Grid Margin="0,12,0,12">
             <Grid.ColumnDefinitions>
@@ -97,14 +113,23 @@
 
           <TextBlock Margin="0,8,0,8" Foreground="#9AA6B3" Text="{Binding LibraryStatusMessage}" />
 
-          <ListBox Items="{Binding LibraryItems}" SelectedItem="{Binding SelectedLibraryItem}" Height="260" Margin="0,6,0,0">
+          <ListBox Name="LibraryList" Items="{Binding LibraryItems}" SelectedItem="{Binding SelectedLibraryItem}" Height="260" Margin="0,6,0,0">
             <ListBox.ItemTemplate>
               <DataTemplate>
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <TextBlock Text="{Binding Title}" Width="220" />
-                  <TextBlock Text="{Binding Artist}" Width="140" Foreground="#9AA6B3" />
-                  <TextBlock Text="{Binding Album}" Width="160" Foreground="#9AA6B3" />
-                </StackPanel>
+                <Border Background="#0E1118" Padding="8" CornerRadius="3" Margin="0,2">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="200" />
+                      <ColumnDefinition Width="130" />
+                      <ColumnDefinition Width="150" />
+                      <ColumnDefinition Width="60" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="{Binding Title}" Foreground="#DDE7F3" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="1" Text="{Binding Artist}" Foreground="#9AA6B3" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="2" Text="{Binding Album}" Foreground="#9AA6B3" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="3" Text="{Binding Duration}" Foreground="#7C8793" HorizontalAlignment="Right" />
+                  </Grid>
+                </Border>
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
@@ -164,10 +189,13 @@
         </Grid.ColumnDefinitions>
 
         <!-- Deck A -->
-        <Border Grid.Row="0" Grid.Column="0" Background="#0F1220" CornerRadius="8" Padding="12" Margin="0,0,8,8">
+        <Border Name="DeckADropTarget" Grid.Row="0" Grid.Column="0" Background="#0F1220" CornerRadius="8" Padding="12" Margin="0,0,8,8"
+                DragDrop.AllowDrop="True">
           <StackPanel>
             <TextBlock Text="Deck A" Foreground="#DDE7F3" FontSize="16" FontWeight="SemiBold" />
-            <Grid Margin="0,6,0,0">
+            <Border Background="#121826" BorderBrush="#2D313B" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,8,0,0">
+              <StackPanel>
+                <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -192,20 +220,25 @@
                   <TextBlock Text="{Binding DeckA.RemainingTime}" Foreground="#9AA6B3" />
                 </StackPanel>
               </StackPanel>
-            </Grid>
-            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-              <Button Content="Play" Width="80" Command="{Binding DeckPlayCommand}" CommandParameter="A" />
-              <Button Content="Stop" Width="80" Command="{Binding DeckStopCommand}" CommandParameter="A" />
-              <Button Content="Next" Width="80" Command="{Binding DeckNextCommand}" CommandParameter="A" />
-            </StackPanel>
+                </Grid>
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                  <Button Content="Play" Width="80" Command="{Binding DeckPlayCommand}" CommandParameter="A" />
+                  <Button Content="Stop" Width="80" Command="{Binding DeckStopCommand}" CommandParameter="A" />
+                  <Button Content="Next" Width="80" Command="{Binding DeckNextCommand}" CommandParameter="A" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
           </StackPanel>
         </Border>
 
         <!-- Deck B -->
-        <Border Grid.Row="0" Grid.Column="1" Background="#0F1220" CornerRadius="8" Padding="12" Margin="8,0,8,8">
+        <Border Name="DeckBDropTarget" Grid.Row="0" Grid.Column="1" Background="#0F1220" CornerRadius="8" Padding="12" Margin="8,0,8,8"
+                DragDrop.AllowDrop="True">
           <StackPanel>
             <TextBlock Text="Deck B" Foreground="#DDE7F3" FontSize="16" FontWeight="SemiBold" />
-            <Grid Margin="0,6,0,0">
+            <Border Background="#121826" BorderBrush="#2D313B" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,8,0,0">
+              <StackPanel>
+                <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -230,12 +263,14 @@
                   <TextBlock Text="{Binding DeckB.RemainingTime}" Foreground="#9AA6B3" />
                 </StackPanel>
               </StackPanel>
-            </Grid>
-            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-              <Button Content="Play" Width="80" Command="{Binding DeckPlayCommand}" CommandParameter="B" />
-              <Button Content="Stop" Width="80" Command="{Binding DeckStopCommand}" CommandParameter="B" />
-              <Button Content="Next" Width="80" Command="{Binding DeckNextCommand}" CommandParameter="B" />
-            </StackPanel>
+                </Grid>
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                  <Button Content="Play" Width="80" Command="{Binding DeckPlayCommand}" CommandParameter="B" />
+                  <Button Content="Stop" Width="80" Command="{Binding DeckStopCommand}" CommandParameter="B" />
+                  <Button Content="Next" Width="80" Command="{Binding DeckNextCommand}" CommandParameter="B" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
           </StackPanel>
         </Border>
 
@@ -363,20 +398,24 @@
               <Button Content="Clear" Command="{Binding ClearQueueCommand}" Margin="8,0,0,0" />
             </StackPanel>
 
-            <ListBox Grid.Row="1" Items="{Binding QueueItems}" SelectedItem="{Binding SelectedQueueItem}" Margin="0,12,0,0">
+            <ListBox Name="QueueList" Grid.Row="1" Items="{Binding QueueItems}" SelectedItem="{Binding SelectedQueueItem}" Margin="0,12,0,0"
+                     DragDrop.AllowDrop="True">
               <ListBox.ItemTemplate>
                 <DataTemplate>
                   <Border Background="#121826" Padding="10" CornerRadius="5" Margin="0,4">
                     <Grid>
                       <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="200" />
+                        <ColumnDefinition Width="140" />
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="70" />
+                        <ColumnDefinition Width="80" />
                       </Grid.ColumnDefinitions>
-                      <StackPanel Grid.Column="0">
-                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                        <TextBlock Text="{Binding Artist}" Foreground="#9AA6B3" />
-                      </StackPanel>
-                      <Button Grid.Column="1" Content="Remove" Command="{Binding DataContext.RemoveQueueItemCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}" Width="80" />
+                      <TextBlock Grid.Column="0" Text="{Binding Title}" FontWeight="SemiBold" Foreground="#DDE7F3" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Grid.Column="1" Text="{Binding Artist}" Foreground="#9AA6B3" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Grid.Column="2" Text="{Binding Source}" Foreground="#7C8793" TextTrimming="CharacterEllipsis" Margin="8,0" />
+                      <TextBlock Grid.Column="3" Text="{Binding Duration}" Foreground="#7C8793" HorizontalAlignment="Right" />
+                      <Button Grid.Column="4" Content="Remove" Command="{Binding DataContext.RemoveQueueItemCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}" Width="80" Margin="8,0,0,0" />
                     </Grid>
                   </Border>
                 </DataTemplate>

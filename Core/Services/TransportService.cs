@@ -56,6 +56,15 @@ namespace OpenBroadcaster.Core.Services
             Publish(deckId, deck);
         }
 
+        /// <summary>
+        /// Directly load a track to a specific deck (for drag-and-drop from library).
+        /// </summary>
+        public void LoadTrackToDeck(DeckIdentifier deckId, Track track)
+        {
+            var queueItem = new QueueItem(track, QueueSource.Manual, "Library", "Host");
+            LoadDeck(deckId, queueItem);
+        }
+
         public void Unload(DeckIdentifier deckId)
         {
             var deck = Resolve(deckId);

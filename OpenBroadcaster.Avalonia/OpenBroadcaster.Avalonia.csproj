@@ -4,6 +4,25 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    
+    <!-- Version Information -->
+    <Version>4.1.0</Version>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
+    <FileVersion>4.1.0.0</FileVersion>
+    <InformationalVersion>4.1.0</InformationalVersion>
+    
+    <!-- Application Information -->
+    <Company>WickedMediaSolutions</Company>
+    <Product>OpenBroadcaster</Product>
+    <Description>Professional Internet Radio Automation</Description>
+    <Copyright>Copyright © 2026 WickedMediaSolutions</Copyright>
+    <PackageProjectUrl>https://github.com/WickedMediaSolutions/openbroadcaster</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/WickedMediaSolutions/openbroadcaster</RepositoryUrl>
+    
+    <!-- Windows-specific settings for self-contained builds -->
+    <PublishSingleFile>false</PublishSingleFile>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <ApplicationIcon>..\Assets\app-icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

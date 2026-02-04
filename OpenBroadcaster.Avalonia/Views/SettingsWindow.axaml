@@ -222,8 +222,6 @@
                           <TextBlock Text="{Binding RotationName}" FontWeight="SemiBold" />
                           <TextBlock Text=" · " Foreground="#888888" />
                           <TextBlock Text="{Binding StartTimeString}" />
-                          <TextBlock Text=" - " />
-                          <TextBlock Text="{Binding EndTimeString}" />
                         </StackPanel>
                         <TextBlock Text="{Binding Day}" Foreground="#888888" />
                       </StackPanel>

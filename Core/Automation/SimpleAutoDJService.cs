@@ -21,7 +21,7 @@ namespace OpenBroadcaster.Core.Automation
         private bool _isEnabled;
         private int? _lastQueuedMediaId;
 
-        private const double EndOfTrackThresholdSeconds = 30.0;
+        private const double EndOfTrackThresholdSeconds = 5.0; // Crossfade trigger at 5 seconds
         private const int CheckIntervalMs = 2000; // Check every 2 seconds
 
         /// <summary>
@@ -89,35 +89,40 @@ namespace OpenBroadcaster.Core.Automation
             }
         }
 
+        // Event to notify when crossfade should be triggered
+        public event Action? CrossfadeRequested;
+
         private void CheckAndQueueNextTrack()
         {
-            // AutoDJ only acts if the queue is empty to avoid interfering with manual selections.
-            if (!_queueService.IsQueueEmpty())
-            {
-                return;
-            }
-
             var playerState = _playerStatusService.GetPlayerState();
             bool shouldQueue = false;
+            bool shouldCrossfade = false;
 
             // Condition 1: Player is stopped, and queue is empty. Let's start the music.
-            if (!playerState.IsPlaying)
+            if (!playerState.IsPlaying && _queueService.IsQueueEmpty())
             {
                 shouldQueue = true;
             }
-            // Condition 2: A track is playing and nearing its end.
-            else if (playerState.TimeRemaining.TotalSeconds < EndOfTrackThresholdSeconds)
+            // Condition 2: A track is playing and nearing its end (5 seconds left)
+            else if (playerState.IsPlaying && playerState.TimeRemaining.TotalSeconds < EndOfTrackThresholdSeconds)
             {
-                // And we haven't already queued a track for this ending song
+                // Only trigger if we haven't already queued for this track
                 if (playerState.CurrentMediaId.HasValue && playerState.CurrentMediaId != _lastQueuedMediaId)
                 {
                     shouldQueue = true;
+                    shouldCrossfade = true;
                 }
             }
 
             if (shouldQueue)
             {
                 QueueNextTrack(playerState.CurrentMediaId);
+            }
+
+            // Notify UI to crossfade if needed
+            if (shouldCrossfade)
+            {
+                CrossfadeRequested?.Invoke();
             }
         }
 

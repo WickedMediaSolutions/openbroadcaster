@@ -34,6 +34,10 @@ namespace OpenBroadcaster.Core.Services
                 var settings = JsonSerializer.Deserialize<AppSettings>(json, _options) ?? CreateDefault();
                 settings.ApplyDefaults();
                 _migrator.Migrate(settings);
+                
+                // Decrypt sensitive tokens after loading
+                DecryptSensitiveData(settings);
+                
                 return settings;
             }
             catch (Exception)
@@ -57,8 +61,51 @@ namespace OpenBroadcaster.Core.Services
                 Directory.CreateDirectory(directory);
             }
 
-            var payload = JsonSerializer.Serialize(settings, _options);
+            // Clone settings to avoid modifying the original
+            var clonedSettings = CloneSettings(settings);
+            
+            // Encrypt sensitive tokens before saving
+            EncryptSensitiveData(clonedSettings);
+
+            var payload = JsonSerializer.Serialize(clonedSettings, _options);
             File.WriteAllText(_filePath, payload);
+        }
+
+        private static void EncryptSensitiveData(AppSettings settings)
+        {
+            // Encrypt Twitch OAuth token
+            if (!string.IsNullOrWhiteSpace(settings.Twitch.OAuthToken))
+            {
+                settings.Twitch.OAuthToken = TokenProtection.Protect(settings.Twitch.OAuthToken);
+            }
+
+            // Encrypt Overlay API password
+            if (!string.IsNullOrWhiteSpace(settings.Overlay.ApiPassword))
+            {
+                settings.Overlay.ApiPassword = TokenProtection.Protect(settings.Overlay.ApiPassword);
+            }
+        }
+
+        private static void DecryptSensitiveData(AppSettings settings)
+        {
+            // Decrypt Twitch OAuth token
+            if (!string.IsNullOrWhiteSpace(settings.Twitch.OAuthToken))
+            {
+                settings.Twitch.OAuthToken = TokenProtection.Unprotect(settings.Twitch.OAuthToken);
+            }
+
+            // Decrypt Overlay API password
+            if (!string.IsNullOrWhiteSpace(settings.Overlay.ApiPassword))
+            {
+                settings.Overlay.ApiPassword = TokenProtection.Unprotect(settings.Overlay.ApiPassword);
+            }
+        }
+
+        private static AppSettings CloneSettings(AppSettings original)
+        {
+            // Deep clone to avoid modifying original during encryption
+            var json = JsonSerializer.Serialize(original);
+            return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
         }
 
         private static AppSettings CreateDefault()

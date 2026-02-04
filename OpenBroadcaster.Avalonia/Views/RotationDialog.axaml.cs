@@ -15,6 +15,11 @@ namespace OpenBroadcaster.Avalonia.Views
         private readonly RotationDialogViewModel _viewModel;
         private readonly SimpleRotation _rotation;
 
+        // Parameterless constructor for XAML designer support
+        public RotationDialog() : this(new SimpleRotation { Name = "Default" }, new List<string>())
+        {
+        }
+
         public RotationDialog(SimpleRotation rotation, List<string> categoryOptions, IEnumerable<string>? existingNames = null)
         {
             InitializeComponent();

@@ -2,7 +2,7 @@
 ; Requires Inno Setup 6.0 or later (https://jrsoftware.org/isinfo.php)
 
 #define MyAppName "OpenBroadcaster"
-#define MyAppVersion "3.1"
+#define MyAppVersion "4.1"
 #define MyAppPublisher "WickedMediaSolutions"
 #define MyAppURL "https://github.com/WickedMediaSolutions/openbroadcaster"
 #define MyAppExeName "OpenBroadcaster.Avalonia.exe"
@@ -96,8 +96,19 @@ procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
   begin
-    // Create AppData folder for settings
+    // Create AppData folder structure for settings
     CreateDir(ExpandConstant('{userappdata}\OpenBroadcaster'));
     CreateDir(ExpandConstant('{userappdata}\OpenBroadcaster\logs'));
+    CreateDir(ExpandConstant('{userappdata}\OpenBroadcaster\cache'));
+    CreateDir(ExpandConstant('{userappdata}\OpenBroadcaster\overlays'));
   end;
 end;
+
+[Registry]
+; Associate .obproj file extension with OpenBroadcaster
+Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueType: string; ValueName: "{#MyAppAssocKey}"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}"; ValueType: string; ValueName: ""; ValueData: "{#MyAppAssocName}"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
+Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
+Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppExeName}\SupportedTypes"; ValueType: string; ValueName: ".obproj"; ValueData: ""
+

@@ -1,0 +1,16 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenBroadcaster.Avalonia.Views.ImportCategorySelectorWindow"
+        Width="400" Height="350" Title="Select Categories for Import"
+        WindowStartupLocation="CenterOwner">
+  <DockPanel Margin="12">
+    <TextBlock DockPanel.Dock="Top" Text="Select categories to assign to imported tracks:" Margin="0,0,0,12" />
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Bottom" Margin="0,12,0,0">
+      <Button Width="90" Margin="6,0" Click="ImportClicked">Import</Button>
+      <Button Width="90" Margin="6,0" Click="CancelClicked">Cancel</Button>
+    </StackPanel>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+      <StackPanel Name="CategoriesPanel" Spacing="4" />
+    </ScrollViewer>
+  </DockPanel>
+</Window>

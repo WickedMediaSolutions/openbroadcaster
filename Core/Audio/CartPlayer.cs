@@ -135,7 +135,8 @@ namespace OpenBroadcaster.Core.Audio
                 _waveOut = new WaveOutEvent { DeviceNumber = deviceNumber };
                 _waveOut.PlaybackStopped += OnPlaybackStopped;
                 _waveOut.Init(playbackSource);
-                _waveOut.Volume = initialVolume;
+                // Keep WaveOut.Volume at 1.0 so it doesn't affect master output
+                _waveOut.Volume = 1.0f;
                 _elapsedCallback = elapsedCallback;
                 _completed = completed;
                 _levelChanged = levelChanged;
@@ -180,7 +181,8 @@ namespace OpenBroadcaster.Core.Audio
 
                 var applied = Math.Clamp(volume, 0f, 1f);
                 _sampleChannel.Volume = applied;
-                _waveOut.Volume = applied;
+                // Only set the sample channel volume, NOT the WaveOut.Volume
+                // WaveOut.Volume affects the device master output which should not be controlled by cart volume
             }
 
             private void OnTimerElapsed(object? sender, ElapsedEventArgs e)

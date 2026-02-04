@@ -13,8 +13,8 @@ namespace OpenBroadcaster.Avalonia.Views
             InitializeComponent();
             var btnSave = this.FindControl<Button>("BtnSave");
             var btnCancel = this.FindControl<Button>("BtnCancel");
-            btnSave.Click += BtnSave_Click;
-            btnCancel.Click += BtnCancel_Click;
+            if (btnSave != null) btnSave.Click += BtnSave_Click;
+            if (btnCancel != null) btnCancel.Click += BtnCancel_Click;
         }
 
         private void BtnCancel_Click(object? sender, RoutedEventArgs e)

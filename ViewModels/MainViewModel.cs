@@ -554,6 +554,52 @@ namespace OpenBroadcaster.ViewModels
                 Math.Max(5, _appSettings.Automation?.TargetQueueDepth ?? 5),
                 defaultRotationId);
             _simpleAutoDjService.StatusChanged += (_, status) => RunOnUiThread(() => AutoDjStatusMessage = status);
+            // Subscribe to crossfade event from AutoDJ
+            _simpleAutoDjService.CrossfadeRequested += OnAutoDjCrossfadeRequested;
+                    // Handler for AutoDJ crossfade event
+                    private void OnAutoDjCrossfadeRequested()
+                    {
+                        RunOnUiThread(() =>
+                        {
+                            // Determine which deck is currently playing and which is idle
+                            var deckA = _transportService.DeckA;
+                            var deckB = _transportService.DeckB;
+                            var deckAPlaying = deckA.Status == DeckStatus.Playing;
+                            var deckBPlaying = deckB.Status == DeckStatus.Playing;
+
+                            DeckIdentifier fromDeck, toDeck;
+                            if (deckAPlaying && !deckBPlaying)
+                            {
+                                fromDeck = DeckIdentifier.A;
+                                toDeck = DeckIdentifier.B;
+                            }
+                            else if (deckBPlaying && !deckAPlaying)
+                            {
+                                fromDeck = DeckIdentifier.B;
+                                toDeck = DeckIdentifier.A;
+                            }
+                            else
+                            {
+                                // If both or neither are playing, do nothing
+                                return;
+                            }
+
+                            // Load next track into the non-playing deck if not already loaded
+                            var toDeckService = toDeck == DeckIdentifier.A ? deckA : deckB;
+                            if (toDeckService.CurrentQueueItem == null)
+                            {
+                                var next = _transportService.RequestNextFromQueue(toDeck);
+                                if (next == null)
+                                {
+                                    _logger.LogWarning("AutoDJ crossfade: No track available in queue for deck {ToDeck}", toDeck);
+                                    return;
+                                }
+                            }
+
+                            // Start crossfade
+                            _ = StartAutoDjCrossfadeAsync(fromDeck, toDeck);
+                        });
+                    }
             // Note: SimpleAutoDjService already subscribes to QueueChanged internally - do not duplicate!
             
             // Initialize Top-of-Hour scheduler
