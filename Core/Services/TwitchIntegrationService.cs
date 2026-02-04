@@ -16,6 +16,21 @@ namespace OpenBroadcaster.Core.Services
     public sealed class TwitchIntegrationService : IDisposable
     {
         private static readonly TimeSpan SearchSessionTtl = TimeSpan.FromMinutes(5);
+        private static readonly Random _random = new Random();
+        private static readonly string[] _announceResponses = new[]
+        {
+            "turn it up!",
+            "crank this one up!",
+            "this is a bad ass track tune in!",
+            "that's a tune!",
+            "bang that one!",
+            "what a track!",
+            "fire in the mix!",
+            "absolute heat!",
+            "straight up vibes!",
+            "quality selection!",
+            "keep it locked in!"
+        };
 
         private readonly QueueService _queueService;
         private readonly TransportService _transportService;
@@ -90,15 +105,16 @@ namespace OpenBroadcaster.Core.Services
 
             var track = queueItem.Track;
             var stationName = _settings?.RadioStationName ?? "the station";
+            var randomResponse = _announceResponses[_random.Next(_announceResponses.Length)];
             string message;
             
             if (queueItem.HasRequester)
             {
-                message = $"{track.Artist} - {track.Title} is jamming on {stationName} (requested by @{queueItem.RequestedBy}) turn it up!";
+                message = $"{track.Artist} - {track.Title} is jamming on {stationName} (requested by @{queueItem.RequestedBy}) {randomResponse}";
             }
             else
             {
-                message = $"{track.Artist} - {track.Title} is jamming on {stationName} turn it up!";
+                message = $"{track.Artist} - {track.Title} is jamming on {stationName} {randomResponse}";
             }
 
             RespondToChat(message, echo: true);
@@ -243,9 +259,12 @@ namespace OpenBroadcaster.Core.Services
                 case "!addpoints":
                     HandleAddPoints(context, arguments);
                     break;
+                case "!points":
+                    HandleCheckPoints(context);
+                    break;
                 case "!help":
                 case "!commands":
-                    RespondToChat($"Commands: !s <text> to search | !pick # or !1-!9 to request | !playnext # for priority ({_settings.PlayNextCost} {PointsLabel}) | !np now playing | !next up next", true);
+                    RespondToChat($"Commands: !s <text> to search | !pick # or !1-!9 to request | !playnext # for priority ({_settings.PlayNextCost} {PointsLabel}) | !points to check your {PointsLabel} | !np now playing | !next up next", true);
                     break;
             }
         }
@@ -410,6 +429,12 @@ namespace OpenBroadcaster.Core.Services
             var total = _loyaltyLedger.AddPoints(target, amount);
             RespondToChat($"@{target} now has {total} {PointsLabel}.", true);
             _logger.LogInformation("{User} adjusted points for {Target} by {Amount}", context.UserName, target, amount);
+        }
+
+        private void HandleCheckPoints(TwitchChatMessage context)
+        {
+            var balance = _loyaltyLedger.GetPoints(context.UserName);
+            RespondToChat($"@{context.UserName} you have {balance} {PointsLabel}.", true);
         }
 
         private void EnqueueTrack(Track track, string requestedBy, bool priority)

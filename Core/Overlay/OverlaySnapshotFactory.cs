@@ -29,14 +29,15 @@ namespace OpenBroadcaster.Core.Overlay
             var queue = queueItems ?? Array.Empty<QueueItem>();
             var history = historyItems ?? Array.Empty<QueueItem>();
 
+            // Find the playing deck first (actual status = Playing)
             var nowPlayingCandidate = decks
                 .Where(state => state.QueueItem != null && state.IsPlaying)
-                .OrderBy(state => state.DeckId)
                 .FirstOrDefault();
 
+            // Fallback: if no deck is marked as playing, use the first one with a track loaded
+            // Don't order by ID - just use the first one found
             nowPlayingCandidate ??= decks
                 .Where(state => state.QueueItem != null)
-                .OrderBy(state => state.DeckId)
                 .FirstOrDefault();
 
             // Track the current playing file for artwork extraction
@@ -119,10 +120,11 @@ namespace OpenBroadcaster.Core.Overlay
 
         private string ResolveArtworkUrl(QueueItem item, bool isNowPlaying)
         {
-            // For now playing track, use dynamic track artwork endpoint
+            // For now playing track, use dynamic track artwork endpoint with cache-busting parameter
             if (isNowPlaying && !string.IsNullOrWhiteSpace(item?.Track?.FilePath))
             {
-                return OverlayPaths.TrackArtwork;
+                // Add track ID as query parameter to force browser to fetch new image when track changes
+                return $"{OverlayPaths.TrackArtwork}?t={item.Track.Id}";
             }
 
             var url = _settings.ArtworkFallbackUrl;

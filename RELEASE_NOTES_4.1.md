@@ -1,7 +1,7 @@
 # OpenBroadcaster 4.1 Release Notes
 
-**Release Date:** February 3, 2026  
-**Version:** 4.1.0  
+**Release Date:** February 4, 2026  
+**Version:** 4.1.1  
 **Platform:** Windows 10+ (64-bit), Linux (Ubuntu 20.04+, Debian 11+, Fedora 35+)
 
 ---

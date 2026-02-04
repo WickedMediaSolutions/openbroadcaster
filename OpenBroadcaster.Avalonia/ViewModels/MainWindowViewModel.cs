@@ -40,6 +40,8 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         private OpenBroadcaster.Core.Services.LoyaltyLedger? _loyaltyLedger;
         private SimpleAutoDjService? _simpleAutoDjService;
         private Guid? _currentlyPlayingTrackId;
+        private OpenBroadcaster.Core.Messaging.Events.DeckStateChangedEvent? _deckAState;
+        private OpenBroadcaster.Core.Messaging.Events.DeckStateChangedEvent? _deckBState;
         private readonly System.Collections.ObjectModel.ObservableCollection<QueueItemViewModel> _queueItems = new();
         private readonly System.Collections.ObjectModel.ObservableCollection<LibraryItemViewModel> _libraryItems = new();
         private readonly System.Collections.ObjectModel.ObservableCollection<OpenBroadcaster.Core.Models.LibraryCategory> _libraryCategories = new();
@@ -66,6 +68,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         private int _encoderVolume = 100;
         private readonly System.Func<int, System.Threading.Tasks.Task<string?>>? _filePicker;
         private OpenBroadcaster.Core.Models.AppSettings _appSettings = null!;
+        private OpenBroadcaster.Core.Services.AppSettingsStore? _appSettingsStore;
 
         public MainWindowViewModel(OpenBroadcaster.Core.Services.RadioService radioService, OpenBroadcaster.Core.Services.TransportService transportService, OpenBroadcaster.Core.Services.AudioService audioService, OpenBroadcaster.Core.Messaging.EventBus eventBus, OpenBroadcaster.Core.Services.QueueService queueService, OpenBroadcaster.Core.Services.LibraryService libraryService, OpenBroadcaster.Core.Services.CartWallService cartWallService, OpenBroadcaster.Core.Overlay.OverlayService? overlayService, OpenBroadcaster.Core.Models.AppSettings appSettings, System.Func<int, System.Threading.Tasks.Task<string?>>? filePicker = null)
         {
@@ -121,6 +124,12 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             _filePicker = filePicker;
             _appSettings = appSettings ?? new OpenBroadcaster.Core.Models.AppSettings();
             _appSettings.Twitch ??= new OpenBroadcaster.Core.Models.TwitchSettings();
+            _appSettingsStore = new OpenBroadcaster.Core.Services.AppSettingsStore();
+
+            // Initialize volume sliders from saved settings
+            _masterVolume = _appSettings.Audio.MasterVolumePercent;
+            _micVolume = _appSettings.Audio.MicVolumePercent;
+            _cartWallVolume = _appSettings.Audio.CartWallVolumePercent;
 
             _encoderManager = new EncoderManager();
             try { _encoderManager.UpdateConfiguration(_appSettings.Encoder, _appSettings.Audio.EncoderDeviceId); }
@@ -749,6 +758,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                     _micVolume = value;
                     OnPropertyChanged();
                     try { _audioService.SetMicVolume(_micVolume / 100.0); } catch { }
+                    SaveSettings();
                 }
             }
         }
@@ -768,6 +778,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                         _audioService.SetDeckVolume(OpenBroadcaster.Core.Models.DeckIdentifier.B, _masterVolume / 100.0);
                     }
                     catch { }
+                    SaveSettings();
                 }
             }
         }
@@ -782,6 +793,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                     _cartWallVolume = value;
                     OnPropertyChanged();
                     try { _audioService.SetCartVolume(_cartWallVolume / 100.0); } catch { }
+                    SaveSettings();
                 }
             }
         }
@@ -1462,11 +1474,14 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                     await System.Threading.Tasks.Task.Delay(stepDelay).ConfigureAwait(false);
                 }
 
-                // Stop the source deck without triggering its own auto-advance
+                // Stop and unload the source deck without triggering its own auto-advance
                 _transportService.IsSkipping = true;
                 try
                 {
                     _transportService.Stop(fromDeck);
+                    // Unload the track that just finished - do not load next track yet
+                    // The next track will be loaded by AutoDJ when it determines it's time
+                    _transportService.Unload(fromDeck);
                 }
                 finally
                 {
@@ -1491,34 +1506,64 @@ namespace OpenBroadcaster.Avalonia.ViewModels
 
         private void OnDeckStateChanged(OpenBroadcaster.Core.Messaging.Events.DeckStateChangedEvent e)
         {
-            // Only announce when a track is actively playing
-            if (!e.IsPlaying || e.QueueItem?.Track == null || e.Status != OpenBroadcaster.Core.Models.DeckStatus.Playing)
+            // Track the latest state for each deck
+            if (e.DeckId == OpenBroadcaster.Core.Models.DeckIdentifier.A)
             {
-                return;
+                _deckAState = e;
+            }
+            else if (e.DeckId == OpenBroadcaster.Core.Models.DeckIdentifier.B)
+            {
+                _deckBState = e;
             }
 
-            var trackId = e.QueueItem.Track.Id;
-
-            // Skip if this is the same track we've already announced
-            if (_currentlyPlayingTrackId == trackId)
+            // Only announce the deck that's actually playing (not a fading-out deck during crossfade)
+            var playingDeck = SelectPlayingDeckForAnnouncement();
+            
+            if (playingDeck?.QueueItem?.Track != null && playingDeck.IsPlaying)
             {
-                return;
+                var trackId = playingDeck.QueueItem.Track.Id;
+
+                // Skip if this is the same track we've already announced
+                if (_currentlyPlayingTrackId == trackId)
+                {
+                    return;
+                }
+
+                // Skip if track hasn't been playing for at least 5 seconds
+                if (playingDeck.Elapsed.TotalSeconds < 5)
+                {
+                    return;
+                }
+
+                // Update currently playing track ID and announce
+                _currentlyPlayingTrackId = trackId;
+
+                if (_twitchChatEnabled && _twitchService != null && _twitchService.IsConnected)
+                {
+                    _twitchService.AnnounceNowPlaying(playingDeck.QueueItem);
+                }
+            }
+            else if (playingDeck == null || !playingDeck.IsPlaying)
+            {
+                // No track is playing, clear the announcement tracker
+                _currentlyPlayingTrackId = null;
+            }
+        }
+
+        private OpenBroadcaster.Core.Messaging.Events.DeckStateChangedEvent? SelectPlayingDeckForAnnouncement()
+        {
+            // Return the first deck that's actually playing (prefer Deck A if both are in transition)
+            if (_deckAState?.IsPlaying == true && _deckAState.QueueItem?.Track != null)
+            {
+                return _deckAState;
             }
 
-            // Skip if track hasn't been playing for at least 3 seconds (prevents rapid re-announcements)
-            if (e.Elapsed.TotalSeconds < 3)
+            if (_deckBState?.IsPlaying == true && _deckBState.QueueItem?.Track != null)
             {
-                return;
+                return _deckBState;
             }
 
-            // Update currently playing track ID
-            _currentlyPlayingTrackId = trackId;
-
-            // Announce to Twitch if enabled and connected
-            if (_twitchChatEnabled && _twitchService != null && _twitchService.IsConnected)
-            {
-                _twitchService.AnnounceNowPlaying(e.QueueItem);
-            }
+            return null;
         }
 
         private void AppendChatMessage(string userName, string message, bool isSystem, System.DateTime? timestampUtc = null)
@@ -1551,6 +1596,24 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         private static string FormatTimestamp(System.DateTime timestampUtc)
         {
             return timestampUtc.ToLocalTime().ToString("HH:mm");
+        }
+
+        private void SaveSettings()
+        {
+            try
+            {
+                if (_appSettings?.Audio != null && _appSettingsStore != null)
+                {
+                    _appSettings.Audio.MasterVolumePercent = _masterVolume;
+                    _appSettings.Audio.MicVolumePercent = _micVolume;
+                    _appSettings.Audio.CartWallVolumePercent = _cartWallVolume;
+                    _appSettingsStore.Save(_appSettings);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.WriteLine($"Error saving settings: {ex.Message}");
+            }
         }
 
         private static bool IsTwitchSettingsValid(OpenBroadcaster.Core.Models.TwitchSettings settings)

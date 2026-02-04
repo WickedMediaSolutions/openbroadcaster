@@ -1356,11 +1356,14 @@ namespace OpenBroadcaster.ViewModels
                     await Task.Delay(stepDelay).ConfigureAwait(false);
                 }
 
-                // Stop the source deck without triggering its own auto-advance
+                // Stop and unload the source deck without triggering its own auto-advance
                 _transportService.IsSkipping = true;
                 try
                 {
                     _transportService.Stop(fromDeck);
+                    // Unload the track that just finished - do not load next track yet
+                    // The next track will be loaded by AutoDJ when it determines it's time
+                    _transportService.Unload(fromDeck);
                 }
                 finally
                 {
@@ -2477,8 +2480,8 @@ namespace OpenBroadcaster.ViewModels
                 // ...and it's a different track than the one we've announced...
                 if (_currentlyPlayingTrackId != newTrackId)
                 {
-                    // ...and it has been playing for at least 3 seconds...
-                    if (candidate.Elapsed.TotalSeconds >= 3)
+                    // ...and it has been playing for at least 5 seconds...
+                    if (candidate.Elapsed.TotalSeconds >= 5)
                     {
                         // ...then this is our new official playing track.
                         _currentlyPlayingTrackId = newTrackId;
