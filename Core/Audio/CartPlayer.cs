@@ -135,8 +135,6 @@ namespace OpenBroadcaster.Core.Audio
                 _waveOut = new WaveOutEvent { DeviceNumber = deviceNumber };
                 _waveOut.PlaybackStopped += OnPlaybackStopped;
                 _waveOut.Init(playbackSource);
-                // Keep WaveOut.Volume at 1.0 so it doesn't affect master output
-                _waveOut.Volume = 1.0f;
                 _elapsedCallback = elapsedCallback;
                 _completed = completed;
                 _levelChanged = levelChanged;

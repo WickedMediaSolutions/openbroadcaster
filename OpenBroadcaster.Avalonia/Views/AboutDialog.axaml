@@ -14,6 +14,12 @@
                  FontWeight="Bold" 
                  Foreground="#DDE7F3" 
                  HorizontalAlignment="Center" />
+
+      <TextBlock Text="{Binding AppVersion}"
+             FontSize="12"
+             Foreground="#9AA6B3"
+             HorizontalAlignment="Center"
+             Margin="0,-6,0,0" />
       
       <TextBlock Text="Professional Radio Automation Software" 
                  FontSize="14" 

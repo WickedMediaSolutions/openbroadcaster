@@ -14,6 +14,44 @@
 			"problemMatcher": [
 				"$msbuild"
 			]
+		},
+		{
+			"label": "run-openbroadcaster-avalonia",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"--project",
+				"OpenBroadcaster.Avalonia\\OpenBroadcaster.Avalonia.csproj"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "run-openbroadcaster-avalonia-foreground",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"--project",
+				"OpenBroadcaster.Avalonia\\OpenBroadcaster.Avalonia.csproj"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "build-installer",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"installer\\build-installer.bat"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
 		}
 	]
 }

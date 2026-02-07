@@ -8,7 +8,7 @@ namespace OpenBroadcaster.Core.Models
 {
     public sealed class AppSettings
     {
-        public const string CurrentVersion = "1.1";
+        public const string CurrentVersion = "4.2";
 
         public string Version { get; set; } = CurrentVersion;
         public AudioSettings Audio { get; set; } = new AudioSettings();

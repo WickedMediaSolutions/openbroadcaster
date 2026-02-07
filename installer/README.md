@@ -1,8 +1,8 @@
 # OpenBroadcaster Installer
 
-This directory contains the Windows installer build scripts for **OpenBroadcaster 4.1**.
+This directory contains the Windows installer build scripts for **OpenBroadcaster 4.2**.
 
-## What's New in Version 4.1
+## What's New in Version 4.2
 
 **Major Features:**
 - ✅ Complete architectural modernization with dependency injection
@@ -50,7 +50,7 @@ build-installer.bat
 This will:
 1. Build OpenBroadcaster.Avalonia in Release mode (self-contained)
 2. Create the installer using Inno Setup
-3. Output: `bin\InstallerOutput\OpenBroadcaster-4.1-Setup.exe`
+3. Output: `bin\InstallerOutput\OpenBroadcaster-4.2-Setup.exe`
 
 ### Manual Build
 
@@ -84,20 +84,20 @@ Update the version in two places:
 
 1. **`OpenBroadcaster.iss`** (Line 5):
 ```inno
-#define MyAppVersion "4.1"
+#define MyAppVersion "4.2"
 ```
 
 2. **`OpenBroadcaster.Avalonia.csproj`**:
 ```xml
-<Version>4.1.0</Version>
-<AssemblyVersion>4.1.0.0</AssemblyVersion>
+<Version>4.2.0</Version>
+<AssemblyVersion>4.2.0.0</AssemblyVersion>
 ```
 
 ### App Icon
 Place your application icon at `Assets\app-icon.ico`.
 
 ### Output Filename
-The installer will be named: `OpenBroadcaster-4.1-Setup.exe`
+The installer will be named: `OpenBroadcaster-4.2-Setup.exe`
 
 ## Installer Features
 
@@ -129,6 +129,6 @@ Use the generated installer only for:
 
 ## Version History
 
-- **4.1** (Feb 2026) - Architectural modernization, security enhancements, Linux support
+- **4.2** (Feb 2026) - Architectural modernization, security enhancements, Linux support
 - **3.1** - Initial Avalonia release
 - **3.0** - Legacy WPF version

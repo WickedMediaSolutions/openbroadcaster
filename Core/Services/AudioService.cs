@@ -172,7 +172,7 @@ namespace OpenBroadcaster.Core.Services
             return _deviceResolver.GetInputDevices();
         }
 
-        public void ApplyAudioSettings(AudioSettings? settings)
+        public void ApplyAudioSettings(AudioSettings? settings, bool applyVolumes = true)
         {
             if (settings == null)
             {
@@ -224,12 +224,15 @@ namespace OpenBroadcaster.Core.Services
                 _lastMicDeviceNumber = -1;
                 _micInputService.Stop();
             }
-            var deckAVolumePercent = Math.Clamp(settings.DeckAVolumePercent, 0, 100);
-            var deckBVolumePercent = Math.Clamp(settings.DeckBVolumePercent, 0, 100);
-            SetDeckVolume(DeckIdentifier.A, deckAVolumePercent / 100d);
-            SetDeckVolume(DeckIdentifier.B, deckBVolumePercent / 100d);
-            var cartVolumePercent = Math.Clamp(settings.CartWallVolumePercent, 0, 100);
-            SetCartVolume(cartVolumePercent / 100d);
+            if (applyVolumes)
+            {
+                var deckAVolumePercent = Math.Clamp(settings.DeckAVolumePercent, 0, 100);
+                var deckBVolumePercent = Math.Clamp(settings.DeckBVolumePercent, 0, 100);
+                SetDeckVolume(DeckIdentifier.A, deckAVolumePercent / 100d);
+                SetDeckVolume(DeckIdentifier.B, deckBVolumePercent / 100d);
+                var cartVolumePercent = Math.Clamp(settings.CartWallVolumePercent, 0, 100);
+                SetCartVolume(cartVolumePercent / 100d);
+            }
         }
 
         public void StopDeck(DeckIdentifier deckId)

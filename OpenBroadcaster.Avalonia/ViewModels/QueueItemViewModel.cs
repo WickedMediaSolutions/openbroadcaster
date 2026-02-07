@@ -26,6 +26,31 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         public string Source { get; }
         public string RequestedBy { get; }
 
+        public bool HasRequester => !string.IsNullOrWhiteSpace(Underlying.RequestedBy);
+        public bool IsTwitchRequest => Underlying.SourceType == QueueSource.Twitch && HasRequester;
+        public bool IsWebRequest => Underlying.SourceType == QueueSource.WebRequest && HasRequester;
+
+        public string RequestedByDisplay => HasRequester ? $"Requested by {Underlying.RequestedBy}" : string.Empty;
+
+        public string WebRequestDisplay
+        {
+            get
+            {
+                if (!IsWebRequest)
+                {
+                    return string.Empty;
+                }
+
+                var baseText = RequestedByDisplay;
+                if (!string.IsNullOrWhiteSpace(Underlying.RequestMessage))
+                {
+                    return $"{baseText} — {Underlying.RequestMessage}";
+                }
+
+                return baseText;
+            }
+        }
+
         // Keep a reference to the core model for commands
         public QueueItem Underlying { get; }
     }

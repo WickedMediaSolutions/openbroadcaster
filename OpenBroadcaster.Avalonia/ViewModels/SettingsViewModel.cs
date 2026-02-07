@@ -278,7 +278,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                 _store.Save(Settings);
                 try
                 {
-                    _audioService.ApplyAudioSettings(Settings.Audio);
+                    _audioService.ApplyAudioSettings(Settings.Audio, applyVolumes: false);
                 }
                 catch { }
                 try

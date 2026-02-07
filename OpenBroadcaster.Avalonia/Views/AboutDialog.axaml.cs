@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -10,7 +11,11 @@ namespace OpenBroadcaster.Avalonia.Views
         public AboutDialog()
         {
             InitializeComponent();
+            AppVersion = BuildAppVersion();
+            DataContext = this;
         }
+
+        public string AppVersion { get; }
 
         private void OnCloseClick(object? sender, RoutedEventArgs e)
         {
@@ -41,6 +46,14 @@ namespace OpenBroadcaster.Avalonia.Views
                 });
             }
             catch { }
+        }
+
+        private static string BuildAppVersion()
+        {
+            var assembly = typeof(AboutDialog).Assembly;
+            var info = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+            var version = string.IsNullOrWhiteSpace(info) ? assembly.GetName().Version?.ToString() : info;
+            return string.IsNullOrWhiteSpace(version) ? "Version unknown" : $"Version {version}";
         }
     }
 }

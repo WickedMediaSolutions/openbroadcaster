@@ -2,7 +2,7 @@
 ; Requires Inno Setup 6.0 or later (https://jrsoftware.org/isinfo.php)
 
 #define MyAppName "OpenBroadcaster"
-#define MyAppVersion "4.1.1"
+#define MyAppVersion "4.2"
 #define MyAppPublisher "WickedMediaSolutions"
 #define MyAppURL "https://github.com/WickedMediaSolutions/openbroadcaster"
 #define MyAppExeName "OpenBroadcaster.Avalonia.exe"

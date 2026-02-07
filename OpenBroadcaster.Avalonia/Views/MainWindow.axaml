@@ -404,18 +404,51 @@
                 <DataTemplate>
                   <Border Background="#121826" Padding="10" CornerRadius="5" Margin="0,4">
                     <Grid>
-                      <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="200" />
-                        <ColumnDefinition Width="140" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="70" />
-                        <ColumnDefinition Width="80" />
-                      </Grid.ColumnDefinitions>
-                      <TextBlock Grid.Column="0" Text="{Binding Title}" FontWeight="SemiBold" Foreground="#DDE7F3" TextTrimming="CharacterEllipsis" />
-                      <TextBlock Grid.Column="1" Text="{Binding Artist}" Foreground="#9AA6B3" TextTrimming="CharacterEllipsis" />
-                      <TextBlock Grid.Column="2" Text="{Binding Source}" Foreground="#7C8793" TextTrimming="CharacterEllipsis" Margin="8,0" />
-                      <TextBlock Grid.Column="3" Text="{Binding Duration}" Foreground="#7C8793" HorizontalAlignment="Right" />
-                      <Button Grid.Column="4" Content="Remove" Command="{Binding DataContext.RemoveQueueItemCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}" Width="80" Margin="8,0,0,0" />
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                      </Grid.RowDefinitions>
+                      <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="200" />
+                          <ColumnDefinition Width="140" />
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="70" />
+                          <ColumnDefinition Width="80" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding Title}" FontWeight="SemiBold" Foreground="#DDE7F3" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding Artist}" Foreground="#9AA6B3" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" Text="{Binding Source}" Foreground="#7C8793" TextTrimming="CharacterEllipsis" Margin="8,0" />
+                        <TextBlock Grid.Column="3" Text="{Binding Duration}" Foreground="#7C8793" HorizontalAlignment="Right" />
+                        <Button Grid.Column="4" Content="Remove" Command="{Binding DataContext.RemoveQueueItemCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}" Width="80" Margin="8,0,0,0" />
+                      </Grid>
+                      <Border Grid.Row="1"
+                              Margin="0,6,0,0"
+                              Padding="6,2"
+                              CornerRadius="4"
+                              BorderThickness="1"
+                              BorderBrush="#39FF14"
+                              Background="#1A39FF14"
+                              IsVisible="{Binding IsTwitchRequest}">
+                        <TextBlock Text="{Binding RequestedByDisplay}"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="#39FF14" />
+                      </Border>
+                      <Border Grid.Row="1"
+                              Margin="0,6,0,0"
+                              Padding="6,2"
+                              CornerRadius="4"
+                              BorderThickness="1"
+                              BorderBrush="#39FF14"
+                              Background="#1A39FF14"
+                              IsVisible="{Binding IsWebRequest}">
+                        <TextBlock Text="{Binding WebRequestDisplay}"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="#39FF14"
+                                   TextWrapping="Wrap" />
+                      </Border>
                     </Grid>
                   </Border>
                 </DataTemplate>

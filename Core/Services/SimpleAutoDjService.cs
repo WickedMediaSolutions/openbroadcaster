@@ -158,6 +158,16 @@ namespace OpenBroadcaster.Core.Automation
                     return;
                 }
 
+                if (!_currentRotationId.HasValue)
+                {
+                    var activeRotation = _rotations.FirstOrDefault(r => r.IsActive && r.Enabled)
+                        ?? _rotations.FirstOrDefault(r => r.IsActive);
+                    if (activeRotation != null)
+                    {
+                        _currentRotationId = activeRotation.Id;
+                    }
+                }
+
                 var now = DateTime.Now;
                 var scheduledId = GetScheduledRotationId(now);
 

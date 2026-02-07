@@ -59,6 +59,10 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         // AutoDJ crossfade state
         private readonly SemaphoreSlim _autoDjCrossfadeSemaphore = new(1, 1);
         private readonly System.TimeSpan _autoDjCrossfadeDuration = System.TimeSpan.FromSeconds(5);
+        private readonly System.TimeSpan _autoDjPreloadLeadTime = System.TimeSpan.FromSeconds(10);
+        private bool _autoDjCrossfadeInProgress;
+        private OpenBroadcaster.Core.Models.DeckIdentifier? _autoDjPreloadedDeck;
+        private OpenBroadcaster.Core.Models.DeckIdentifier? _autoDjAnnounceReadyDeck;
         private bool _encodersEnabled = false;
         private string _encoderStatusMessage = "Encoders offline.";
         private bool _micEnabled = false;
@@ -1397,35 +1401,48 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                 return;
             }
 
-            // Only trigger once we are within the crossfade window (5 seconds remaining)
-            if (payload.Remaining > _autoDjCrossfadeDuration)
+            var toDeck = fromDeck == OpenBroadcaster.Core.Models.DeckIdentifier.A
+                ? OpenBroadcaster.Core.Models.DeckIdentifier.B
+                : OpenBroadcaster.Core.Models.DeckIdentifier.A;
+
+            // Preload next track at 10 seconds remaining into the non-playing deck.
+            if (payload.Remaining <= _autoDjPreloadLeadTime && payload.Remaining > _autoDjCrossfadeDuration)
             {
+                var toDeckService = toDeck == OpenBroadcaster.Core.Models.DeckIdentifier.A ? _transportService.DeckA : _transportService.DeckB;
+                if (toDeckService.CurrentQueueItem == null && _autoDjPreloadedDeck != toDeck)
+                {
+                    var next = _transportService.RequestNextFromQueue(toDeck);
+                    if (next != null)
+                    {
+                        _autoDjPreloadedDeck = toDeck;
+                    }
+                }
+
                 return;
             }
 
-            // Use WaitAsync(0).Result for non-blocking check - if it fails, crossfade is already in progress
-            if (!_autoDjCrossfadeSemaphore.WaitAsync(0).Result)
+            // Trigger crossfade at 5 seconds remaining.
+            if (payload.Remaining <= _autoDjCrossfadeDuration)
             {
-                return;
-            }
-
-            try
-            {
-                var toDeck = fromDeck == OpenBroadcaster.Core.Models.DeckIdentifier.A 
-                    ? OpenBroadcaster.Core.Models.DeckIdentifier.B 
-                    : OpenBroadcaster.Core.Models.DeckIdentifier.A;
                 _ = StartAutoDjCrossfadeAsync(fromDeck, toDeck);
-            }
-            finally
-            {
-                _autoDjCrossfadeSemaphore.Release();
             }
         }
 
         private async System.Threading.Tasks.Task StartAutoDjCrossfadeAsync(OpenBroadcaster.Core.Models.DeckIdentifier fromDeck, OpenBroadcaster.Core.Models.DeckIdentifier toDeck)
         {
+            if (!await _autoDjCrossfadeSemaphore.WaitAsync(0).ConfigureAwait(false))
+            {
+                return;
+            }
+
+            _autoDjCrossfadeInProgress = true;
+            _autoDjAnnounceReadyDeck = null;
+
             try
             {
+                var fromDeckService = fromDeck == OpenBroadcaster.Core.Models.DeckIdentifier.A ? _transportService.DeckA : _transportService.DeckB;
+                var fromTrackId = fromDeckService.CurrentQueueItem?.Track?.Id;
+
                 // The 'toDeck' should already be primed with the next track.
                 // If not, we need to load the next track now.
                 var toDeckService = toDeck == OpenBroadcaster.Core.Models.DeckIdentifier.A ? _transportService.DeckA : _transportService.DeckB;
@@ -1482,6 +1499,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                     // Unload the track that just finished - do not load next track yet
                     // The next track will be loaded by AutoDJ when it determines it's time
                     _transportService.Unload(fromDeck);
+                    EnsureCrossfadedDeckCleared(fromDeck, fromTrackId);
                 }
                 finally
                 {
@@ -1489,10 +1507,32 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                 }
 
                 _audioService.SetDeckVolume(toDeck, toTargetVolume);
+                _autoDjPreloadedDeck = null;
+                _autoDjAnnounceReadyDeck = toDeck;
             }
             catch (System.Exception)
             {
                 // Log error silently for now
+            }
+            finally
+            {
+                _autoDjCrossfadeInProgress = false;
+                _autoDjCrossfadeSemaphore.Release();
+            }
+        }
+
+        private void EnsureCrossfadedDeckCleared(OpenBroadcaster.Core.Models.DeckIdentifier fromDeck, System.Guid? fromTrackId)
+        {
+            if (!fromTrackId.HasValue)
+            {
+                return;
+            }
+
+            var deck = fromDeck == OpenBroadcaster.Core.Models.DeckIdentifier.A ? _transportService.DeckA : _transportService.DeckB;
+            var currentId = deck.CurrentQueueItem?.Track?.Id;
+            if (deck.Status != OpenBroadcaster.Core.Models.DeckStatus.Playing && currentId.HasValue && currentId.Value == fromTrackId.Value)
+            {
+                _transportService.Unload(fromDeck);
             }
         }
 
@@ -1518,9 +1558,19 @@ namespace OpenBroadcaster.Avalonia.ViewModels
 
             // Only announce the deck that's actually playing (not a fading-out deck during crossfade)
             var playingDeck = SelectPlayingDeckForAnnouncement();
+
+            if (_autoDjEnabled && _autoDjCrossfadeInProgress)
+            {
+                return;
+            }
             
             if (playingDeck?.QueueItem?.Track != null && playingDeck.IsPlaying)
             {
+                if (_autoDjAnnounceReadyDeck.HasValue && playingDeck.DeckId != _autoDjAnnounceReadyDeck.Value)
+                {
+                    return;
+                }
+
                 var trackId = playingDeck.QueueItem.Track.Id;
 
                 // Skip if this is the same track we've already announced
@@ -1537,6 +1587,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
 
                 // Update currently playing track ID and announce
                 _currentlyPlayingTrackId = trackId;
+                _autoDjAnnounceReadyDeck = null;
 
                 if (_twitchChatEnabled && _twitchService != null && _twitchService.IsConnected)
                 {
@@ -1552,18 +1603,12 @@ namespace OpenBroadcaster.Avalonia.ViewModels
 
         private OpenBroadcaster.Core.Messaging.Events.DeckStateChangedEvent? SelectPlayingDeckForAnnouncement()
         {
-            // Return the first deck that's actually playing (prefer Deck A if both are in transition)
-            if (_deckAState?.IsPlaying == true && _deckAState.QueueItem?.Track != null)
-            {
-                return _deckAState;
-            }
-
-            if (_deckBState?.IsPlaying == true && _deckBState.QueueItem?.Track != null)
-            {
-                return _deckBState;
-            }
-
-            return null;
+            var states = new[] { _deckAState, _deckBState };
+            return states
+                .Where(state => state?.IsPlaying == true && state.QueueItem?.Track != null)
+                .OrderBy(state => state!.Elapsed)
+                .ThenBy(state => state!.DeckId)
+                .FirstOrDefault();
         }
 
         private void AppendChatMessage(string userName, string message, bool isSystem, System.DateTime? timestampUtc = null)

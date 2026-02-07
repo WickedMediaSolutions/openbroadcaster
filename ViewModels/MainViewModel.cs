@@ -1308,6 +1308,9 @@ namespace OpenBroadcaster.ViewModels
         {
             try
             {
+                var fromDeckService = fromDeck == DeckIdentifier.A ? _transportService.DeckA : _transportService.DeckB;
+                var fromTrackId = fromDeckService.CurrentQueueItem?.Track?.Id;
+
                 // The 'toDeck' should already be primed with the next track.
                 // If not, we can't crossfade.
                 var toDeckService = toDeck == DeckIdentifier.A ? _transportService.DeckA : _transportService.DeckB;
@@ -1364,6 +1367,7 @@ namespace OpenBroadcaster.ViewModels
                     // Unload the track that just finished - do not load next track yet
                     // The next track will be loaded by AutoDJ when it determines it's time
                     _transportService.Unload(fromDeck);
+                    EnsureCrossfadedDeckCleared(fromDeck, fromTrackId);
                 }
                 finally
                 {
@@ -1382,6 +1386,21 @@ namespace OpenBroadcaster.ViewModels
                 {
                     _autoDjCrossfadeInProgress = false;
                 }
+            }
+        }
+
+        private void EnsureCrossfadedDeckCleared(DeckIdentifier fromDeck, Guid? fromTrackId)
+        {
+            if (!fromTrackId.HasValue)
+            {
+                return;
+            }
+
+            var deck = fromDeck == DeckIdentifier.A ? _transportService.DeckA : _transportService.DeckB;
+            var currentId = deck.CurrentQueueItem?.Track?.Id;
+            if (deck.Status != DeckStatus.Playing && currentId.HasValue && currentId.Value == fromTrackId.Value)
+            {
+                _transportService.Unload(fromDeck);
             }
         }
 
@@ -2171,6 +2190,27 @@ namespace OpenBroadcaster.ViewModels
             }
 
             settings.ApplyDefaults();
+
+            if (settings.Audio != null)
+            {
+                var previousAudio = previous?.Audio;
+                var deckAVolume = DeckA?.VolumePercent ?? settings.Audio.DeckAVolumePercent;
+                var deckBVolume = DeckB?.VolumePercent ?? settings.Audio.DeckBVolumePercent;
+
+                if (previousAudio != null && settings.Audio.MasterVolumePercent == previousAudio.MasterVolumePercent)
+                {
+                    settings.Audio.MasterVolumePercent = _masterVolume;
+                }
+
+                if (previousAudio != null && settings.Audio.CartWallVolumePercent == previousAudio.CartWallVolumePercent)
+                {
+                    settings.Audio.CartWallVolumePercent = _cartWallVolume;
+                }
+
+                settings.Audio.DeckAVolumePercent = (int)Math.Round(Math.Clamp(deckAVolume, 0d, 100d));
+                settings.Audio.DeckBVolumePercent = (int)Math.Round(Math.Clamp(deckBVolume, 0d, 100d));
+                settings.Audio.MicVolumePercent = Math.Clamp(_micVolume, 0, 100);
+            }
             _appSettingsStore.Save(settings);
 
             // Only re-apply audio pipeline (devices + volumes) if audio
@@ -2515,7 +2555,8 @@ namespace OpenBroadcaster.ViewModels
             var states = new[] { _deckAState, _deckBState };
             var playing = states
                 .Where(state => state?.QueueItem?.Track != null && state.IsPlaying)
-                .OrderBy(state => state!.DeckId)
+                .OrderBy(state => state!.Elapsed)
+                .ThenBy(state => state!.DeckId)
                 .FirstOrDefault();
 
             if (playing != null)

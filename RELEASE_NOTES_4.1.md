@@ -1,14 +1,14 @@
-# OpenBroadcaster 4.1 Release Notes
+# OpenBroadcaster 4.2 Release Notes
 
 **Release Date:** February 4, 2026  
-**Version:** 4.1.1  
+**Version:** 4.2  
 **Platform:** Windows 10+ (64-bit), Linux (Ubuntu 20.04+, Debian 11+, Fedora 35+)
 
 ---
 
-## 🎉 What's New in Version 4.1
+## 🎉 What's New in Version 4.2
 
-OpenBroadcaster 4.1 represents a major architectural modernization with enterprise-grade security, comprehensive Linux support, and significant performance improvements.
+OpenBroadcaster 4.2 represents a major architectural modernization with enterprise-grade security, comprehensive Linux support, and significant performance improvements.
 
 ### 🏗️ Architectural Modernization
 
@@ -175,7 +175,7 @@ OpenBroadcaster 4.1 represents a major architectural modernization with enterpri
 ### Installer Details
 
 **Windows Installer:**
-- **Filename:** `OpenBroadcaster-4.1-Setup.exe`
+- **Filename:** `OpenBroadcaster-4.2-Setup.exe`
 - **Size:** ~90 MB (self-contained with .NET runtime)
 - **Compression:** LZMA2 Ultra64
 - **Type:** Self-contained deployment
@@ -198,6 +198,7 @@ dotnet run --project OpenBroadcaster.Avalonia/OpenBroadcaster.Avalonia.csproj
 ### Critical Fixes
 - Fixed XAML designer issues preventing hot reload
 - Resolved memory leak in album artwork loading
+- Fixed AutoDJ crossfade leaving the previous deck loaded after handoff
 - Fixed chat trimming performance bottleneck
 - Corrected nullable reference warnings in ViewModel layer
 
@@ -227,7 +228,7 @@ dotnet run --project OpenBroadcaster.Avalonia/OpenBroadcaster.Avalonia.csproj
 - **[CODE_QUALITY_REPORT.md](CODE_QUALITY_REPORT.md)** - Code quality metrics
 
 ### Updated Documentation
-- **[README.md](README.md)** - Complete rewrite with v4.1 features
+- **[README.md](README.md)** - Complete rewrite with v4.2 features
 - **[installer/README.md](installer/README.md)** - Updated build instructions
 - **User Guide** - All sections updated for new features
 
@@ -238,7 +239,7 @@ dotnet run --project OpenBroadcaster.Avalonia/OpenBroadcaster.Avalonia.csproj
 ### From Version 3.x
 
 **Automatic Migration:**
-1. Install OpenBroadcaster 4.1
+1. Install OpenBroadcaster 4.2
 2. On first launch, settings will be automatically upgraded
 3. OAuth tokens and passwords will be encrypted transparently
 4. No manual intervention required
@@ -256,7 +257,7 @@ dotnet run --project OpenBroadcaster.Avalonia/OpenBroadcaster.Avalonia.csproj
 
 ### Breaking Changes
 
-**None!** Version 4.1 is 100% backward compatible with 3.x settings and data.
+**None!** Version 4.2 is 100% backward compatible with 3.x settings and data.
 
 ---
 
@@ -339,7 +340,7 @@ See [LICENSE](LICENSE) for complete details.
 ## 📦 Download
 
 **Windows Installer:**
-- **File:** `OpenBroadcaster-4.1-Setup.exe`
+- **File:** `OpenBroadcaster-4.2-Setup.exe`
 - **Size:** 90 MB
 - **Location:** `bin/InstallerOutput/` (after building)
 
