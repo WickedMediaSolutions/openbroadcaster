@@ -33,6 +33,12 @@ namespace OpenBroadcaster.ViewModels
         public ICommand RemoveTohSlotCommand { get; }
         public ICommand MoveTohSlotUpCommand { get; }
         public ICommand MoveTohSlotDownCommand { get; }
+
+        // Bottom-of-Hour commands
+        public ICommand AddBohSlotCommand { get; }
+        public ICommand RemoveBohSlotCommand { get; }
+        public ICommand MoveBohSlotUpCommand { get; }
+        public ICommand MoveBohSlotDownCommand { get; }
         
         private AppSettings _original;
         private AppSettings _working;
@@ -48,6 +54,7 @@ namespace OpenBroadcaster.ViewModels
         
         // Top-of-Hour selection
         private TohSlot? _selectedTohSlot;
+        private TohSlot? _selectedBohSlot;
         private IReadOnlyList<LibraryCategory>? _libraryCategories;
 
         // UI dialog delegates (settable for tests/headless scenarios)
@@ -105,6 +112,12 @@ namespace OpenBroadcaster.ViewModels
             RemoveTohSlotCommand = new RelayCommand(_ => RemoveSelectedTohSlot(), _ => SelectedTohSlot != null);
             MoveTohSlotUpCommand = new RelayCommand(_ => MoveTohSlotUp(), _ => CanMoveTohSlotUp());
             MoveTohSlotDownCommand = new RelayCommand(_ => MoveTohSlotDown(), _ => CanMoveTohSlotDown());
+            
+            // Bottom-of-Hour commands
+            AddBohSlotCommand = new RelayCommand(_ => AddBohSlot());
+            RemoveBohSlotCommand = new RelayCommand(_ => RemoveSelectedBohSlot(), _ => SelectedBohSlot != null);
+            MoveBohSlotUpCommand = new RelayCommand(_ => MoveBohSlotUp(), _ => CanMoveBohSlotUp());
+            MoveBohSlotDownCommand = new RelayCommand(_ => MoveBohSlotDown(), _ => CanMoveBohSlotDown());
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -207,6 +220,20 @@ namespace OpenBroadcaster.ViewModels
                 if (!ReferenceEquals(_selectedTohSlot, value))
                 {
                     _selectedTohSlot = value;
+                    OnPropertyChanged();
+                    CommandManager.InvalidateRequerySuggested();
+                }
+            }
+        }
+
+        public TohSlot? SelectedBohSlot
+        {
+            get => _selectedBohSlot;
+            set
+            {
+                if (!ReferenceEquals(_selectedBohSlot, value))
+                {
+                    _selectedBohSlot = value;
                     OnPropertyChanged();
                     CommandManager.InvalidateRequerySuggested();
                 }
@@ -852,6 +879,121 @@ namespace OpenBroadcaster.ViewModels
         private void ReorderTohSlots()
         {
             var slots = Settings?.Automation?.TopOfHour?.Slots;
+            if (slots == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < slots.Count; i++)
+            {
+                slots[i].SlotOrder = i + 1;
+            }
+        }
+
+        // BOH (Bottom-of-Hour) slot management
+        private void AddBohSlot()
+        {
+            var slots = Settings?.Automation?.TopOfHour?.BohSlots;
+            if (slots == null)
+            {
+                return;
+            }
+
+            var newSlot = new TohSlot
+            {
+                SlotOrder = slots.Count + 1,
+                TrackCount = 1,
+                SelectionMode = TohSelectionMode.Random,
+                PreventRepeat = true
+            };
+
+            slots.Add(newSlot);
+            SelectedBohSlot = newSlot;
+            NotifySettingsModified();
+        }
+
+        private void RemoveSelectedBohSlot()
+        {
+            var slots = Settings?.Automation?.TopOfHour?.BohSlots;
+            if (slots == null || SelectedBohSlot == null)
+            {
+                return;
+            }
+
+            var index = slots.IndexOf(SelectedBohSlot);
+            slots.Remove(SelectedBohSlot);
+            ReorderBohSlots();
+
+            if (slots.Count > 0)
+            {
+                SelectedBohSlot = slots[Math.Min(index, slots.Count - 1)];
+            }
+            else
+            {
+                SelectedBohSlot = null;
+            }
+
+            NotifySettingsModified();
+        }
+
+        private bool CanMoveBohSlotUp()
+        {
+            var slots = Settings?.Automation?.TopOfHour?.BohSlots;
+            if (slots == null || SelectedBohSlot == null)
+            {
+                return false;
+            }
+            return slots.IndexOf(SelectedBohSlot) > 0;
+        }
+
+        private bool CanMoveBohSlotDown()
+        {
+            var slots = Settings?.Automation?.TopOfHour?.BohSlots;
+            if (slots == null || SelectedBohSlot == null)
+            {
+                return false;
+            }
+            var index = slots.IndexOf(SelectedBohSlot);
+            return index >= 0 && index < slots.Count - 1;
+        }
+
+        private void MoveBohSlotUp()
+        {
+            var slots = Settings?.Automation?.TopOfHour?.BohSlots;
+            if (slots == null || SelectedBohSlot == null)
+            {
+                return;
+            }
+
+            var index = slots.IndexOf(SelectedBohSlot);
+            if (index > 0)
+            {
+                slots.Move(index, index - 1);
+                ReorderBohSlots();
+                NotifySettingsModified();
+            }
+        }
+
+        private void MoveBohSlotDown()
+        {
+            var slots = Settings?.Automation?.TopOfHour?.BohSlots;
+            if (slots == null || SelectedBohSlot == null)
+            {
+                return;
+            }
+
+            var index = slots.IndexOf(SelectedBohSlot);
+            if (index >= 0 && index < slots.Count - 1)
+            {
+                slots.Move(index, index + 1);
+                ReorderBohSlots();
+                NotifySettingsModified();
+            }
+        }
+
+        private void ReorderBohSlots()
+        {
+            var slots = Settings?.Automation?.TopOfHour?.BohSlots;
             if (slots == null)
             {
                 return;

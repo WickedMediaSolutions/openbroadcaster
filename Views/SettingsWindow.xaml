@@ -566,6 +566,105 @@
                     </ScrollViewer>
                 </TabItem>
 
+                <TabItem Header="Bottom of Hour">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <CheckBox Content="Enable Bottom-of-the-Hour injection"
+                                      IsChecked="{Binding Settings.Automation.TopOfHour.BohEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}" />
+                            
+                            <GroupBox Header="Timing" Margin="0,12,0,0">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Label Content="Fire offset (seconds)" Width="180" />
+                                        <TextBox Width="80"
+                                                 Text="{Binding Settings.Automation.TopOfHour.BohFireSecondOffset, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}" />
+                                        <TextBlock Text="(0 = exactly at :30:00)" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource StudioMutedTextBrush}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="Mode Options" Margin="0,12,0,0">
+                                <StackPanel>
+                                    <CheckBox Content="Allow BOH during AutoDJ"
+                                              IsChecked="{Binding Settings.Automation.TopOfHour.BohAllowDuringAutoDj, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}" />
+                                    <CheckBox Content="Allow BOH during Live Assist"
+                                              IsChecked="{Binding Settings.Automation.TopOfHour.BohAllowDuringLiveAssist, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}"
+                                              Margin="0,4,0,0" />
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="BOH Sequence" Margin="0,12,0,0">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <ListBox Grid.Row="0"
+                                             ItemsSource="{Binding Settings.Automation.TopOfHour.BohSlots}"
+                                             SelectedItem="{Binding SelectedBohSlot, Mode=TwoWay}"
+                                             Height="200"
+                                             Background="#0F141F"
+                                             BorderBrush="#1C2534">
+                                        <ListBox.ItemContainerStyle>
+                                            <Style TargetType="ListBoxItem">
+                                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                <Setter Property="Margin" Value="0,2" />
+                                            </Style>
+                                        </ListBox.ItemContainerStyle>
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type models:TohSlot}">
+                                                <Border Background="#121826" BorderBrush="#1F2734" BorderThickness="1" CornerRadius="4" Padding="8">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="30" />
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="80" />
+                                                            <ColumnDefinition Width="100" />
+                                                            <ColumnDefinition Width="100" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Grid.Column="0" Text="{Binding SlotOrder}" FontWeight="Bold" VerticalAlignment="Center" />
+                                                        <ComboBox Grid.Column="1"
+                                                                  ItemsSource="{Binding DataContext.TohCategoryOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                  SelectedValue="{Binding CategoryId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                  SelectedValuePath="CategoryId"
+                                                                  DisplayMemberPath="Name"
+                                                                  Margin="4,0" />
+                                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                            <TextBlock Text="×" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                                            <TextBox Text="{Binding TrackCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                     Width="40" />
+                                                        </StackPanel>
+                                                        <ComboBox Grid.Column="3"
+                                                                  SelectedIndex="{Binding SelectionMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource EnumToIndexConverter}}"
+                                                                  Margin="4,0">
+                                                            <ComboBoxItem Content="Random" />
+                                                            <ComboBoxItem Content="Sequential" />
+                                                        </ComboBox>
+                                                        <CheckBox Grid.Column="4"
+                                                                  Content="No Repeat"
+                                                                  IsChecked="{Binding PreventRepeat, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                  VerticalAlignment="Center" />
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                                        <Button Content="▲" Width="40" Command="{Binding MoveBohSlotUpCommand}" ToolTip="Move Up" />
+                                        <Button Content="▼" Width="40" Command="{Binding MoveBohSlotDownCommand}" ToolTip="Move Down" Margin="4,0,0,0" />
+                                        <Button Content="Add Slot" Width="100" Command="{Binding AddBohSlotCommand}" Margin="12,0,0,0" />
+                                        <Button Content="Remove" Width="100" Command="{Binding RemoveBohSlotCommand}" Margin="4,0,0,0" />
+                                    </StackPanel>
+                                </Grid>
+                            </GroupBox>
+
+                            <TextBlock Margin="0,12,0,0" TextWrapping="Wrap"
+                                       Foreground="{StaticResource StudioMutedTextBrush}"
+                                       Text="Configure slots to play at the bottom of each hour (30-minute mark). Tracks are inserted at the top of the queue in sequence order. Categories should be dedicated BOH content (Station IDs, Commercials, Sweepers, Legal IDs)." />
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
                 <TabItem Header="Requests">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal">
