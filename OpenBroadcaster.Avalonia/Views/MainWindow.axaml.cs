@@ -324,6 +324,10 @@ namespace OpenBroadcaster.Avalonia.Views
             }
 
             var last = e.NewItems[e.NewItems.Count - 1];
+            if (last == null)
+            {
+                return;
+            }
             Dispatcher.UIThread.Post(() => _chatList.ScrollIntoView(last));
         }
 

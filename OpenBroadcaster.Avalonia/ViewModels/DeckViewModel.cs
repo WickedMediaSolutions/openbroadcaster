@@ -142,7 +142,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                                             }
 
                                             var pref = Sanitize(ev.QueueItem.Track.Artist ?? "unknown") + "_" + Sanitize(ev.QueueItem.Track.Title ?? "unknown");
-                                            string found = null;
+                                            string? found = null;
                                             try
                                             {
                                                 if (System.IO.Directory.Exists(cacheDir))

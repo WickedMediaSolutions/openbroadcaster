@@ -21,6 +21,7 @@ namespace OpenBroadcaster.Core.Models
         public AutomationSettings Automation { get; set; } = new AutomationSettings();
         public RequestSettings Requests { get; set; } = new RequestSettings();
         public DirectServerSettings DirectServer { get; set; } = new DirectServerSettings();
+        public string ThemeName { get; set; } = "Default";
 
         public void ApplyDefaults()
         {
@@ -54,6 +55,7 @@ namespace OpenBroadcaster.Core.Models
             }
             Requests ??= new RequestSettings();
             DirectServer ??= new DirectServerSettings();
+            ThemeName = string.IsNullOrWhiteSpace(ThemeName) ? "Default" : ThemeName;
         }
     }
 

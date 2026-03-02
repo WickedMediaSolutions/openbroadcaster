@@ -64,7 +64,7 @@ namespace OpenBroadcaster.Avalonia.Views
             StartTime = entry.StartTime;
             EndTime = entry.EndTime;
             Enabled = entry.Enabled;
-            SelectedRotation = rotations.FirstOrDefault(r => r.Id == entry.RotationId) ?? rotations.FirstOrDefault();
+            SelectedRotation = _rotations.FirstOrDefault(r => r.Id == entry.RotationId) ?? _rotations.FirstOrDefault();
         }
 
         public IReadOnlyList<DayOfWeek> DaysOfWeek { get; } = new[]

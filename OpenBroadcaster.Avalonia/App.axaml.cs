@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
+using Avalonia.Media;
 using System.Linq;
 using Avalonia.Markup.Xaml;
 using OpenBroadcaster.Avalonia.ViewModels;
@@ -13,6 +14,8 @@ namespace OpenBroadcaster.Avalonia
     {
         private Action<string>? _logToFile;
         private static OpenBroadcaster.Core.DependencyInjection.ServiceContainer? _serviceContainer;
+
+        public static readonly string[] SupportedThemes = new[] { "Default", "BlackGreenRetro", "BlackOrange", "BlackRed" };
 
         /// <summary>
         /// Gets the global service container.
@@ -96,9 +99,10 @@ namespace OpenBroadcaster.Avalonia
                 try
                 {
                     var services = InitializeServices();
+                    var appSettings = LoadAndConfigureSettings(services.OverlayService);
+                    ApplyTheme(appSettings.ThemeName);
                     var mainWindow = CreateAndShowMainWindow();
                     var filePicker = CreateFilePickerDelegate(mainWindow);
-                    var appSettings = LoadAndConfigureSettings(services.OverlayService);
                     var viewModel = CreateMainViewModel(services, appSettings, filePicker);
                     ConfigureMainWindow(desktop, mainWindow, viewModel);
                     
@@ -215,6 +219,7 @@ namespace OpenBroadcaster.Avalonia
             _logToFile!("[INIT] Loading app settings...");
             var settingsStore = new OpenBroadcaster.Core.Services.AppSettingsStore();
             var appSettings = settingsStore.Load();
+            appSettings.ThemeName = NormalizeThemeName(appSettings.ThemeName);
             
             appSettings.Overlay ??= new OpenBroadcaster.Core.Models.OverlaySettings();
             if (appSettings.Overlay.Port == 0)
@@ -227,6 +232,72 @@ namespace OpenBroadcaster.Avalonia
 
             return appSettings;
         }
+
+        public static void ApplyTheme(string? themeName)
+        {
+            if (Current is App app)
+            {
+                app.ApplyThemeInternal(themeName);
+            }
+        }
+
+        private static string NormalizeThemeName(string? themeName)
+        {
+            if (string.IsNullOrWhiteSpace(themeName))
+            {
+                return "Default";
+            }
+
+            var match = SupportedThemes.FirstOrDefault(t => string.Equals(t, themeName, StringComparison.OrdinalIgnoreCase));
+            return match ?? "Default";
+        }
+
+        private void ApplyThemeInternal(string? themeName)
+        {
+            var normalized = NormalizeThemeName(themeName);
+
+            var palette = normalized switch
+            {
+                "BlackGreenRetro" => new ThemePalette("#07090A", "#0D1113", "#12181A", "#243034", "#D2FFE3", "#98F8BE", "#63D29B", "#4DFF84", "#17392E", "#B35D26", "#1A2527", "#4DFF84", "#2A3A3F"),
+                "BlackOrange" => new ThemePalette("#0B0908", "#13100D", "#18130F", "#3A2B1B", "#FFD8B0", "#FFBA6A", "#D78F3B", "#FF8C1A", "#4A2C11", "#6C3E14", "#23160E", "#FF8C1A", "#2D2218"),
+                "BlackRed" => new ThemePalette("#0A0708", "#140D0F", "#1B1013", "#41202A", "#FFD1D8", "#FF9BAA", "#C56A7A", "#FF3B5C", "#4F1422", "#7A1A2B", "#251017", "#FF3B5C", "#2E1A21"),
+                _ => new ThemePalette("#0E1118", "#0F1220", "#121826", "#2D313B", "#DDE7F3", "#9AA6B3", "#7C8793", "#39FF14", "#1A39FF14", "#AA3333", "#1E2530", "#00FF00", "#3A4252")
+            };
+
+            SetBrush("ObBrushBackground", palette.Background);
+            SetBrush("ObBrushPanel", palette.Panel);
+            SetBrush("ObBrushSurface", palette.Surface);
+            SetBrush("ObBrushBorder", palette.Border);
+            SetBrush("ObBrushPrimaryText", palette.PrimaryText);
+            SetBrush("ObBrushSecondaryText", palette.SecondaryText);
+            SetBrush("ObBrushMutedText", palette.MutedText);
+            SetBrush("ObBrushAccent", palette.Accent);
+            SetBrush("ObBrushAccentSoft", palette.AccentSoft);
+            SetBrush("ObBrushCloseButton", palette.CloseButton);
+            SetBrush("ObBrushWindowButton", palette.WindowButton);
+            SetBrush("ObBrushToggleOn", palette.ToggleOn);
+            SetBrush("ObBrushToggleOff", palette.ToggleOff);
+        }
+
+        private void SetBrush(string key, string colorHex)
+        {
+            Resources[key] = new SolidColorBrush(Color.Parse(colorHex));
+        }
+
+        private sealed record ThemePalette(
+            string Background,
+            string Panel,
+            string Surface,
+            string Border,
+            string PrimaryText,
+            string SecondaryText,
+            string MutedText,
+            string Accent,
+            string AccentSoft,
+            string CloseButton,
+            string WindowButton,
+            string ToggleOn,
+            string ToggleOff);
 
         private MainWindowViewModel CreateMainViewModel(ApplicationServices services, OpenBroadcaster.Core.Models.AppSettings appSettings, System.Func<int, System.Threading.Tasks.Task<string?>> filePicker)
         {

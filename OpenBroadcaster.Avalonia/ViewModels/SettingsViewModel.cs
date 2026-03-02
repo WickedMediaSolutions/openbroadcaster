@@ -75,6 +75,21 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         }
 
         public AppSettings Settings { get; }
+        public IReadOnlyList<string> ThemeOptions { get; } = new[] { "Default", "BlackGreenRetro", "BlackOrange", "BlackRed" };
+
+        public string SelectedTheme
+        {
+            get => string.IsNullOrWhiteSpace(Settings.ThemeName) ? "Default" : Settings.ThemeName;
+            set
+            {
+                var normalized = string.IsNullOrWhiteSpace(value) ? "Default" : value;
+                if (!string.Equals(Settings.ThemeName, normalized, StringComparison.Ordinal))
+                {
+                    Settings.ThemeName = normalized;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         public ObservableCollection<AudioDeviceInfo> PlaybackDeviceOptions { get; }
         public ObservableCollection<AudioDeviceInfo> InputDeviceOptions { get; }
@@ -278,11 +293,8 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                 _store.Save(Settings);
                 try
                 {
-                    _audioService.ApplyAudioSettings(Settings.Audio, applyVolumes: false);
-                }
-                catch { }
-                try
-                {
+                    // DO NOT call ApplyAudioSettings here - MainWindowViewModel handles it
+                    // with proper volume management after updating settings with master slider values
                     SettingsChanged?.Invoke(this, Settings);
                     // Persist AutoDJ rotations/schedule/default
                     SyncToAutoDjSettings();
@@ -301,7 +313,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             var existingNames = list.Select(r => r.Name);
             var categoryOptions = RotationCategoryOptions.ToList();
             var result = await (RotationDialogInvoker?.Invoke(rot, categoryOptions, existingNames)
-                ?? new OpenBroadcaster.Avalonia.Views.RotationDialog(rot, categoryOptions, existingNames).ShowDialog<bool?>(null));
+                ?? new OpenBroadcaster.Avalonia.Views.RotationDialog(rot, categoryOptions, existingNames).ShowDialog<bool?>(null!));
             if (result == true)
             {
                 if (rot.IsActive)
@@ -332,7 +344,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             var existingNames = list.Where(r => r.Id != SelectedSimpleRotation.Id).Select(r => r.Name);
             var categoryOptions = RotationCategoryOptions.ToList();
             var result = await (RotationDialogInvoker?.Invoke(working, categoryOptions, existingNames)
-                ?? new OpenBroadcaster.Avalonia.Views.RotationDialog(working, categoryOptions, existingNames).ShowDialog<bool?>(null));
+                ?? new OpenBroadcaster.Avalonia.Views.RotationDialog(working, categoryOptions, existingNames).ShowDialog<bool?>(null!));
             if (result == true)
             {
                 if (working.IsActive && !SelectedSimpleRotation.IsActive)
@@ -375,7 +387,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
 
             var rotationList = rotations.ToList();
             var result = await (SchedulerDialogInvoker?.Invoke(entry, rotationList)
-                ?? new OpenBroadcaster.Avalonia.Views.SchedulerDialog(entry, rotationList).ShowDialog<bool?>(null));
+                ?? new OpenBroadcaster.Avalonia.Views.SchedulerDialog(entry, rotationList).ShowDialog<bool?>(null!));
             if (result == true)
             {
                 list.Add(entry);
@@ -404,7 +416,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             var working = CloneSimpleScheduleEntry(SelectedSimpleScheduleEntry);
             var rotationList = rotations.ToList();
             var result = await (SchedulerDialogInvoker?.Invoke(working, rotationList)
-                ?? new OpenBroadcaster.Avalonia.Views.SchedulerDialog(working, rotationList).ShowDialog<bool?>(null));
+                ?? new OpenBroadcaster.Avalonia.Views.SchedulerDialog(working, rotationList).ShowDialog<bool?>(null!));
             if (result == true)
             {
                 CopySimpleScheduleEntry(SelectedSimpleScheduleEntry, working);

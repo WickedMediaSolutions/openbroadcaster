@@ -66,7 +66,12 @@ namespace OpenBroadcaster.Tests.Infrastructure
 
             // Assert
             var fileExists = File.Exists(_testLogPath);
-            Assert.False(fileExists || new FileInfo(_testLogPath).Length == 0);
+            if (fileExists)
+            {
+                var fileInfo = new FileInfo(_testLogPath);
+                Assert.True(fileInfo.Length == 0, "Log file should be empty or not exist when logging below minimum level");
+            }
+            // If file doesn't exist, test passes (correct behavior)
         }
 
         [Fact]

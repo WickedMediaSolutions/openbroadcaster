@@ -20,6 +20,11 @@
           </StackPanel>
 
           <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <TextBlock Text="Theme" Width="180" />
+            <ComboBox Width="260" Items="{Binding ThemeOptions}" SelectedItem="{Binding SelectedTheme, Mode=TwoWay}" />
+          </StackPanel>
+
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
             <TextBlock Text="Main Output Device" Width="180" />
             <ComboBox Width="300" Items="{Binding PlaybackDeviceOptions}" SelectedItem="{Binding SelectedMainOutputDevice, Mode=TwoWay}">
               <ComboBox.ItemTemplate>
@@ -116,43 +121,43 @@
             <StackPanel Spacing="8">
             <StackPanel Orientation="Horizontal">
               <TextBlock Text="Name" Width="120" />
-              <TextBox Text="{Binding SelectedEncoder.Name, Mode=TwoWay}" Width="220" />
+              <TextBox Text="{Binding SelectedEncoder.Name, Mode=TwoWay, FallbackValue=''}" Width="220" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">
               <TextBlock Text="Host" Width="120" />
-              <TextBox Text="{Binding SelectedEncoder.Host, Mode=TwoWay}" Width="220" />
+              <TextBox Text="{Binding SelectedEncoder.Host, Mode=TwoWay, FallbackValue=''}" Width="220" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">
               <TextBlock Text="Port" Width="120" />
-              <NumericUpDown Value="{Binding SelectedEncoder.Port, Mode=TwoWay}" Minimum="1" Maximum="65535" Width="120" />
+              <NumericUpDown Value="{Binding SelectedEncoder.Port, Mode=TwoWay, FallbackValue=0}" Minimum="1" Maximum="65535" Width="120" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">
               <TextBlock Text="Mount" Width="120" />
-              <TextBox Text="{Binding SelectedEncoder.Mount, Mode=TwoWay}" Width="220" />
+              <TextBox Text="{Binding SelectedEncoder.Mount, Mode=TwoWay, FallbackValue=''}" Width="220" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">
               <TextBlock Text="Source User" Width="120" />
-              <TextBox Text="{Binding SelectedEncoder.Username, Mode=TwoWay}" Width="220" />
+              <TextBox Text="{Binding SelectedEncoder.Username, Mode=TwoWay, FallbackValue=''}" Width="220" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">
               <TextBlock Text="Source Password" Width="120" />
-              <TextBox Text="{Binding SelectedEncoder.Password, Mode=TwoWay}" Width="220" />
+              <TextBox Text="{Binding SelectedEncoder.Password, Mode=TwoWay, FallbackValue=''}" Width="220" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">
               <TextBlock Text="Admin User" Width="120" />
-              <TextBox Text="{Binding SelectedEncoder.AdminUser, Mode=TwoWay}" Width="220" />
+              <TextBox Text="{Binding SelectedEncoder.AdminUser, Mode=TwoWay, FallbackValue=''}" Width="220" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">
               <TextBlock Text="Admin Password" Width="120" />
-              <TextBox Text="{Binding SelectedEncoder.AdminPassword, Mode=TwoWay}" Width="220" />
+              <TextBox Text="{Binding SelectedEncoder.AdminPassword, Mode=TwoWay, FallbackValue=''}" Width="220" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">
               <TextBlock Text="Bitrate (kbps)" Width="120" />
-              <NumericUpDown Value="{Binding SelectedEncoder.BitrateKbps, Mode=TwoWay}" Minimum="16" Maximum="512" Width="120" />
+              <NumericUpDown Value="{Binding SelectedEncoder.BitrateKbps, Mode=TwoWay, FallbackValue=0}" Minimum="16" Maximum="512" Width="120" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">
               <TextBlock Text="Enabled" Width="120" />
-              <CheckBox IsChecked="{Binding SelectedEncoder.Enabled, Mode=TwoWay}" />
+              <CheckBox IsChecked="{Binding SelectedEncoder.Enabled, Mode=TwoWay, FallbackValue=False}" />
             </StackPanel>
             </StackPanel>
           </ScrollViewer>
@@ -185,7 +190,7 @@
               <TextBox Text="{Binding Settings.Automation.TargetQueueDepth, Mode=TwoWay}" Width="120" />
             </StackPanel>
 
-            <Border Margin="0,8,0,0" BorderBrush="#1C2534" BorderThickness="1" CornerRadius="4" Padding="8">
+            <Border Margin="0,8,0,0" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" Padding="8">
               <StackPanel>
                 <TextBlock Text="Rotations (Simple)" FontWeight="SemiBold" Margin="0,0,0,8" />
                 <ListBox Items="{Binding Settings.Automation.SimpleRotations}" SelectedItem="{Binding SelectedSimpleRotation, Mode=TwoWay}" Height="160">
@@ -196,7 +201,7 @@
                           <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}" Margin="0,0,8,0" />
                           <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
                         </StackPanel>
-                        <TextBlock Text="{Binding CategoryNamesString}" Foreground="#888888" />
+                        <TextBlock Text="{Binding CategoryNamesString}" Foreground="{DynamicResource ObBrushMutedText}" />
                       </StackPanel>
                     </DataTemplate>
                   </ListBox.ItemTemplate>
@@ -210,7 +215,7 @@
               </StackPanel>
             </Border>
 
-            <Border Margin="0,8,0,0" BorderBrush="#1C2534" BorderThickness="1" CornerRadius="4" Padding="8">
+            <Border Margin="0,8,0,0" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" Padding="8">
               <StackPanel>
                 <TextBlock Text="Schedule (Simple)" FontWeight="SemiBold" Margin="0,0,0,8" />
                 <ListBox Items="{Binding Settings.Automation.SimpleSchedule}" SelectedItem="{Binding SelectedSimpleScheduleEntry, Mode=TwoWay}" Height="160">
@@ -220,10 +225,10 @@
                         <StackPanel Orientation="Horizontal">
                           <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}" Margin="0,0,8,0" />
                           <TextBlock Text="{Binding RotationName}" FontWeight="SemiBold" />
-                          <TextBlock Text=" · " Foreground="#888888" />
+                          <TextBlock Text=" · " Foreground="{DynamicResource ObBrushMutedText}" />
                           <TextBlock Text="{Binding StartTimeString}" />
                         </StackPanel>
-                        <TextBlock Text="{Binding Day}" Foreground="#888888" />
+                        <TextBlock Text="{Binding Day}" Foreground="{DynamicResource ObBrushMutedText}" />
                       </StackPanel>
                     </DataTemplate>
                   </ListBox.ItemTemplate>
@@ -236,7 +241,7 @@
               </StackPanel>
             </Border>
 
-            <Border Margin="0,8,0,0" BorderBrush="#1C2534" BorderThickness="1" CornerRadius="4" Padding="8">
+            <Border Margin="0,8,0,0" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" Padding="8">
               <StackPanel>
                 <TextBlock Text="Top of Hour" FontWeight="SemiBold" Margin="0,0,0,8" />
 
@@ -248,7 +253,7 @@
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8" Margin="0,6,0,0">
                   <TextBlock Text="Fire offset (seconds)" Width="200" />
                   <NumericUpDown Value="{Binding Settings.Automation.TopOfHour.FireSecondOffset, Mode=TwoWay}" Minimum="0" Maximum="60" Width="90" />
-                  <TextBlock Text="(0 = :00:00)" Foreground="#888888" VerticalAlignment="Center" />
+                  <TextBlock Text="(0 = :00:00)" Foreground="{DynamicResource ObBrushMutedText}" VerticalAlignment="Center" />
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="12" Margin="0,6,0,0">
@@ -260,7 +265,7 @@
                 <ListBox Items="{Binding Settings.Automation.TopOfHour.Slots}" SelectedItem="{Binding SelectedTohSlot, Mode=TwoWay}" Height="200">
                   <ListBox.ItemTemplate>
                     <DataTemplate>
-                      <Border BorderBrush="#1F2734" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,2">
+                      <Border BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,2">
                         <Grid ColumnDefinitions="30,*,90,120,110">
                           <TextBlock Grid.Column="0" Text="{Binding SlotOrder}" FontWeight="Bold" VerticalAlignment="Center" />
                           <ComboBox Grid.Column="1"
@@ -294,11 +299,11 @@
                   <Button Content="Remove" Width="100" Command="{Binding RemoveTohSlotCommand}" />
                 </StackPanel>
 
-                <TextBlock Text="Configure slots to play at the top of each hour using built-in TOH categories. Choose track count, selection mode, and whether repeats are allowed." Margin="0,8,0,0" Foreground="#888888" />
+                <TextBlock Text="Configure slots to play at the top of each hour using built-in TOH categories. Choose track count, selection mode, and whether repeats are allowed." Margin="0,8,0,0" Foreground="{DynamicResource ObBrushMutedText}" />
               </StackPanel>
             </Border>
 
-            <TextBlock Text="Use the editor to set rotation names and category slots, then schedule them by day and time." Margin="0,12,0,0" Foreground="#888888" />
+            <TextBlock Text="Use the editor to set rotation names and category slots, then schedule them by day and time." Margin="0,12,0,0" Foreground="{DynamicResource ObBrushMutedText}" />
           </StackPanel>
         </ScrollViewer>
       </TabItem>

@@ -73,6 +73,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         private readonly System.Func<int, System.Threading.Tasks.Task<string?>>? _filePicker;
         private OpenBroadcaster.Core.Models.AppSettings _appSettings = null!;
         private OpenBroadcaster.Core.Services.AppSettingsStore? _appSettingsStore;
+        private string _selectedTheme = "Default";
 
         public MainWindowViewModel(OpenBroadcaster.Core.Services.RadioService radioService, OpenBroadcaster.Core.Services.TransportService transportService, OpenBroadcaster.Core.Services.AudioService audioService, OpenBroadcaster.Core.Messaging.EventBus eventBus, OpenBroadcaster.Core.Services.QueueService queueService, OpenBroadcaster.Core.Services.LibraryService libraryService, OpenBroadcaster.Core.Services.CartWallService cartWallService, OpenBroadcaster.Core.Overlay.OverlayService? overlayService, OpenBroadcaster.Core.Models.AppSettings appSettings, System.Func<int, System.Threading.Tasks.Task<string?>>? filePicker = null)
         {
@@ -129,11 +130,14 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             _appSettings = appSettings ?? new OpenBroadcaster.Core.Models.AppSettings();
             _appSettings.Twitch ??= new OpenBroadcaster.Core.Models.TwitchSettings();
             _appSettingsStore = new OpenBroadcaster.Core.Services.AppSettingsStore();
+            _selectedTheme = NormalizeThemeName(_appSettings.ThemeName);
+            _appSettings.ThemeName = _selectedTheme;
 
             // Initialize volume sliders from saved settings
             _masterVolume = _appSettings.Audio.MasterVolumePercent;
             _micVolume = _appSettings.Audio.MicVolumePercent;
             _cartWallVolume = _appSettings.Audio.CartWallVolumePercent;
+            ApplyProgramOutputLevel(saveSettings: false);
 
             _encoderManager = new EncoderManager();
             try { _encoderManager.UpdateConfiguration(_appSettings.Encoder, _appSettings.Audio.EncoderDeviceId); }
@@ -151,6 +155,9 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                 }
             }
             catch { }
+
+            // Ensure device changes made during startup retain the slider-owned program output level.
+            ApplyProgramOutputLevel(saveSettings: false);
 
             try
             {
@@ -222,8 +229,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             try { _audioService.SetEncoderLevel(_encoderVolume / 100.0); }
             catch (Exception ex) { Debug.WriteLine($"Error setting encoder level: {ex.Message}"); }
 
-            // Menu / other UI commands - minimal implementations to finish wiring
-            ManageCategoriesCommand = new RelayCommand(_ => { /* TODO: open manage categories dialog */ });
+            // Menu / other UI commands - wired below with full implementations
             OpenAboutDialogCommand = new RelayCommand(_ => 
             {
                 try
@@ -240,8 +246,8 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                 }
                 catch { }
             });
-            OpenAppSettingsCommand = new RelayCommand(_ => { /* TODO: show application settings */ });
-            AssignCategoriesCommand = new RelayCommand(_ => { /* TODO: open assign-categories UI for SelectedLibraryItem */ });
+            
+            // ManageCategoriesCommand, OpenAppSettingsCommand, and AssignCategoriesCommand are wired below
 
             // Import commands now wired to real behaviors
 
@@ -352,6 +358,37 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                     {
                         var previous = _appSettings ?? new OpenBroadcaster.Core.Models.AppSettings();
                         _appSettings = updated ?? new OpenBroadcaster.Core.Models.AppSettings();
+                        _appSettings.Audio ??= new OpenBroadcaster.Core.Models.AudioSettings();
+
+                        var normalizedTheme = NormalizeThemeName(_appSettings.ThemeName);
+                        _appSettings.ThemeName = normalizedTheme;
+                        if (!string.Equals(_selectedTheme, normalizedTheme, StringComparison.Ordinal))
+                        {
+                            _selectedTheme = normalizedTheme;
+                            OnPropertyChanged(nameof(SelectedTheme));
+                        }
+
+                        try { OpenBroadcaster.Avalonia.App.ApplyTheme(_appSettings.ThemeName); } catch { }
+
+                        // CRITICAL: Program output loudness is owned by the main control-rack slider.
+                        // Always ensure settings object has current master values BEFORE applying.
+                        _appSettings.Audio.MasterVolumePercent = _masterVolume;
+                        _appSettings.Audio.DeckAVolumePercent = _masterVolume;
+                        _appSettings.Audio.DeckBVolumePercent = _masterVolume;
+
+                        // Save normalized volumes to disk immediately to prevent stale values from persisting
+                        SaveSettings();
+
+                        // Apply audio device changes WITHOUT applying volumes (we'll do it next)
+                        try { _audioService.ApplyAudioSettings(_appSettings.Audio, applyVolumes: false); } catch { }
+
+                        // Small delay to ensure device changes have fully taken effect
+                        System.Threading.Thread.Sleep(50);
+
+                        // Immediately re-assert runtime deck levels to master slider value
+                        // This ensures both decks are exactly the same and match the slider
+                        ApplyProgramOutputLevel(saveSettings: false);
+
                         try { _encoderManager.UpdateConfiguration(_appSettings.Encoder, _appSettings.Audio.EncoderDeviceId); } catch { }
                         
                         // Apply Overlay settings
@@ -522,7 +559,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                             getSnapshot: GetDirectServerSnapshot,
                             searchLibrary: SearchLibraryForDirectServer,
                             onSongRequest: HandleDirectServerSongRequest,
-                            getStationName: () => _appSettings.Overlay?.ApiUsername ?? "OpenBroadcaster"
+                            getStationName: () => _appSettings?.Overlay?.ApiUsername ?? "OpenBroadcaster"
                         );
 
                         _directServer.ServerStarted += (_, _) => { /* no-op for now */ };
@@ -546,8 +583,44 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                     var schedule = autoDjSettings.Schedule ?? new System.Collections.Generic.List<OpenBroadcaster.Core.Automation.SimpleSchedulerEntry>();
                     var defaultRotationId = autoDjSettings.DefaultRotationId;
 
+                    // CRITICAL: If no rotations exist, create a default "All Library" rotation
+                    // This ensures AutoDJ can work out-of-the-box without requiring manual setup
+                    if (rotations.Count == 0)
+                    {
+                        var defaultRotation = new OpenBroadcaster.Core.Automation.SimpleRotation
+                        {
+                            Id = Guid.NewGuid(),
+                            Name = "All Library",
+                            Enabled = true,
+                            IsActive = true,
+                            CategoryNames = new System.Collections.Generic.List<string> { "[All Library]" },
+                            Slots = new System.Collections.Generic.List<OpenBroadcaster.Core.Automation.SimpleRotationSlot>
+                            {
+                                new OpenBroadcaster.Core.Automation.SimpleRotationSlot
+                                {
+                                    CategoryId = new Guid("00000000-0000-0000-0000-000000000010") // Library pseudo-category
+                                }
+                            }
+                        };
+                        rotations.Add(defaultRotation);
+                        defaultRotationId = defaultRotation.Id;
+                        
+                        // Save the default rotation so it persists
+                        try
+                        {
+                            autoDjSettings.Rotations = rotations;
+                            autoDjSettings.DefaultRotationId = defaultRotationId;
+                            autoDjSettings.DefaultRotationName = defaultRotation.Name;
+                            autoDjSettings.SaveAll();
+                        }
+                        catch { }
+                    }
+
                     _simpleAutoDjService = new SimpleAutoDjService(_queueService, _libraryService, rotations, schedule, _appSettings?.Automation?.TargetQueueDepth ?? 5, defaultRotationId);
                     _simpleAutoDjService.StatusChanged += (_, status) => global::Avalonia.Threading.Dispatcher.UIThread.Post(() => AutoDjStatusMessage = status);
+
+                    // Ensure active rotation is set before trying to fill queue
+                    _simpleAutoDjService.UpdateActiveRotationIfNeeded();
 
                     // Always ensure queue is seeded on startup
                     System.Threading.Tasks.Task.Run(() => _simpleAutoDjService!.EnsureQueueDepth());
@@ -661,6 +734,34 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         public System.Collections.ObjectModel.ObservableCollection<OpenBroadcaster.Core.Models.LibraryCategory> LibraryCategories => _libraryCategories;
         public OpenBroadcaster.Core.Models.LibraryCategory? SelectedLibraryCategory { get => _selectedLibraryCategory; set { if (_selectedLibraryCategory != value) { _selectedLibraryCategory = value; OnPropertyChanged(); RefreshLibraryItems(); } } }
         public string LibraryStatusMessage { get => _libraryStatusMessage; set { if (_libraryStatusMessage != value) { _libraryStatusMessage = value; OnPropertyChanged(); } } }
+        public System.Collections.Generic.IReadOnlyList<string> ThemeOptions => OpenBroadcaster.Avalonia.App.SupportedThemes;
+        public string SelectedTheme
+        {
+            get => _selectedTheme;
+            set
+            {
+                var normalized = NormalizeThemeName(value);
+                if (string.Equals(_selectedTheme, normalized, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                _selectedTheme = normalized;
+                OnPropertyChanged();
+
+                try { OpenBroadcaster.Avalonia.App.ApplyTheme(_selectedTheme); } catch { }
+
+                try
+                {
+                    if (_appSettings != null)
+                    {
+                        _appSettings.ThemeName = _selectedTheme;
+                        SaveSettings();
+                    }
+                }
+                catch { }
+            }
+        }
 
         public double TwitchChatFontSize { get => _twitchChatFontSize; set { if (Math.Abs(_twitchChatFontSize - value) > 0.01) { _twitchChatFontSize = value; OnPropertyChanged(); } } }
         public System.Collections.ObjectModel.ObservableCollection<ChatMessageViewModel> ChatMessages => _chatMessages;
@@ -776,13 +877,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                 {
                     _masterVolume = value;
                     OnPropertyChanged();
-                    try
-                    {
-                        _audioService.SetDeckVolume(OpenBroadcaster.Core.Models.DeckIdentifier.A, _masterVolume / 100.0);
-                        _audioService.SetDeckVolume(OpenBroadcaster.Core.Models.DeckIdentifier.B, _masterVolume / 100.0);
-                    }
-                    catch { }
-                    SaveSettings();
+                    ApplyProgramOutputLevel(saveSettings: true);
                 }
             }
         }
@@ -828,6 +923,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
 
         public void Play()
         {
+            ApplyProgramOutputLevel(saveSettings: false);
             _radioService.Play();
         }
 
@@ -1174,6 +1270,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             if (parameter == null) return;
             var id = parameter.ToString();
             var deckId = id == "B" ? OpenBroadcaster.Core.Models.DeckIdentifier.B : OpenBroadcaster.Core.Models.DeckIdentifier.A;
+            ApplyProgramOutputLevel(saveSettings: false);
             _radioService.ActiveDeck = deckId;
             switch (action)
             {
@@ -1457,18 +1554,13 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                     }
                 }
 
-                // Capture current deck volumes
-                var fromStartVolume = _audioService.GetDeckVolume(fromDeck);
-                if (fromStartVolume <= 0)
-                {
-                    fromStartVolume = 1.0;
-                }
+                // Crossfade around the slider-owned program output target.
+                var programOutputLevel = GetProgramOutputLevel();
+                var fromStartVolume = programOutputLevel;
+                var toTargetVolume = programOutputLevel;
 
-                var toTargetVolume = _audioService.GetDeckVolume(toDeck);
-                if (toTargetVolume <= 0)
-                {
-                    toTargetVolume = fromStartVolume;
-                }
+                // Normalize deck levels to the owned target before crossfade starts.
+                _audioService.SetDeckVolume(fromDeck, fromStartVolume);
 
                 // Start target deck at zero and begin playback
                 _audioService.SetDeckVolume(toDeck, 0.0);
@@ -1507,6 +1599,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                 }
 
                 _audioService.SetDeckVolume(toDeck, toTargetVolume);
+                ApplyProgramOutputLevel(saveSettings: false);
                 _autoDjPreloadedDeck = null;
                 _autoDjAnnounceReadyDeck = toDeck;
             }
@@ -1650,6 +1743,8 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                 if (_appSettings?.Audio != null && _appSettingsStore != null)
                 {
                     _appSettings.Audio.MasterVolumePercent = _masterVolume;
+                    _appSettings.Audio.DeckAVolumePercent = _masterVolume;
+                    _appSettings.Audio.DeckBVolumePercent = _masterVolume;
                     _appSettings.Audio.MicVolumePercent = _micVolume;
                     _appSettings.Audio.CartWallVolumePercent = _cartWallVolume;
                     _appSettingsStore.Save(_appSettings);
@@ -1658,6 +1753,40 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             catch (System.Exception ex)
             {
                 Debug.WriteLine($"Error saving settings: {ex.Message}");
+            }
+        }
+
+        private double GetProgramOutputLevel()
+        {
+            return System.Math.Clamp(_masterVolume / 100.0, 0.0, 1.0);
+        }
+
+        private static string NormalizeThemeName(string? themeName)
+        {
+            if (string.IsNullOrWhiteSpace(themeName))
+            {
+                return "Default";
+            }
+
+            var match = OpenBroadcaster.Avalonia.App.SupportedThemes
+                .FirstOrDefault(t => string.Equals(t, themeName, StringComparison.OrdinalIgnoreCase));
+
+            return match ?? "Default";
+        }
+
+        private void ApplyProgramOutputLevel(bool saveSettings)
+        {
+            try
+            {
+                var level = GetProgramOutputLevel();
+                _audioService.SetDeckVolume(OpenBroadcaster.Core.Models.DeckIdentifier.A, level);
+                _audioService.SetDeckVolume(OpenBroadcaster.Core.Models.DeckIdentifier.B, level);
+            }
+            catch { }
+
+            if (saveSettings)
+            {
+                SaveSettings();
             }
         }
 

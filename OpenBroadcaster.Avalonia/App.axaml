@@ -6,9 +6,72 @@
   <Application.Resources>
     <converters:EnumToIndexConverter x:Key="EnumToIndexConverter" />
     <converters:TohCategoryConverter x:Key="TohCategoryConverter" />
+    <SolidColorBrush x:Key="ObBrushBackground" Color="#0E1118" />
+    <SolidColorBrush x:Key="ObBrushPanel" Color="#0F1220" />
+    <SolidColorBrush x:Key="ObBrushSurface" Color="#121826" />
+    <SolidColorBrush x:Key="ObBrushBorder" Color="#2D313B" />
+    <SolidColorBrush x:Key="ObBrushPrimaryText" Color="#DDE7F3" />
+    <SolidColorBrush x:Key="ObBrushSecondaryText" Color="#9AA6B3" />
+    <SolidColorBrush x:Key="ObBrushMutedText" Color="#7C8793" />
+    <SolidColorBrush x:Key="ObBrushAccent" Color="#39FF14" />
+    <SolidColorBrush x:Key="ObBrushAccentSoft" Color="#1A39FF14" />
+    <SolidColorBrush x:Key="ObBrushCloseButton" Color="#AA3333" />
+    <SolidColorBrush x:Key="ObBrushWindowButton" Color="#1E2530" />
+    <SolidColorBrush x:Key="ObBrushToggleOn" Color="#00FF00" />
+    <SolidColorBrush x:Key="ObBrushToggleOff" Color="#3A4252" />
   </Application.Resources>
   <Application.Styles>
     <!-- Use FluentTheme so Avalonia controls have default styles -->
     <FluentTheme />
+    <Style Selector="Window">
+      <Setter Property="Background" Value="{DynamicResource ObBrushBackground}" />
+      <Setter Property="Foreground" Value="{DynamicResource ObBrushPrimaryText}" />
+    </Style>
+    <Style Selector="TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ObBrushPrimaryText}" />
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="Foreground" Value="{DynamicResource ObBrushPrimaryText}" />
+      <Setter Property="Background" Value="{DynamicResource ObBrushSurface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ObBrushBorder}" />
+    </Style>
+    <Style Selector="ComboBox">
+      <Setter Property="Foreground" Value="{DynamicResource ObBrushPrimaryText}" />
+      <Setter Property="Background" Value="{DynamicResource ObBrushSurface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ObBrushBorder}" />
+    </Style>
+    <Style Selector="NumericUpDown">
+      <Setter Property="Foreground" Value="{DynamicResource ObBrushPrimaryText}" />
+      <Setter Property="Background" Value="{DynamicResource ObBrushSurface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ObBrushBorder}" />
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="Foreground" Value="{DynamicResource ObBrushPrimaryText}" />
+      <Setter Property="Background" Value="{DynamicResource ObBrushSurface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ObBrushBorder}" />
+    </Style>
+    <Style Selector="ListBox">
+      <Setter Property="Foreground" Value="{DynamicResource ObBrushPrimaryText}" />
+      <Setter Property="Background" Value="{DynamicResource ObBrushBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ObBrushBorder}" />
+    </Style>
+    <Style Selector="Menu">
+      <Setter Property="Foreground" Value="{DynamicResource ObBrushPrimaryText}" />
+      <Setter Property="Background" Value="{DynamicResource ObBrushPanel}" />
+    </Style>
+    <Style Selector="MenuItem">
+      <Setter Property="Foreground" Value="{DynamicResource ObBrushPrimaryText}" />
+    </Style>
+    <Style Selector="TabControl">
+      <Setter Property="Foreground" Value="{DynamicResource ObBrushPrimaryText}" />
+      <Setter Property="Background" Value="{DynamicResource ObBrushPanel}" />
+    </Style>
+    <Style Selector="TabItem">
+      <Setter Property="Foreground" Value="{DynamicResource ObBrushPrimaryText}" />
+      <Setter Property="Background" Value="{DynamicResource ObBrushSurface}" />
+    </Style>
+    <Style Selector="Slider">
+      <Setter Property="Foreground" Value="{DynamicResource ObBrushAccent}" />
+    </Style>
   </Application.Styles>
 </Application>

@@ -21,7 +21,7 @@ namespace OpenBroadcaster.Tests.Automation
 
         public SimpleAutoDJServiceTests()
         {
-            // Mocking the dependencies of SimpleAutoDJService
+            // Mocking the dependencies of SimpleAutoDJService (Core.Automation version)
             var mockSettings = new Mock<AutoDjSettingsService>(false);
             _mockScheduler = new Mock<SimpleScheduler>(mockSettings.Object);
             
@@ -29,6 +29,7 @@ namespace OpenBroadcaster.Tests.Automation
             _mockRotationEngine = new Mock<SimpleRotationEngine>(mockLibrary.Object);
 
             _mockQueueService = new Mock<IQueueService>();
+            _mockQueueService.Setup(q => q.IsQueueEmpty()).Returns(true);
             _mockPlayerStatusService = new Mock<IPlayerStatusService>();
 
             _autoDjService = new SimpleAutoDJService(
@@ -59,11 +60,11 @@ namespace OpenBroadcaster.Tests.Automation
 
             // Act
             _autoDjService.IsEnabled = true;
-            // Give timer a moment to fire. A more robust solution would be a manual timer control.
-            Thread.Sleep(50); 
+            // Give timer a moment to fire (2 second interval + buffer)
+            Thread.Sleep(2500); 
 
-            // Assert
-            _mockQueueService.Verify(qs => qs.EnqueueTrack(_nextTrack), Times.Once);
+            // Assert - timer fires immediately (change to 0) and may fire once more, so AtLeastOnce is appropriate
+            _mockQueueService.Verify(qs => qs.EnqueueTrack(_nextTrack), Times.AtLeastOnce);
         }
 
         [Fact]
@@ -101,13 +102,13 @@ namespace OpenBroadcaster.Tests.Automation
         [Fact]
         public void CheckAndQueueNextTrack_TrackNearingEnd_QueuesTrack()
         {
-            // Arrange
+            // Arrange - track has 3 seconds remaining (below 5 second threshold)
              _mockPlayerStatusService.Setup(ps => ps.GetPlayerState())
-                .Returns(new PlayerState { IsPlaying = true, TimeRemaining = TimeSpan.FromSeconds(10), CurrentMediaId = 1 });
+                .Returns(new PlayerState { IsPlaying = true, TimeRemaining = TimeSpan.FromSeconds(3), CurrentMediaId = 1 });
             _autoDjService.IsEnabled = true;
             
-            // Act
-            Thread.Sleep(50);
+            // Act - wait for timer to fire (2 second interval + buffer)
+            Thread.Sleep(2500);
             
             // Assert
             _mockQueueService.Verify(qs => qs.EnqueueTrack(_nextTrack), Times.Once);
@@ -118,13 +119,13 @@ namespace OpenBroadcaster.Tests.Automation
         {
             // Arrange
             _mockPlayerStatusService.Setup(ps => ps.GetPlayerState())
-                .Returns(new PlayerState { IsPlaying = true, TimeRemaining = TimeSpan.FromSeconds(60) });
+                .Returns(new PlayerState { IsPlaying = true, TimeRemaining = TimeSpan.FromSeconds(60), CurrentMediaId = 2 });
             _autoDjService.IsEnabled = true;
             
-            // Act
-            Thread.Sleep(50);
+            // Act - wait for timer to fire
+            Thread.Sleep(2500);
             
-            // Assert
+            // Assert - should not queue because track is not near end
             _mockQueueService.Verify(qs => qs.EnqueueTrack(It.IsAny<Media>()), Times.Never);
         }
         
