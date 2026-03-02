@@ -768,6 +768,9 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                     }
                 }
                 catch { }
+
+                // Force cart wall visual refresh to pick up new theme colors
+                RefreshCartWallVisuals();
             }
         }
 
@@ -859,7 +862,9 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         }
         public string AutoDjStatusMessage { get => _autoDjStatusMessage; set { if (_autoDjStatusMessage != value) { _autoDjStatusMessage = value; OnPropertyChanged(); } } }
 
-        public bool MicEnabled { get => _micEnabled; set { if (_micEnabled != value) { _micEnabled = value; OnPropertyChanged(); try { _audioService.SetMicEnabled(value); } catch { } if (_appSettings?.Audio != null) { _appSettings.Audio.MicrophoneEnabled = value; _appSettingsStore.Save(_appSettings); } } } }
+        public bool MicEnabled { get => _micEnabled; set { if (_micEnabled != value) { _micEnabled = value; OnPropertyChanged(); OnPropertyChanged(nameof(OnAir)); try { _audioService.SetMicEnabled(value); } catch { } if (_appSettings?.Audio != null) { _appSettings.Audio.MicrophoneEnabled = value; _appSettingsStore.Save(_appSettings); } } } }
+
+        public bool OnAir => _micEnabled || (_deckAState?.IsPlaying ?? false) || (_deckBState?.IsPlaying ?? false);
 
         public int MicVolume
         {
@@ -1657,6 +1662,8 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                 _deckBState = e;
             }
 
+            Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(OnAir)));
+
             // Only announce the deck that's actually playing (not a fading-out deck during crossfade)
             var playingDeck = SelectPlayingDeckForAnnouncement();
 
@@ -1780,6 +1787,24 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                 .FirstOrDefault(t => string.Equals(t, themeName, StringComparison.OrdinalIgnoreCase));
 
             return match ?? "Default";
+        }
+
+        private void RefreshCartWallVisuals()
+        {
+            // Force cart pads to refresh their visual bindings to pick up new theme colors
+            if (_cartWallService?.Pads != null)
+            {
+                foreach (var pad in _cartWallService.Pads)
+                {
+                    // Trigger PropertyChanged for the properties that converters bind to
+                    pad.GetType().GetMethod("OnPropertyChanged", 
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?
+                        .Invoke(pad, new object?[] { nameof(pad.IsPlaying) });
+                    pad.GetType().GetMethod("OnPropertyChanged", 
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?
+                        .Invoke(pad, new object?[] { nameof(pad.RemainingTimeDisplay) });
+                }
+            }
         }
 
         private void ApplyProgramOutputLevel(bool saveSettings)

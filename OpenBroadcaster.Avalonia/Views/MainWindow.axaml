@@ -4,6 +4,7 @@
         xmlns:d="https://github.com/avaloniaui/design"
         xmlns:vm="clr-namespace:OpenBroadcaster.Avalonia.ViewModels"
         xmlns:conv="clr-namespace:OpenBroadcaster.Avalonia.Converters"
+        xmlns:ctrl="clr-namespace:OpenBroadcaster.Avalonia.Controls"
         x:Class="OpenBroadcaster.Avalonia.Views.MainWindow"
         Title="OpenBroadcaster (Avalonia)"
         Width="1200" Height="820"
@@ -12,7 +13,32 @@
 
   <Window.Resources>
     <conv:IsPlayingToBorderThicknessConverter x:Key="IsPlayingToBorderThicknessConverter" />
+    <conv:CartPadVisualStateConverter x:Key="CartPadVisualStateConverter" />
+    <conv:BoolToOpacityConverter x:Key="BoolToOpacityConverter" />
   </Window.Resources>
+
+  <Window.Styles>
+    <Style Selector="ToggleButton.consoleRackButton">
+      <Setter Property="Background" Value="{DynamicResource ObBrushSurface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ObBrushBorder}" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="Foreground" Value="{DynamicResource ObBrushPrimaryText}" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}">
+            <ContentPresenter HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Foreground="{TemplateBinding Foreground}" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+  </Window.Styles>
 
   <Grid Margin="12">
     <Grid.RowDefinitions>
@@ -44,14 +70,16 @@
           </MenuItem>
         </Menu>
 
-        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-          <Button Content="App Settings" Command="{Binding OpenAppSettingsCommand}" Width="140" Margin="8,0" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="8">
+          <TextBlock Text="Theme" Foreground="{DynamicResource ObBrushSecondaryText}" VerticalAlignment="Center" />
+          <ComboBox Width="170" Items="{Binding ThemeOptions}" SelectedItem="{Binding SelectedTheme, Mode=TwoWay}" VerticalAlignment="Center" />
+          <Button Content="App Settings" Command="{Binding OpenAppSettingsCommand}" Width="140" Margin="8,0" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" />
         </StackPanel>
 
         <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="1">
           <Button Width="44" Height="32" Click="MinimizeButton_Click" 
                   Background="{DynamicResource ObBrushWindowButton}" 
-                  BorderThickness="0"
+                  BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1"
                   CornerRadius="4"
                   FontSize="16"
                   Foreground="{DynamicResource ObBrushPrimaryText}">
@@ -59,7 +87,7 @@
           </Button>
           <Button Width="44" Height="32" Click="MaximizeRestoreButton_Click" 
                   Background="{DynamicResource ObBrushWindowButton}" 
-                  BorderThickness="0"
+                  BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1"
                   CornerRadius="4"
                   FontSize="14"
                   Foreground="{DynamicResource ObBrushPrimaryText}">
@@ -67,7 +95,7 @@
           </Button>
           <Button Width="44" Height="32" Click="CloseButton_Click" 
                   Background="{DynamicResource ObBrushCloseButton}" 
-                  BorderThickness="0"
+                  BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1"
                   CornerRadius="4"
                   FontSize="16"
                   Foreground="{DynamicResource ObBrushPrimaryText}">
@@ -90,13 +118,8 @@
           <Grid>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />
-              <ColumnDefinition Width="230" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Text="Song Library" Foreground="{DynamicResource ObBrushPrimaryText}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" VerticalAlignment="Center">
-              <TextBlock Text="Theme" Foreground="{DynamicResource ObBrushSecondaryText}" VerticalAlignment="Center" />
-              <ComboBox Width="170" Items="{Binding ThemeOptions}" SelectedItem="{Binding SelectedTheme, Mode=TwoWay}" />
-            </StackPanel>
           </Grid>
 
           <Grid Margin="0,12,0,12">
@@ -115,10 +138,10 @@
           </Grid>
 
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="Add to Queue" Command="{Binding AddToQueueCommand}" CommandParameter="{Binding SelectedLibraryItem}" />
-            <Button Content="Assign Categories" Command="{Binding AssignCategoriesCommand}" />
-            <Button Content="Import Files" Command="{Binding ImportTracksCommand}" />
-            <Button Content="Import Folder" Command="{Binding ImportFolderCommand}" />
+            <Button Content="Add to Queue" Command="{Binding AddToQueueCommand}" CommandParameter="{Binding SelectedLibraryItem}" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" />
+            <Button Content="Assign Categories" Command="{Binding AssignCategoriesCommand}" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" />
+            <Button Content="Import Files" Command="{Binding ImportTracksCommand}" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" />
+            <Button Content="Import Folder" Command="{Binding ImportFolderCommand}" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" />
           </StackPanel>
 
           <TextBlock Margin="0,8,0,8" Foreground="{DynamicResource ObBrushSecondaryText}" Text="{Binding LibraryStatusMessage}" />
@@ -219,22 +242,22 @@
                 </Grid>
               </Border>
               <StackPanel Grid.Column="1">
-                <TextBlock Text="{Binding DeckA.Title}" />
-                <TextBlock Text="{Binding DeckA.Artist}" Foreground="{DynamicResource ObBrushSecondaryText}" />
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                  <TextBlock Text="Elapsed:" Foreground="{DynamicResource ObBrushSecondaryText}" />
-                  <TextBlock Text="{Binding DeckA.ElapsedTime}" Foreground="{DynamicResource ObBrushSecondaryText}" />
+                <TextBlock Text="{Binding DeckA.Title}" FontFamily="OCR A Extended, Consolas, Courier New" FontSize="14" />
+                <TextBlock Text="{Binding DeckA.Artist}" Foreground="{DynamicResource ObBrushSecondaryText}" FontFamily="OCR A Extended, Consolas, Courier New" FontSize="12" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+                  <TextBlock Text="Elapsed:" Foreground="{DynamicResource ObBrushMutedText}" FontSize="11" />
+                  <TextBlock Text="{Binding DeckA.ElapsedTime}" Foreground="{DynamicResource ObBrushAccent}" FontFamily="OCR A Extended, Consolas, Courier New" FontSize="13" FontWeight="Bold" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <TextBlock Text="Remaining:" Foreground="{DynamicResource ObBrushSecondaryText}" />
-                  <TextBlock Text="{Binding DeckA.RemainingTime}" Foreground="{DynamicResource ObBrushSecondaryText}" />
+                  <TextBlock Text="Remaining:" Foreground="{DynamicResource ObBrushMutedText}" FontSize="11" />
+                  <TextBlock Text="{Binding DeckA.RemainingTime}" Foreground="{DynamicResource ObBrushAccent}" FontFamily="OCR A Extended, Consolas, Courier New" FontSize="13" FontWeight="Bold" />
                 </StackPanel>
               </StackPanel>
                 </Grid>
-                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                  <Button Content="Play" Width="80" Command="{Binding DeckPlayCommand}" CommandParameter="A" />
-                  <Button Content="Stop" Width="80" Command="{Binding DeckStopCommand}" CommandParameter="A" />
-                  <Button Content="Next" Width="80" Command="{Binding DeckNextCommand}" CommandParameter="A" />
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Spacing="4">
+                  <Button Content="Play" Width="80" Command="{Binding DeckPlayCommand}" CommandParameter="A" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" />
+                  <Button Content="Stop" Width="80" Command="{Binding DeckStopCommand}" CommandParameter="A" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" />
+                  <Button Content="Next" Width="80" Command="{Binding DeckNextCommand}" CommandParameter="A" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" />
                 </StackPanel>
               </StackPanel>
             </Border>
@@ -262,22 +285,22 @@
                 </Grid>
               </Border>
               <StackPanel Grid.Column="1">
-                <TextBlock Text="{Binding DeckB.Title}" />
-                <TextBlock Text="{Binding DeckB.Artist}" Foreground="{DynamicResource ObBrushSecondaryText}" />
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                  <TextBlock Text="Elapsed:" Foreground="{DynamicResource ObBrushSecondaryText}" />
-                  <TextBlock Text="{Binding DeckB.ElapsedTime}" Foreground="{DynamicResource ObBrushSecondaryText}" />
+                <TextBlock Text="{Binding DeckB.Title}" FontFamily="OCR A Extended, Consolas, Courier New" FontSize="14" />
+                <TextBlock Text="{Binding DeckB.Artist}" Foreground="{DynamicResource ObBrushSecondaryText}" FontFamily="OCR A Extended, Consolas, Courier New" FontSize="12" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+                  <TextBlock Text="Elapsed:" Foreground="{DynamicResource ObBrushMutedText}" FontSize="11" />
+                  <TextBlock Text="{Binding DeckB.ElapsedTime}" Foreground="{DynamicResource ObBrushAccent}" FontFamily="OCR A Extended, Consolas, Courier New" FontSize="13" FontWeight="Bold" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <TextBlock Text="Remaining:" Foreground="{DynamicResource ObBrushSecondaryText}" />
-                  <TextBlock Text="{Binding DeckB.RemainingTime}" Foreground="{DynamicResource ObBrushSecondaryText}" />
+                  <TextBlock Text="Remaining:" Foreground="{DynamicResource ObBrushMutedText}" FontSize="11" />
+                  <TextBlock Text="{Binding DeckB.RemainingTime}" Foreground="{DynamicResource ObBrushAccent}" FontFamily="OCR A Extended, Consolas, Courier New" FontSize="13" FontWeight="Bold" />
                 </StackPanel>
               </StackPanel>
                 </Grid>
-                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                  <Button Content="Play" Width="80" Command="{Binding DeckPlayCommand}" CommandParameter="B" />
-                  <Button Content="Stop" Width="80" Command="{Binding DeckStopCommand}" CommandParameter="B" />
-                  <Button Content="Next" Width="80" Command="{Binding DeckNextCommand}" CommandParameter="B" />
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Spacing="4">
+                  <Button Content="Play" Width="80" Command="{Binding DeckPlayCommand}" CommandParameter="B" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" />
+                  <Button Content="Stop" Width="80" Command="{Binding DeckStopCommand}" CommandParameter="B" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" />
+                  <Button Content="Next" Width="80" Command="{Binding DeckNextCommand}" CommandParameter="B" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" />
                 </StackPanel>
               </StackPanel>
             </Border>
@@ -285,29 +308,75 @@
         </Border>
 
         <!-- Control Rack -->
-        <Border Grid.Row="0" Grid.Column="2" Grid.RowSpan="2" Background="{DynamicResource ObBrushPanel}" CornerRadius="8" Padding="12" Margin="8,0,0,8">
+        <Border Grid.Row="0" Grid.Column="2" Grid.RowSpan="3" Background="{DynamicResource ObBrushPanel}" CornerRadius="8" Padding="12" Margin="8,0,0,8">
           <StackPanel>
             <TextBlock Text="Control Rack" Foreground="{DynamicResource ObBrushPrimaryText}" FontSize="16" FontWeight="SemiBold" />
-            <StackPanel Margin="0,8,0,0">
-              <ToggleButton IsChecked="{Binding TwitchChatEnabled}">
-                <StackPanel Orientation="Horizontal">
-                  <Ellipse Width="10" Height="10" Margin="0,0,6,0" VerticalAlignment="Center"
+
+            <Border Margin="0,8,0,4"
+                    HorizontalAlignment="Center"
+                    Background="Transparent"
+                    Padding="0">
+              <Grid Width="190" Height="78">
+                <Image Stretch="Uniform"
+                       Source="avares://OpenBroadcaster.Avalonia/Assets/on-air-custom.png" />
+                <Border Background="#D0FF2A2A"
+                        Opacity="{Binding OnAir, Converter={x:Static conv:BoolToOpacityConverter.Instance}, ConverterParameter='0.55|0'}"
+                        IsHitTestVisible="False">
+                  <Border.OpacityMask>
+                    <ImageBrush Source="avares://OpenBroadcaster.Avalonia/Assets/on-air-custom.png" Stretch="Uniform" />
+                  </Border.OpacityMask>
+                </Border>
+              </Grid>
+            </Border>
+            
+            <!-- Toggle Buttons at Top -->
+            <Grid Margin="0,8,0,8">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              
+              <ToggleButton Grid.Column="0" Classes="consoleRackButton" IsChecked="{Binding TwitchChatEnabled}" Width="58" Height="58" HorizontalAlignment="Center" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="2" CornerRadius="29">
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+                  <Ellipse Width="10" Height="10" Margin="0,0,0,4" HorizontalAlignment="Center"
                            Stroke="{DynamicResource ObBrushBorder}" StrokeThickness="1"
                            Fill="{Binding TwitchChatEnabled, Converter={x:Static conv:BoolToBrushConverter.Instance}, ConverterParameter='resource:ObBrushToggleOn|resource:ObBrushToggleOff'}" />
-                  <TextBlock Text="Enable Twitch" />
+                  <TextBlock Text="Twitch" FontSize="10" HorizontalAlignment="Center" />
                 </StackPanel>
               </ToggleButton>
-              <ToggleButton IsChecked="{Binding AutoDjEnabled}" Margin="0,6,0,0">
-                <StackPanel Orientation="Horizontal">
-                  <Ellipse Width="10" Height="10" Margin="0,0,6,0" VerticalAlignment="Center"
+              
+              <ToggleButton Grid.Column="1" Classes="consoleRackButton" IsChecked="{Binding AutoDjEnabled}" Width="58" Height="58" HorizontalAlignment="Center" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="2" CornerRadius="29">
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+                  <Ellipse Width="10" Height="10" Margin="0,0,0,4" HorizontalAlignment="Center"
                            Stroke="{DynamicResource ObBrushBorder}" StrokeThickness="1"
                            Fill="{Binding AutoDjEnabled, Converter={x:Static conv:BoolToBrushConverter.Instance}, ConverterParameter='resource:ObBrushToggleOn|resource:ObBrushToggleOff'}" />
-                  <TextBlock Text="Enable AutoDJ" />
+                  <TextBlock Text="AutoDJ" FontSize="10" HorizontalAlignment="Center" />
                 </StackPanel>
               </ToggleButton>
-              <TextBlock Text="{Binding AutoDjStatusMessage}" Foreground="{DynamicResource ObBrushSecondaryText}" Margin="0,6,0,0" />
-              <TextBlock Text="Levels" Foreground="{DynamicResource ObBrushPrimaryText}" FontSize="12" Margin="0,8,0,0" />
-              <Grid Margin="0,6,0,0">
+              
+              <ToggleButton Grid.Column="2" Classes="consoleRackButton" IsChecked="{Binding EncodersEnabled}" Width="58" Height="58" HorizontalAlignment="Center" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="2" CornerRadius="29">
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+                  <Ellipse Width="10" Height="10" Margin="0,0,0,4" HorizontalAlignment="Center"
+                           Stroke="{DynamicResource ObBrushBorder}" StrokeThickness="1"
+                           Fill="{Binding EncodersEnabled, Converter={x:Static conv:BoolToBrushConverter.Instance}, ConverterParameter='resource:ObBrushToggleOn|resource:ObBrushToggleOff'}" />
+                  <TextBlock Text="Encode" FontSize="10" HorizontalAlignment="Center" />
+                </StackPanel>
+              </ToggleButton>
+
+              <ToggleButton Grid.Column="3" Classes="consoleRackButton" IsChecked="{Binding MicEnabled}" Width="58" Height="58" HorizontalAlignment="Center" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="2" CornerRadius="29">
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+                  <Ellipse Width="10" Height="10" Margin="0,0,0,4" HorizontalAlignment="Center"
+                           Stroke="{DynamicResource ObBrushBorder}" StrokeThickness="1"
+                           Fill="{Binding MicEnabled, Converter={x:Static conv:BoolToBrushConverter.Instance}, ConverterParameter='resource:ObBrushToggleOn|resource:ObBrushToggleOff'}" />
+                  <TextBlock Text="Talk" FontSize="10" HorizontalAlignment="Center" />
+                </StackPanel>
+              </ToggleButton>
+            </Grid>
+            
+            <StackPanel>
+              <Grid Margin="0,0,0,0">
                 <Grid.RowDefinitions>
                   <RowDefinition Height="Auto" />
                   <RowDefinition Height="Auto" />
@@ -317,69 +386,218 @@
                 </Grid.RowDefinitions>
 
                 <!-- Program / Main Output -->
-                <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,8">
-                  <TextBlock Text="Program" Foreground="{DynamicResource ObBrushSecondaryText}" />
-                  <ProgressBar Minimum="0" Maximum="100" Value="{Binding ProgramVuPercent}" Height="12" Margin="0,6,0,6" />
-                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-                    <Slider Minimum="0" Maximum="100" Value="{Binding MasterVolume, Mode=TwoWay}" HorizontalAlignment="Stretch" Width="160" />
-                    <TextBlock Text="{Binding MasterVolume, StringFormat='{}{0}%'}" Width="44" Foreground="{DynamicResource ObBrushSecondaryText}" Margin="8,0,0,0" VerticalAlignment="Center" />
-                  </StackPanel>
+                <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,4">
+                  <TextBlock Text="Main" Foreground="{DynamicResource ObBrushSecondaryText}" FontSize="13" FontWeight="SemiBold" />
+                  <Border Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="2" CornerRadius="4" Padding="6" Margin="0,3,0,3">
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                      </Grid.ColumnDefinitions>
+                      
+                      <!-- Left side: Vol label, Knob, and % -->
+                      <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,12,0">
+                        <TextBlock 
+                          Text="Vol" 
+                          Foreground="{DynamicResource ObBrushSecondaryText}" 
+                          Margin="0,0,0,4" 
+                          HorizontalAlignment="Center"
+                          FontWeight="SemiBold"
+                          FontSize="10" />
+                        <ctrl:RotaryKnob 
+                          Value="{Binding MasterVolume, Mode=TwoWay}" 
+                          Minimum="0" 
+                          Maximum="100" 
+                          Width="45" 
+                          Height="45"
+                          Margin="0,0,0,4"
+                          KnobBrush="#0A0A0A"
+                          IndicatorBrush="#FFFFFF"
+                          BackgroundBrush="#000000" />
+                        <TextBlock 
+                          Text="{Binding MasterVolume, StringFormat='{}{0}%'}" 
+                          Foreground="{DynamicResource ObBrushAccent}" 
+                          HorizontalAlignment="Center"
+                          FontWeight="SemiBold"
+                          FontSize="13" />
+                      </StackPanel>
+                      
+                      <!-- Right side: Power Meter -->
+                      <ctrl:PowerMeter 
+                        Grid.Column="1"
+                        Value="{Binding ProgramVuPercent}" 
+                        Minimum="0" 
+                        Maximum="100" 
+                        Height="62"
+                        MinWidth="132"
+                        NeedleBrush="{DynamicResource ObBrushAccent}"
+                        MeterBackground="{DynamicResource ObBrushPanel}"
+                        ScaleBrush="{DynamicResource ObBrushSecondaryText}" />
+                    </Grid>
+                  </Border>
                 </StackPanel>
 
                 <!-- Mic -->
-                <StackPanel Grid.Row="1" Orientation="Vertical" Margin="0,0,0,8">
-                  <TextBlock Text="Microphone" Foreground="{DynamicResource ObBrushSecondaryText}" />
-                  <ProgressBar Minimum="0" Maximum="100" Value="{Binding MicVuPercent}" Height="12" Margin="0,6,0,6" />
-                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-                    <ToggleButton IsChecked="{Binding MicEnabled}" Width="56" Margin="0,0,8,0">
-                      <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
-                        <Ellipse Width="10" Height="10" StrokeThickness="1" Margin="0,0,0,2" HorizontalAlignment="Center"
-                                 Stroke="{DynamicResource ObBrushBorder}"
-                                 Fill="{Binding MicEnabled, Converter={x:Static conv:BoolToBrushConverter.Instance}, ConverterParameter='resource:ObBrushToggleOn|resource:ObBrushToggleOff'}" />
-                        <TextBlock Text="Mic" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                <StackPanel Grid.Row="1" Orientation="Vertical" Margin="0,0,0,4">
+                  <TextBlock Text="Mic" Foreground="{DynamicResource ObBrushSecondaryText}" FontSize="13" FontWeight="SemiBold" />
+                  <Border Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="2" CornerRadius="4" Padding="6" Margin="0,3,0,3">
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                      </Grid.ColumnDefinitions>
+                      
+                      <!-- Left side: Vol label, Knob, and % -->
+                      <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,12,0">
+                        <TextBlock 
+                          Text="Vol" 
+                          Foreground="{DynamicResource ObBrushSecondaryText}" 
+                          Margin="0,0,0,4" 
+                          HorizontalAlignment="Center"
+                          FontWeight="SemiBold"
+                          FontSize="10" />
+                        <ctrl:RotaryKnob 
+                          Value="{Binding MicVolume, Mode=TwoWay}" 
+                          Minimum="0" 
+                          Maximum="100" 
+                          Width="45" 
+                          Height="45"
+                          Margin="0,0,0,4"
+                          KnobBrush="#0A0A0A"
+                          IndicatorBrush="#FFFFFF"
+                          BackgroundBrush="#000000" />
+                        <TextBlock 
+                          Text="{Binding MicVolume, StringFormat='{}{0}%'}" 
+                          Foreground="{DynamicResource ObBrushAccent}" 
+                          HorizontalAlignment="Center"
+                          FontWeight="SemiBold"
+                          FontSize="12" />
                       </StackPanel>
-                    </ToggleButton>
-                    <Slider Minimum="0" Maximum="100" Value="{Binding MicVolume}" Width="160" />
-                    <TextBlock Text="{Binding MicVolume, StringFormat='{}{0}%'}" Width="44" Foreground="{DynamicResource ObBrushSecondaryText}" Margin="8,0,0,0" VerticalAlignment="Center" />
-                  </StackPanel>
+                      
+                      <!-- Right side: Power Meter -->
+                      <ctrl:PowerMeter 
+                        Grid.Column="1"
+                        Value="{Binding MicVuPercent}" 
+                        Minimum="0" 
+                        Maximum="100" 
+                        Height="62"
+                        MinWidth="132"
+                        NeedleBrush="{DynamicResource ObBrushAccent}"
+                        MeterBackground="{DynamicResource ObBrushPanel}"
+                        ScaleBrush="{DynamicResource ObBrushSecondaryText}" />
+                    </Grid>
+                  </Border>
                 </StackPanel>
 
                 <!-- Cart Wall -->
-                <StackPanel Grid.Row="2" Orientation="Vertical">
-                  <TextBlock Text="Cart Wall" Foreground="{DynamicResource ObBrushSecondaryText}" />
-                  <ProgressBar Minimum="0" Maximum="100" Value="{Binding CartVuPercent}" Height="12" Margin="0,6,0,6" />
-                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-                    <Slider Minimum="0" Maximum="100" Value="{Binding CartWallVolume, Mode=TwoWay}" Width="160" />
-                    <TextBlock Text="{Binding CartWallVolume, StringFormat='{}{0}%'}" Width="44" Foreground="{DynamicResource ObBrushSecondaryText}" Margin="8,0,0,0" VerticalAlignment="Center" />
-                  </StackPanel>
+                <StackPanel Grid.Row="2" Orientation="Vertical" Margin="0,0,0,4">
+                  <TextBlock Text="Cart Wall" Foreground="{DynamicResource ObBrushSecondaryText}" FontSize="13" FontWeight="SemiBold" />
+                  <Border Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="2" CornerRadius="4" Padding="6" Margin="0,3,0,3">
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                      </Grid.ColumnDefinitions>
+                      
+                      <!-- Left side: Vol label, Knob, and % -->
+                      <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,12,0">
+                        <TextBlock 
+                          Text="Vol" 
+                          Foreground="{DynamicResource ObBrushSecondaryText}" 
+                          Margin="0,0,0,4" 
+                          HorizontalAlignment="Center"
+                          FontWeight="SemiBold"
+                          FontSize="10" />
+                        <ctrl:RotaryKnob 
+                          Value="{Binding CartWallVolume, Mode=TwoWay}" 
+                          Minimum="0" 
+                          Maximum="100" 
+                          Width="45" 
+                          Height="45"
+                          Margin="0,0,0,4"
+                          KnobBrush="#0A0A0A"
+                          IndicatorBrush="#FFFFFF"
+                          BackgroundBrush="#000000" />
+                        <TextBlock 
+                          Text="{Binding CartWallVolume, StringFormat='{}{0}%'}" 
+                          Foreground="{DynamicResource ObBrushAccent}" 
+                          HorizontalAlignment="Center"
+                          FontWeight="SemiBold"
+                          FontSize="12" />
+                      </StackPanel>
+                      
+                      <!-- Right side: Power Meter -->
+                      <ctrl:PowerMeter 
+                        Grid.Column="1"
+                        Value="{Binding CartVuPercent}" 
+                        Minimum="0" 
+                        Maximum="100" 
+                        Height="62"
+                        MinWidth="132"
+                        NeedleBrush="{DynamicResource ObBrushAccent}"
+                        MeterBackground="{DynamicResource ObBrushPanel}"
+                        ScaleBrush="{DynamicResource ObBrushSecondaryText}" />
+                    </Grid>
+                  </Border>
                 </StackPanel>
 
                 <!-- Encoder -->
-                <StackPanel Grid.Row="3" Orientation="Vertical">
-                  <TextBlock Text="Encoder" Foreground="{DynamicResource ObBrushSecondaryText}" />
-                  <ProgressBar Minimum="0" Maximum="100" Value="{Binding EncoderVuPercent}" Height="12" Margin="0,6,0,6" />
-                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-                    <Slider Minimum="0" Maximum="100" Value="{Binding EncoderVolume, Mode=TwoWay}" Width="160" />
-                    <TextBlock Text="{Binding EncoderVolume, StringFormat='{}{0}%'}" Width="44" Foreground="{DynamicResource ObBrushSecondaryText}" Margin="8,0,0,0" VerticalAlignment="Center" />
-                  </StackPanel>
-                  <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                    <ToggleButton IsChecked="{Binding EncodersEnabled}" Width="140">
-                      <StackPanel Orientation="Horizontal">
-                        <Ellipse Width="10" Height="10" Margin="0,0,6,0" VerticalAlignment="Center"
-                                 Stroke="{DynamicResource ObBrushBorder}" StrokeThickness="1"
-                                 Fill="{Binding EncodersEnabled, Converter={x:Static conv:BoolToBrushConverter.Instance}, ConverterParameter='resource:ObBrushToggleOn|resource:ObBrushToggleOff'}" />
-                        <TextBlock Text="Enable Encoders" />
+                <StackPanel Grid.Row="3" Orientation="Vertical" Margin="0,0,0,4">
+                  <TextBlock Text="Encoder" Foreground="{DynamicResource ObBrushSecondaryText}" FontSize="13" FontWeight="SemiBold" />
+                  <Border Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="2" CornerRadius="4" Padding="6" Margin="0,3,0,3">
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                      </Grid.ColumnDefinitions>
+                      
+                      <!-- Left side: Vol label, Knob, and % -->
+                      <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,12,0">
+                        <TextBlock 
+                          Text="Vol" 
+                          Foreground="{DynamicResource ObBrushSecondaryText}" 
+                          Margin="0,0,0,4" 
+                          HorizontalAlignment="Center"
+                          FontWeight="SemiBold"
+                          FontSize="10" />
+                        <ctrl:RotaryKnob 
+                          Value="{Binding EncoderVolume, Mode=TwoWay}" 
+                          Minimum="0" 
+                          Maximum="100" 
+                          Width="45" 
+                          Height="45"
+                          Margin="0,0,0,4"
+                          KnobBrush="#0A0A0A"
+                          IndicatorBrush="#FFFFFF"
+                          BackgroundBrush="#000000" />
+                        <TextBlock 
+                          Text="{Binding EncoderVolume, StringFormat='{}{0}%'}" 
+                          Foreground="{DynamicResource ObBrushAccent}" 
+                          HorizontalAlignment="Center"
+                          FontWeight="SemiBold"
+                          FontSize="12" />
                       </StackPanel>
-                    </ToggleButton>
-                    <TextBlock Text="{Binding EncoderStatusMessage}" Foreground="{DynamicResource ObBrushSecondaryText}" Margin="8,0,0,0" VerticalAlignment="Center" />
-                  </StackPanel>
+                      
+                      <!-- Right side: Power Meter -->
+                      <ctrl:PowerMeter 
+                        Grid.Column="1"
+                        Value="{Binding EncoderVuPercent}" 
+                        Minimum="0" 
+                        Maximum="100" 
+                        Height="62"
+                        MinWidth="132"
+                        NeedleBrush="{DynamicResource ObBrushAccent}"
+                        MeterBackground="{DynamicResource ObBrushPanel}"
+                        ScaleBrush="{DynamicResource ObBrushSecondaryText}" />
+                    </Grid>
+                  </Border>
                 </StackPanel>
 
                 <!-- Encoder Console -->
-                <StackPanel Grid.Row="4" Orientation="Vertical" Margin="0,10,0,0">
-                  <TextBlock Text="Encoder Console" Foreground="{DynamicResource ObBrushSecondaryText}" />
-                  <Border Background="{DynamicResource ObBrushSurface}" CornerRadius="4" Padding="6" Margin="0,6,0,0">
-                    <ScrollViewer Height="140">
+                <StackPanel Grid.Row="4" Orientation="Vertical" Margin="0,4,0,0">
+                  <TextBlock Text="Encoder Console" Foreground="{DynamicResource ObBrushSecondaryText}" FontSize="11" />
+                  <Border Background="{DynamicResource ObBrushSurface}" CornerRadius="4" Padding="4" Margin="0,4,0,0">
+                    <ScrollViewer Height="64">
                       <ListBox Items="{Binding EncoderLog}">
                         <ListBox.ItemTemplate>
                           <DataTemplate>
@@ -404,8 +622,8 @@
             </Grid.RowDefinitions>
             <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
               <TextBlock Text="Program Queue" Foreground="{DynamicResource ObBrushPrimaryText}" FontSize="16" FontWeight="SemiBold" />
-              <Button Content="Shuffle" Command="{Binding ShuffleQueueCommand}" Margin="12,0,0,0" />
-              <Button Content="Clear" Command="{Binding ClearQueueCommand}" Margin="8,0,0,0" />
+              <Button Content="Shuffle" Command="{Binding ShuffleQueueCommand}" Margin="12,0,0,0" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" />
+              <Button Content="Clear" Command="{Binding ClearQueueCommand}" Margin="8,0,0,0" Background="{DynamicResource ObBrushSurface}" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" />
             </StackPanel>
 
             <ListBox Name="QueueList" Grid.Row="1" Items="{Binding QueueItems}" SelectedItem="{Binding SelectedQueueItem}" Margin="0,12,0,0"
@@ -473,11 +691,10 @@
         </Border>
 
         <!-- Cart Wall -->
-        <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Background="{DynamicResource ObBrushPanel}" CornerRadius="8" Padding="12" Margin="0,0,0,4">
+        <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Background="{DynamicResource ObBrushPanel}" CornerRadius="8" Padding="12" Margin="0,0,8,8">
           <StackPanel>
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
               <TextBlock Text="Cart Wall" Foreground="{DynamicResource ObBrushPrimaryText}" FontSize="16" FontWeight="SemiBold" />
-              <TextBlock Text="Hot triggers" Foreground="{DynamicResource ObBrushSecondaryText}" Margin="12,0,0,0" />
               <!-- Cart wall volume is shown in Control Rack -->
             </StackPanel>
 
@@ -489,7 +706,16 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Button Command="{Binding DataContext.TriggerCartCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" Margin="6" Background="{Binding ColorHex}" CornerRadius="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" BorderBrush="{DynamicResource ObBrushToggleOn}" BorderThickness="{Binding IsPlaying, Converter={StaticResource IsPlayingToBorderThicknessConverter}}" x:Name="CartButton">
+                    <Button Command="{Binding DataContext.TriggerCartCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                      CommandParameter="{Binding}"
+                      Margin="6"
+                      Background="{Binding RemainingTimeDisplay, Converter={x:Static conv:CartPadVisualStateConverter.Instance}, ConverterParameter=background}"
+                      CornerRadius="6"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch"
+                      BorderBrush="{Binding IsPlaying, Converter={x:Static conv:CartPadVisualStateConverter.Instance}, ConverterParameter=border}"
+                      BorderThickness="{Binding IsPlaying, Converter={x:Static conv:CartPadVisualStateConverter.Instance}, ConverterParameter=thickness}"
+                      x:Name="CartButton">
                     <Button.ContextMenu>
                       <ContextMenu>
                         <MenuItem Header="Assign File..." Click="OnAssignFile" Tag="{Binding #CartButton.DataContext}" />
@@ -497,9 +723,9 @@
                       </ContextMenu>
                     </Button.ContextMenu>
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                      <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontSize="14" HorizontalAlignment="Center" />
-                      <TextBlock Text="{Binding Hotkey}" Foreground="{DynamicResource ObBrushSecondaryText}" FontSize="12" HorizontalAlignment="Center" />
-                      <TextBlock Text="{Binding RemainingTimeDisplay}" Foreground="{DynamicResource ObBrushToggleOn}" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,4,0,0" />
+                      <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontSize="14" HorizontalAlignment="Center" Foreground="{DynamicResource ObBrushPrimaryText}" />
+                      <TextBlock Text="{Binding Hotkey}" Foreground="{DynamicResource ObBrushAccent}" FontSize="12" HorizontalAlignment="Center" FontWeight="Bold" />
+                      <TextBlock Text="{Binding RemainingTimeDisplay}" Foreground="{DynamicResource ObBrushAccent}" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,4,0,0" />
                     </StackPanel>
                   </Button>
                 </DataTemplate>

@@ -6,10 +6,10 @@
     <Nullable>enable</Nullable>
     
     <!-- Version Information -->
-    <Version>4.4.0</Version>
-    <AssemblyVersion>4.4.0.0</AssemblyVersion>
-    <FileVersion>4.4.0.0</FileVersion>
-    <InformationalVersion>4.4</InformationalVersion>
+    <Version>4.5.0</Version>
+    <AssemblyVersion>4.5.0.0</AssemblyVersion>
+    <FileVersion>4.5.0.0</FileVersion>
+    <InformationalVersion>4.5.0</InformationalVersion>
     
     <!-- Application Information -->
     <Company>WickedMediaSolutions</Company>
@@ -36,6 +36,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\OpenBroadcaster.Core\OpenBroadcaster.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**\*" />
   </ItemGroup>
 
   <ItemGroup>

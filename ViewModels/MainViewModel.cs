@@ -26,7 +26,7 @@ namespace OpenBroadcaster.ViewModels
 {
     public class MainViewModel : ViewModelBase, IDisposable
     {
-        private const int CartSlotCount = 16;
+        private const int CartSlotCount = 12;
         private const int ChatHistoryLimit = 200;
 
         private readonly QueueService _queueService;

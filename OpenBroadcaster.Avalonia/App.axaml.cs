@@ -15,7 +15,7 @@ namespace OpenBroadcaster.Avalonia
         private Action<string>? _logToFile;
         private static OpenBroadcaster.Core.DependencyInjection.ServiceContainer? _serviceContainer;
 
-        public static readonly string[] SupportedThemes = new[] { "Default", "BlackGreenRetro", "BlackOrange", "BlackRed" };
+        public static readonly string[] SupportedThemes = new[] { "Default", "RetroRadio", "Bloody", "Neon Frizzle" };
 
         /// <summary>
         /// Gets the global service container.
@@ -142,7 +142,7 @@ namespace OpenBroadcaster.Avalonia
             var library = new OpenBroadcaster.Core.Services.LibraryService();
             
             _logToFile!("[INIT] Creating CartWallService...");
-            var cartWall = new OpenBroadcaster.Core.Services.CartWallService(audio, null, 16);
+            var cartWall = new OpenBroadcaster.Core.Services.CartWallService(audio, null, 12);
             
             _logToFile!("[INIT] Creating OverlayService...");
             var overlayService = new OpenBroadcaster.Core.Overlay.OverlayService(queue, eventBus);
@@ -258,10 +258,10 @@ namespace OpenBroadcaster.Avalonia
 
             var palette = normalized switch
             {
-                "BlackGreenRetro" => new ThemePalette("#07090A", "#0D1113", "#12181A", "#243034", "#D2FFE3", "#98F8BE", "#63D29B", "#4DFF84", "#17392E", "#B35D26", "#1A2527", "#4DFF84", "#2A3A3F"),
-                "BlackOrange" => new ThemePalette("#0B0908", "#13100D", "#18130F", "#3A2B1B", "#FFD8B0", "#FFBA6A", "#D78F3B", "#FF8C1A", "#4A2C11", "#6C3E14", "#23160E", "#FF8C1A", "#2D2218"),
-                "BlackRed" => new ThemePalette("#0A0708", "#140D0F", "#1B1013", "#41202A", "#FFD1D8", "#FF9BAA", "#C56A7A", "#FF3B5C", "#4F1422", "#7A1A2B", "#251017", "#FF3B5C", "#2E1A21"),
-                _ => new ThemePalette("#0E1118", "#0F1220", "#121826", "#2D313B", "#DDE7F3", "#9AA6B3", "#7C8793", "#39FF14", "#1A39FF14", "#AA3333", "#1E2530", "#00FF00", "#3A4252")
+                "RetroRadio" => new ThemePalette("#000000", "#001800", "#0A0A0A", "#18CC00", "#E0FFE0", "#A8FFA8", "#60AA60", "#18CC00", "#2218CC00", "#CC1800", "#0A0A0A", "#18CC00", "#1A3A1A"),
+                "Bloody" => new ThemePalette("#000000", "#180000", "#0A0A0A", "#D10000", "#FFE0E0", "#FFB8B8", "#B85555", "#D10000", "#22D10000", "#FF0000", "#0A0A0A", "#D10000", "#4D1A1A"),
+                "Neon Frizzle" => new ThemePalette("#000000", "#001418", "#0A0A0A", "#04BAD6", "#E0FFFF", "#A0E0F0", "#5FAAB8", "#04BAD6", "#2204BAD6", "#D63D04", "#0A0A0A", "#04BAD6", "#004555"),
+                _ => new ThemePalette("#0E1118", "#0F1220", "#121826", "#2D313B", "#FFFFFF", "#FFFFFF", "#C0C0C0", "#3B9AFF", "#1A3B9AFF", "#AA3333", "#1E2530", "#3B9AFF", "#3A4252")
             };
 
             SetBrush("ObBrushBackground", palette.Background);

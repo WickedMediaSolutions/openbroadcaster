@@ -10,15 +10,25 @@
     <SolidColorBrush x:Key="ObBrushPanel" Color="#0F1220" />
     <SolidColorBrush x:Key="ObBrushSurface" Color="#121826" />
     <SolidColorBrush x:Key="ObBrushBorder" Color="#2D313B" />
-    <SolidColorBrush x:Key="ObBrushPrimaryText" Color="#DDE7F3" />
-    <SolidColorBrush x:Key="ObBrushSecondaryText" Color="#9AA6B3" />
-    <SolidColorBrush x:Key="ObBrushMutedText" Color="#7C8793" />
-    <SolidColorBrush x:Key="ObBrushAccent" Color="#39FF14" />
-    <SolidColorBrush x:Key="ObBrushAccentSoft" Color="#1A39FF14" />
+    <SolidColorBrush x:Key="ObBrushPrimaryText" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ObBrushSecondaryText" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ObBrushMutedText" Color="#C0C0C0" />
+    <SolidColorBrush x:Key="ObBrushAccent" Color="#3B9AFF" />
+    <SolidColorBrush x:Key="ObBrushAccentSoft" Color="#1A3B9AFF" />
     <SolidColorBrush x:Key="ObBrushCloseButton" Color="#AA3333" />
     <SolidColorBrush x:Key="ObBrushWindowButton" Color="#1E2530" />
-    <SolidColorBrush x:Key="ObBrushToggleOn" Color="#00FF00" />
+    <SolidColorBrush x:Key="ObBrushToggleOn" Color="#3B9AFF" />
     <SolidColorBrush x:Key="ObBrushToggleOff" Color="#3A4252" />
+    
+    <!-- Additional brushes for enhanced styling -->
+    <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,0">
+      <GradientStop Color="#3B9AFF" Offset="0" />
+      <GradientStop Color="#2A7ACC" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="SliderTrackBrush" StartPoint="0,0" EndPoint="1,0">
+      <GradientStop Color="#1A1E26" Offset="0" />
+      <GradientStop Color="#121826" Offset="1" />
+    </LinearGradientBrush>
   </Application.Resources>
   <Application.Styles>
     <!-- Use FluentTheme so Avalonia controls have default styles -->
@@ -72,6 +82,16 @@
     </Style>
     <Style Selector="Slider">
       <Setter Property="Foreground" Value="{DynamicResource ObBrushAccent}" />
+      <Setter Property="Background" Value="{DynamicResource ObBrushSurface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ObBrushBorder}" />
+    </Style>
+    
+    <!-- Custom ProgressBar style for VU Meters -->
+    <Style Selector="ProgressBar">
+      <Setter Property="Foreground" Value="{DynamicResource ObBrushAccent}" />
+      <Setter Property="Background" Value="{DynamicResource ObBrushSurface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ObBrushBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
     </Style>
   </Application.Styles>
 </Application>
