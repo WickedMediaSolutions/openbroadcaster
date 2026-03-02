@@ -137,6 +137,11 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             _masterVolume = _appSettings.Audio.MasterVolumePercent;
             _micVolume = _appSettings.Audio.MicVolumePercent;
             _cartWallVolume = _appSettings.Audio.CartWallVolumePercent;
+            
+            // Load microphone enabled state from settings
+            _micEnabled = _appSettings.Audio?.MicrophoneEnabled ?? false;
+            try { _audioService.SetMicEnabled(_micEnabled); } catch { }
+            
             ApplyProgramOutputLevel(saveSettings: false);
 
             _encoderManager = new EncoderManager();
@@ -851,7 +856,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         }
         public string AutoDjStatusMessage { get => _autoDjStatusMessage; set { if (_autoDjStatusMessage != value) { _autoDjStatusMessage = value; OnPropertyChanged(); } } }
 
-        public bool MicEnabled { get => _micEnabled; set { if (_micEnabled != value) { _micEnabled = value; OnPropertyChanged(); try { _audioService.SetMicEnabled(value); } catch { } } } }
+        public bool MicEnabled { get => _micEnabled; set { if (_micEnabled != value) { _micEnabled = value; OnPropertyChanged(); try { _audioService.SetMicEnabled(value); } catch { } if (_appSettings?.Audio != null) { _appSettings.Audio.MicrophoneEnabled = value; _appSettingsStore.Save(_appSettings); } } } }
 
         public int MicVolume
         {

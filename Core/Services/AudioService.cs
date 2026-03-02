@@ -208,6 +208,9 @@ namespace OpenBroadcaster.Core.Services
                 return;
             }
 
+            // Apply mic enabled state from settings
+            _micEnabled = settings.MicrophoneEnabled;
+
             var playbackDevices = _deviceResolver.GetPlaybackDevices();
             var inputDevices = _deviceResolver.GetInputDevices();
 
