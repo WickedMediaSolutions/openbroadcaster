@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  # Windows version (for reference/documentation)
+  windows:
+    image: mcr.microsoft.com/windows/servercore:ltsc2022
+    build:
+      context: .
+      dockerfile: Dockerfile.windows
+    container_name: openbroadcaster-windows
+    ports:
+      - "9750:9750"  # Overlay API port
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - ./data:/app/data
+    profiles:
+      - windows
+
+  # Linux version (default)
+  linux:
+    image: openbroadcaster:4.4-linux
+    build:
+      context: .
+      dockerfile: Dockerfile.linux
+    container_name: openbroadcaster-linux
+    ports:
+      - "9750:9750"  # Overlay API port
+    environment:
+      # Audio configuration
+      - PULSE_SERVER=host.docker.internal  # Connect to host PulseAudio (for Windows Docker Desktop)
+      - ALSA_DEVICE=default
+      # Application settings
+      - HOME=/app
+      - APPDATA=/app/config
+      - XDG_RUNTIME_DIR=/run/user/0
+    volumes:
+      # Configuration and data persistence
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - ./data:/app/data
+      # For GUI via X11 forwarding (optional, for development)
+      # - /tmp/.X11-unix:/tmp/.X11-unix
+    # Uncomment for interactive terminal testing
+    # stdin_open: true
+    # tty: true
+    depends_on:
+      - pulseaudio
+    networks:
+      - audionet
+
+  # PulseAudio daemon for container audio (optional, for headless environments)
+  pulseaudio:
+    image: pulseaudio:latest
+    container_name: openbroadcaster-audio
+    ports:
+      - "4713:4713"  # PulseAudio native protocol
+    environment:
+      - PULSE_DAEMON_BINARY=/usr/bin/pulseaudio
+      - DISPLAY=:0
+    volumes:
+      - /run/user/1000/pulse:/run/user/1000/pulse
+    networks:
+      - audionet
+    profiles:
+      - audio
+
+networks:
+  audionet:
+    driver: bridge
+
+volumes:
+  config:
+    driver: local
+  logs:
+    driver: local
+  data:
+    driver: local

@@ -1,0 +1,68 @@
+# Docker build context excludes
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Build artifacts
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Testing
+test-results/
+coverage/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+.env.local
+*.log
+
+# Node/npm
+node_modules/
+npm-debug.log
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+docker-compose*.yaml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Documentation
+*.md
+docs/
+README*
+LICENSE
+
+# Temporary
+*.tmp
+*.temp
+.cache/
+temp/
+tmp/
+
+# Installer
+installer/OpenBroadcaster*.exe
+bin/InstallerOutput/
+
+# Large files
+*.iso
+*.zip
+*.tar.gz
+*.7z

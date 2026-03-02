@@ -1,0 +1,95 @@
+# OpenBroadcaster Linux Container
+# Multi-stage build: compile and run identical Windows/Linux application
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 as builder
+
+WORKDIR /src
+
+# Copy the entire solution
+COPY . .
+
+# Restore and build for Linux
+RUN dotnet restore openbroadcaster.sln
+RUN dotnet build -c Release --no-restore
+
+# Run tests to verify functionality
+RUN dotnet test OpenBroadcaster.Tests/OpenBroadcaster.Tests.csproj -c Release --no-build --verbosity normal
+
+# Publish the Avalonia application for Linux
+RUN dotnet publish OpenBroadcaster.Avalonia/OpenBroadcaster.Avalonia.csproj \
+    -c Release \
+    -o /app/publish \
+    --no-build \
+    --self-contained=true \
+    --runtime=linux-x64
+
+# Runtime stage - Ubuntu 22.04 LTS
+FROM ubuntu:22.04
+
+# Install runtime dependencies for Avalonia + Audio
+RUN apt-get update && apt-get install -y \
+    # .NET runtime dependencies
+    libicu70 \
+    libssl3 \
+    zlib1g \
+    # Avalonia GUI dependencies
+    libx11-6 \
+    libxkbcommon0 \
+    libfontconfig1 \
+    libfreetype6 \
+    libpng16-16 \
+    libxrender1 \
+    libxrandr2 \
+    libxinerama1 \
+    libxi6 \
+    libxcursor1 \
+    libxext6 \
+    libxfixes3 \
+    libxxf86vm1 \
+    libgl1-mesa-glx \
+    # Audio support (PulseAudio)
+    pulseaudio \
+    libpulse0 \
+    alsa-lib \
+    alsa-utils \
+    # Audio libraries
+    libsndfile1 \
+    libmpg123-0 \
+    # Tag reading
+    libtag1v5 \
+    libicu70 \
+    # Image processing
+    libmagickwand-6.q16-7 \
+    # Cleanup
+    && rm -rf /var/lib/apt/lists/*
+
+# PulseAudio setup for containerized audio
+RUN mkdir -p /run/dbus /run/user/0/pulse && \
+    chmod 1777 /run/user/0
+
+WORKDIR /app
+
+# Copy published application
+COPY --from=builder /app/publish .
+
+# Create directories for configuration and data
+RUN mkdir -p /app/config /app/logs /app/data && \
+    chmod 755 /app/config /app/logs /app/data
+
+# Set environment variables for application
+ENV APPDATA=/app/config \
+    XDG_RUNTIME_DIR=/run/user/0 \
+    PULSE_RUNTIME_PATH=/run/pulse \
+    HOME=/app
+
+# Expose ports for overlay API
+EXPOSE 9750
+
+# Health check - verify application can start
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD dotnet /app/OpenBroadcaster.Avalonia.dll --version || exit 1
+
+# Run the application
+# For headless audio-only mode: disable X11 forwarding
+# For GUI mode from Windows: use X11 forwarding via Xvfb or VNC
+ENTRYPOINT ["./OpenBroadcaster.Avalonia"]
