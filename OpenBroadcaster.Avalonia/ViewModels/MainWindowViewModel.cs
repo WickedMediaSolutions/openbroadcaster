@@ -39,6 +39,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         private OpenBroadcaster.Core.Services.DirectServer.DirectHttpServer? _directServer;
         private OpenBroadcaster.Core.Services.LoyaltyLedger? _loyaltyLedger;
         private SimpleAutoDjService? _simpleAutoDjService;
+        private OpenBroadcaster.Core.Services.TohSchedulerService? _tohSchedulerService;
         private Guid? _currentlyPlayingTrackId;
         private OpenBroadcaster.Core.Messaging.Events.DeckStateChangedEvent? _deckAState;
         private OpenBroadcaster.Core.Messaging.Events.DeckStateChangedEvent? _deckBState;
@@ -470,6 +471,12 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                                 try { _simpleAutoDjService?.UpdateConfiguration(rotations, schedule, defaultRotationId); } catch { }
                                 try { _simpleAutoDjService!.Enabled = _appSettings?.Automation?.AutoStartAutoDj ?? false; } catch { }
                                 System.Threading.Tasks.Task.Run(() => _simpleAutoDjService?.EnsureQueueDepth());
+                                
+                                // Update TOH scheduler configuration
+                                if (_tohSchedulerService != null && _appSettings?.Automation?.TopOfHour != null)
+                                {
+                                    try { _tohSchedulerService.UpdateSettings(_appSettings.Automation.TopOfHour); } catch { }
+                                }
                             }
                             catch { }
                         }
@@ -635,6 +642,13 @@ namespace OpenBroadcaster.Avalonia.ViewModels
 
                     // Apply auto-start setting from app settings
                     try { _simpleAutoDjService.Enabled = _appSettings?.Automation?.AutoStartAutoDj ?? false; } catch { }
+                    
+                    // Initialize Top of Hour scheduler
+                    _tohSchedulerService = new OpenBroadcaster.Core.Services.TohSchedulerService(_queueService, _libraryService);
+                    if (_appSettings?.Automation?.TopOfHour?.Enabled ?? false)
+                    {
+                        _tohSchedulerService.UpdateSettings(_appSettings.Automation.TopOfHour);
+                    }
                 }
                 catch { }
             }

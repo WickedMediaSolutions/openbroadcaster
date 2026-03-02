@@ -8777,3 +8777,7 @@ Object name: 'Avalonia.Win32.WinRT.Impl.__MicroComICompositionSurfaceBrushProxy'
 [Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #20226985)
 [Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #47015983)
 [Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #20490669)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #47015983)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #20490669)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #50198296)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #49131481)
