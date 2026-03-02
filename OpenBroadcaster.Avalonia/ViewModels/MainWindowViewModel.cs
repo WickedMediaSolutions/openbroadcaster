@@ -19,7 +19,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
     {
         // Constants - using PascalCase per C# conventions for const fields
         private const int ChatHistoryLimit = 200;
-        private const int AutoDjCrossfadeSteps = 20;
+        private const int AutoDjCrossfadeSteps = 150;
         private const int ChatHistoryMaxLines = 200;
         
         private enum DeckAction { Play, Stop, Next }
@@ -59,9 +59,10 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         private string _autoDjStatusMessage = string.Empty;
         // AutoDJ crossfade state
         private readonly SemaphoreSlim _autoDjCrossfadeSemaphore = new(1, 1);
-        private readonly System.TimeSpan _autoDjCrossfadeDuration = System.TimeSpan.FromSeconds(5);
-        private readonly System.TimeSpan _autoDjPreloadLeadTime = System.TimeSpan.FromSeconds(10);
+        private readonly System.TimeSpan _autoDjCrossfadeDuration = System.TimeSpan.FromSeconds(7);
+        private readonly System.TimeSpan _autoDjPreloadLeadTime = System.TimeSpan.FromSeconds(12);
         private bool _autoDjCrossfadeInProgress;
+        private bool _isManualSkipping;
         private OpenBroadcaster.Core.Models.DeckIdentifier? _autoDjPreloadedDeck;
         private OpenBroadcaster.Core.Models.DeckIdentifier? _autoDjAnnounceReadyDeck;
         private bool _encodersEnabled = false;
@@ -231,6 +232,13 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             try
             {
                 _eventBus.Subscribe<OpenBroadcaster.Core.Messaging.Events.DeckStateChangedEvent>(OnDeckStateChangedForAutoDjCrossfade);
+            }
+            catch { }
+
+            // Subscribe to audio deck completion for AutoDJ gap-killer fallback.
+            try
+            {
+                _audioService.DeckPlaybackCompleted += OnDeckPlaybackCompletedForAutoDj;
             }
             catch { }
 
@@ -1308,9 +1316,12 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                     _radioService.Stop();
                     break;
                 case DeckAction.Next:
-                    // Request next from queue then play
+                    // Manual skip - disable crossfade temporarily
+                    _isManualSkipping = true;
                     _transportService.RequestNextFromQueue(deckId);
                     _radioService.Play();
+                    // Reset flag after short delay to allow deck state to stabilize
+                    _ = System.Threading.Tasks.Task.Delay(500).ContinueWith(_ => _isManualSkipping = false);
                     break;
             }
         }
@@ -1502,6 +1513,12 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                 return;
             }
 
+            // Skip crossfade during manual Next/Skip operations
+            if (_isManualSkipping)
+            {
+                return;
+            }
+
             if (payload.Status != OpenBroadcaster.Core.Models.DeckStatus.Playing)
             {
                 return;
@@ -1604,8 +1621,12 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                     }
 
                     var t = i / (double)steps;
-                    _audioService.SetDeckVolume(fromDeck, fromStartVolume * (1.0 - t));
-                    _audioService.SetDeckVolume(toDeck, toTargetVolume * t);
+                    // Smooth DJ-style constant-power crossfade with extended overlap
+                    // Using raised cosine/sine curves for ultra-smooth transition
+                    var fadeOutGain = System.Math.Pow(System.Math.Cos(t * System.Math.PI * 0.5), 0.7);
+                    var fadeInGain = System.Math.Pow(System.Math.Sin(t * System.Math.PI * 0.5), 0.7);
+                    _audioService.SetDeckVolume(fromDeck, fromStartVolume * fadeOutGain);
+                    _audioService.SetDeckVolume(toDeck, toTargetVolume * fadeInGain);
 
                     await System.Threading.Tasks.Task.Delay(stepDelay).ConfigureAwait(false);
                 }
@@ -1637,6 +1658,72 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             finally
             {
                 _autoDjCrossfadeInProgress = false;
+                _autoDjCrossfadeSemaphore.Release();
+            }
+        }
+
+        private void OnDeckPlaybackCompletedForAutoDj(object? sender, OpenBroadcaster.Core.Models.DeckIdentifier completedDeck)
+        {
+            if (!_autoDjEnabled)
+            {
+                return;
+            }
+
+            _ = StartGapKillerTransitionAsync(completedDeck);
+        }
+
+        private async System.Threading.Tasks.Task StartGapKillerTransitionAsync(OpenBroadcaster.Core.Models.DeckIdentifier completedDeck)
+        {
+            if (_autoDjCrossfadeInProgress)
+            {
+                return;
+            }
+
+            if (!await _autoDjCrossfadeSemaphore.WaitAsync(0).ConfigureAwait(false))
+            {
+                return;
+            }
+
+            try
+            {
+                if (!_autoDjEnabled || _autoDjCrossfadeInProgress)
+                {
+                    return;
+                }
+
+                var toDeck = completedDeck == OpenBroadcaster.Core.Models.DeckIdentifier.A
+                    ? OpenBroadcaster.Core.Models.DeckIdentifier.B
+                    : OpenBroadcaster.Core.Models.DeckIdentifier.A;
+
+                var toDeckService = toDeck == OpenBroadcaster.Core.Models.DeckIdentifier.A ? _transportService.DeckA : _transportService.DeckB;
+                if (toDeckService.Status == OpenBroadcaster.Core.Models.DeckStatus.Playing)
+                {
+                    return;
+                }
+
+                if (toDeckService.CurrentQueueItem == null)
+                {
+                    var next = _transportService.RequestNextFromQueue(toDeck);
+                    if (next == null)
+                    {
+                        return;
+                    }
+                }
+
+                var programOutputLevel = GetProgramOutputLevel();
+                _audioService.SetDeckVolume(toDeck, programOutputLevel);
+                _transportService.Play(toDeck);
+
+                _transportService.Unload(completedDeck);
+                _autoDjPreloadedDeck = null;
+                _autoDjAnnounceReadyDeck = toDeck;
+            }
+            catch
+            {
+                // Ignore gap-killer failures to avoid UI disruption.
+            }
+            finally
+            {
                 _autoDjCrossfadeSemaphore.Release();
             }
         }
@@ -1851,6 +1938,12 @@ namespace OpenBroadcaster.Avalonia.ViewModels
 
         public void Dispose()
         {
+            try
+            {
+                _audioService.DeckPlaybackCompleted -= OnDeckPlaybackCompletedForAutoDj;
+            }
+            catch { }
+
             // Dispose deck view models
             DeckA?.Dispose();
             DeckB?.Dispose();
