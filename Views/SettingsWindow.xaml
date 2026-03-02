@@ -408,6 +408,16 @@
                             <TextBox Width="140"
                                      Text="{Binding Settings.Automation.TargetQueueDepth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}" />
                         </StackPanel>
+                        <GroupBox Header="Injection Control" Margin="0,12,0,0">
+                            <StackPanel>
+                                <CheckBox Content="Enable Top-of-the-Hour injection"
+                                          IsChecked="{Binding Settings.Automation.TopOfHour.Enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}" />
+                                <CheckBox Content="Enable Bottom-of-the-Hour injection"
+                                          IsChecked="{Binding Settings.Automation.TopOfHour.BohEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}"
+                                          Margin="0,4,0,0" />
+                                <TextBlock Text="Configure detailed settings in the Top of Hour and Bottom of Hour tabs." Foreground="{StaticResource StudioMutedTextBrush}" FontSize="11" Margin="0,6,0,0" />
+                            </StackPanel>
+                        </GroupBox>
                         <GroupBox Header="Rotations (Simple)">
                             <StackPanel>
                                 <ListBox ItemsSource="{Binding Settings.Automation.SimpleRotations}"
@@ -470,10 +480,7 @@
                 <TabItem Header="Top of Hour">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel>
-                            <CheckBox Content="Enable Top-of-the-Hour injection"
-                                      IsChecked="{Binding Settings.Automation.TopOfHour.Enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}" />
-                            
-                            <GroupBox Header="Timing" Margin="0,12,0,0">
+                            <GroupBox Header="Timing" Margin="0,0,0,0">
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <Label Content="Fire offset (seconds)" Width="180" />
@@ -569,10 +576,7 @@
                 <TabItem Header="Bottom of Hour">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel>
-                            <CheckBox Content="Enable Bottom-of-the-Hour injection"
-                                      IsChecked="{Binding Settings.Automation.TopOfHour.BohEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}" />
-                            
-                            <GroupBox Header="Timing" Margin="0,12,0,0">
+                            <GroupBox Header="Timing" Margin="0,0,0,0">
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <Label Content="Fire offset (seconds)" Width="180" />
