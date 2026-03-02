@@ -1,0 +1,55 @@
+Source: openbroadcaster
+Section: sound
+Priority: optional
+Maintainer: Wicked Media Solutions <support@wickedmediasolutions.com>
+Homepage: https://github.com/WickedMediaSolutions/openbroadcaster
+Vcs-Git: https://github.com/WickedMediaSolutions/openbroadcaster.git
+Vcs-Browser: https://github.com/WickedMediaSolutions/openbroadcaster
+Build-Depends: debhelper-compat (= 13), dotnet-sdk-8.0
+Standards-Version: 4.6.1
+
+Package: openbroadcaster
+Architecture: amd64
+Depends: dotnet-runtime-8.0 (>= 8.0), 
+         libicu70, 
+         libssl3, 
+         zlib1g,
+         libx11-6,
+         libxkbcommon0,
+         libfontconfig1,
+         libfreetype6,
+         libpng16-16,
+         libxrender1,
+         libxrandr2,
+         libxinerama1,
+         libxi6,
+         libxcursor1,
+         libxext6,
+         libxfixes3,
+         libxxf86vm1,
+         libgl1-mesa-glx,
+         pulseaudio,
+         libpulse0,
+         alsa-lib,
+         alsa-utils,
+         libsndfile1,
+         libmpg123-0,
+         libtag1v5,
+         libmagickwand-6.q16-7
+Provides: openbroadcaster
+Version: 4.4.0
+Installed-Size: 250000
+Description: OpenBroadcaster - Cross-Platform Radio Automation Software
+ OpenBroadcaster is a professional radio automation platform supporting
+ multiple streaming platforms (Twitch, YouTube, etc.) with advanced
+ audio processing and scheduling capabilities.
+ .
+ Features:
+  - Multi-deck audio playback with professional mixing
+  - Microphone input with ducking support
+  - Top-of-Hour and Bottom-of-Hour automated injection
+  - AutoDJ with smart rotation scheduling
+  - DirectServer API for external control
+  - Multi-platform support (Windows, Linux, macOS)
+  - Comprehensive deck control and monitoring
+  - Advanced audio routing and device management

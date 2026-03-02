@@ -1,0 +1,25 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_CFLAGS_MAINT_APPEND = -Wall -pedantic
+export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	dotnet build -c Release --no-restore
+
+override_dh_auto_test:
+	dotnet test OpenBroadcaster.Tests/OpenBroadcaster.Tests.csproj -c Release --no-build
+
+override_dh_auto_install:
+	dotnet publish OpenBroadcaster.Avalonia/OpenBroadcaster.Avalonia.csproj \
+		-c Release \
+		-o debian/openbroadcaster/opt/openbroadcaster \
+		--self-contained=true \
+		--runtime=linux-x64
+
+override_dh_auto_clean:
+	rm -rf bin obj
+	dotnet clean || true

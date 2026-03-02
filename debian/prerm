@@ -1,0 +1,15 @@
+#!/bin/bash
+# prerm script for openbroadcaster
+
+set -e
+
+case "$1" in
+    remove|deconfigure)
+        # Nothing to do for upgrade
+        ;;
+    *)
+        exit 0
+        ;;
+esac
+
+exit 0

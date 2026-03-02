@@ -1,0 +1,22 @@
+openbroadcaster (4.4.0) focal; urgency=low
+
+  * Production-Ready Release
+  * Fixed microphone state persistence across application restart
+  * Automatic microphone device fallback to first available device
+  * Added Bottom-of-Hour (BOH) automation feature for 30-minute injection cycles
+  * BOH enable checkbox now in Automation tab for easy access
+  * Removed Master Volume control from Audio settings tab (controlled only by program level slider)
+  * Cleaned up Audio tab to show only device selectors (Main Output, Mic Input)
+  * Avalonia cross-platform UI layer with identical behavior on Windows and Linux
+  * PulseAudio primary audio backend with ALSA and JACK fallback support
+  * Complete device resolution and enumeration for Linux audio systems
+  * All 86 unit tests passing
+  * BuildAssembly and run identical source code on Windows and Linux
+
+ -- Wicked Media Solutions <support@wickedmediasolutions.com>  Mon, 01 Mar 2026 00:00:00 +0000
+
+openbroadcaster (4.3.0) focal; urgency=medium
+
+  * Previous stable release
+
+ -- Wicked Media Solutions <support@wickedmediasolutions.com>  Fri, 01 Mar 2024 00:00:00 +0000

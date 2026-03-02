@@ -1,0 +1,32 @@
+#!/bin/bash
+# postinst script for openbroadcaster
+
+set -e
+
+case "$1" in
+    configure)
+        # Create application directories
+        mkdir -p /var/lib/openbroadcaster
+        mkdir -p /etc/openbroadcaster
+        
+        # Set permissions
+        chmod 755 /opt/openbroadcaster
+        chmod 755 /var/lib/openbroadcaster
+        chmod 755 /etc/openbroadcaster
+        
+        # Create symlink for easy command-line execution
+        ln -sf /opt/openbroadcaster/OpenBroadcaster.Avalonia /usr/bin/openbroadcaster || true
+        
+        # Register application menu entry
+        update-mime-database /usr/share/mime > /dev/null 2>&1 || true
+        update-desktop-database /usr/share/applications > /dev/null 2>&1 || true
+        
+        echo "OpenBroadcaster 4.4.0 installed successfully!"
+        echo "Run 'openbroadcaster' from terminal to start the application"
+        ;;
+    *)
+        exit 0
+        ;;
+esac
+
+exit 0

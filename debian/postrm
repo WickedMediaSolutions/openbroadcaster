@@ -1,0 +1,26 @@
+#!/bin/bash
+# postrm script for openbroadcaster
+
+set -e
+
+case "$1" in
+    remove|purge)
+        # Remove symlink
+        rm -f /usr/bin/openbroadcaster || true
+        
+        # Clean up application directories if purging
+        if [ "$1" = "purge" ]; then
+            rm -rf /var/lib/openbroadcaster || true
+            rm -rf /etc/openbroadcaster || true
+        fi
+        
+        # Update mime and desktop database
+        update-mime-database /usr/share/mime > /dev/null 2>&1 || true
+        update-desktop-database /usr/share/applications > /dev/null 2>&1 || true
+        ;;
+    *)
+        exit 0
+        ;;
+esac
+
+exit 0
