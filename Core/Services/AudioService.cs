@@ -66,7 +66,23 @@ namespace OpenBroadcaster.Core.Services
         public AudioService(ILogger<AudioService>? logger = null, IAudioDeviceResolver? deviceResolver = null)
         {
             _logger = logger ?? AppLogger.CreateLogger<AudioService>();
-            _deviceResolver = deviceResolver ?? new WaveAudioDeviceResolver();
+            
+            // Use platform-appropriate device resolver
+            if (deviceResolver != null)
+            {
+                _deviceResolver = deviceResolver;
+            }
+            else if (PlatformDetection.IsLinux)
+            {
+                // Try PulseAudio resolver first, fall back to ALSA
+                _deviceResolver = CreateLinuxDeviceResolver();
+            }
+            else
+            {
+                // Windows uses WASAPI devices
+                _deviceResolver = new WaveAudioDeviceResolver();
+            }
+            
             _routingGraph = new AudioRoutingGraph();
             _vuMeterService = new VuMeterService(_routingGraph);
             _vuMeterService.VuMetersUpdated += (_, reading) => VuMetersUpdated?.Invoke(this, reading);
@@ -325,6 +341,37 @@ namespace OpenBroadcaster.Core.Services
                 {
                     _logger.LogError(alsaEx, "ALSA initialization also failed for {DeckId}, audio will not work", deckId);
                     throw new InvalidOperationException($"Neither PulseAudio nor ALSA could be initialized for deck {deckId}", alsaEx);
+                }
+            }
+        }
+
+        private IAudioDeviceResolver CreateLinuxDeviceResolver()
+        {
+            try
+            {
+                // Try PulseAudio device resolver first (preferred)
+                var pulseResolver = new PulseAudioDeviceResolver();
+                // Do a test query to verify it works
+                _ = pulseResolver.GetPlaybackDevices();
+                _logger.LogInformation("Using PulseAudio device resolver");
+                return pulseResolver;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "PulseAudio device resolver failed, falling back to ALSA");
+                try
+                {
+                    var alsaResolver = new AlsaDeviceResolver();
+                    // Do a test query to verify it works
+                    _ = alsaResolver.GetPlaybackDevices();
+                    _logger.LogInformation("Using ALSA device resolver");
+                    return alsaResolver;
+                }
+                catch (Exception alsaEx)
+                {
+                    _logger.LogError(alsaEx, "ALSA device resolver also failed, using fallback devices");
+                    // Return ALSA resolver anyway - it has fallback defaults
+                    return new AlsaDeviceResolver();
                 }
             }
         }

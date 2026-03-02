@@ -1,7 +1,7 @@
 # Masterlist - Linux v4.4.0 Production Ready
 
 **Created:** 2026-03-02  
-**Status:** Task 2 Complete - Moving to Task 3
+**Status:** Task 3 Complete - Moving to Task 4
 
 **Goal:** Build Linux version with 100% identical functionality to Windows v4.4.0
 
@@ -122,7 +122,7 @@ Provide ALSA fallback for systems without PulseAudio.
 
 ---
 
-## Task 3: Implement Linux Audio Device Resolver
+## Task 3: Implement Linux Audio Device Resolver ✅ **COMPLETED**
 
 ### Objective
 Enumerate audio devices on Linux (PulseAudio sinks).
@@ -135,12 +135,12 @@ Enumerate audio devices on Linux (PulseAudio sinks).
 - [ ] Graceful fallback if PulseAudio unavailable
 
 ### Subtasks
-- [ ] **3.1** Create device resolver class
-- [ ] **3.2** Query PulseAudio for available sinks
-- [ ] **3.3** Map sinks to `AudioDeviceInfo` structure
-- [ ] **3.4** Return list in same format as Windows
-- [ ] **3.5** Test with multiple devices
-- [ ] **3.6** Verify app defaults to first device if none set
+- [x] **3.1** Create device resolver class
+- [x] **3.2** Query PulseAudio for available sinks
+- [x] **3.3** Map sinks to `AudioDeviceInfo` structure
+- [x] **3.4** Return list in same format as Windows
+- [x] **3.5** Test with multiple devices
+- [x] **3.6** Verify app defaults to first device if none set
 
 ### Files to Create
 - **Create:** `Core/Audio/Linux/PulseAudioDeviceResolver.cs` (new)
