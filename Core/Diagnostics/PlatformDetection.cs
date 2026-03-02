@@ -28,6 +28,11 @@ namespace OpenBroadcaster.Core.Diagnostics
         public static bool SupportsWindowsAudio => IsWindows;
 
         /// <summary>
+        /// Checks if running on Linux (supported platform for audio).
+        /// </summary>
+        public static bool SupportsLinuxAudio => IsLinux;
+
+        /// <summary>
         /// Checks if audio is supported on this platform.
         /// Windows: Always supported
         /// Linux: Supported (PulseAudio, JACK, ALSA)

@@ -5,6 +5,7 @@ using System.Linq;
 using Microsoft.Extensions.Logging;
 using NAudio.Wave;
 using OpenBroadcaster.Core.Audio;
+using OpenBroadcaster.Core.Audio.Linux;
 using OpenBroadcaster.Core.Diagnostics;
 using OpenBroadcaster.Core.Models;
 
@@ -77,8 +78,20 @@ namespace OpenBroadcaster.Core.Services
             _routingGraph.Route(AudioSourceType.DeckB, new[] { AudioBus.Program, AudioBus.Encoder });
             _routingGraph.Route(AudioSourceType.Cartwall, new[] { AudioBus.Program, AudioBus.Encoder });
 
-            DeckA = new AudioDeck(DeckIdentifier.A);
-            DeckB = new AudioDeck(DeckIdentifier.B);
+            // Create appropriate deck type based on platform
+            if (PlatformDetection.IsLinux)
+            {
+                DeckA = new PulseAudioDeck(DeckIdentifier.A);
+                DeckB = new PulseAudioDeck(DeckIdentifier.B);
+                _logger.LogInformation("Using PulseAudio decks on Linux");
+            }
+            else
+            {
+                DeckA = new AudioDeck(DeckIdentifier.A);
+                DeckB = new AudioDeck(DeckIdentifier.B);
+                _logger.LogInformation("Using WASAPI decks on Windows");
+            }
+
             DeckA.LevelChanged += level => _vuMeterService.UpdateSourceLevel(AudioSourceType.DeckA, NormalizeLevel(level));
             DeckB.LevelChanged += level => _vuMeterService.UpdateSourceLevel(AudioSourceType.DeckB, NormalizeLevel(level));
             DeckA.PlaybackStopped += () =>
@@ -106,8 +119,8 @@ namespace OpenBroadcaster.Core.Services
             _logger.LogInformation("AudioService ready: DeckA={DeckA}, DeckB={DeckB}", DeckIdentifier.A, DeckIdentifier.B);
         }
 
-        public AudioDeck DeckA { get; }
-        public AudioDeck DeckB { get; }
+        public IAudioDeck DeckA { get; }
+        public IAudioDeck DeckB { get; }
 
         public event EventHandler<VuMeterReading>? VuMetersUpdated;
         public event EventHandler<double>? CartLevelChanged;
@@ -290,7 +303,7 @@ namespace OpenBroadcaster.Core.Services
             return _cartPlayer.Play(filePath, loop, elapsedCallback);
         }
 
-        private AudioDeck ResolveDeck(DeckIdentifier deckId)
+        private IAudioDeck ResolveDeck(DeckIdentifier deckId)
         {
             return deckId switch
             {

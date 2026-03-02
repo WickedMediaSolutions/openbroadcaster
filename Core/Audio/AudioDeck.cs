@@ -10,7 +10,7 @@ using ElapsedEventArgs = System.Timers.ElapsedEventArgs;
 
 namespace OpenBroadcaster.Core.Audio
 {
-    public sealed class AudioDeck : IDisposable
+    public sealed class AudioDeck : IAudioDeck
     {
         private readonly Timer _elapsedTimer;
         private readonly object _sync = new();
