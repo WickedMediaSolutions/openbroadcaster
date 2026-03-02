@@ -14,12 +14,6 @@
         <ScrollViewer Margin="8">
           <StackPanel Spacing="8">
           <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-            <TextBlock Text="Master Volume" Width="180" />
-            <Slider Minimum="0" Maximum="100" Value="{Binding Settings.Audio.MasterVolumePercent, Mode=TwoWay}" Width="220" />
-            <TextBlock Text="{Binding Settings.Audio.MasterVolumePercent, StringFormat='{}{0}%'}" Margin="8,0,0,0" />
-          </StackPanel>
-
-          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
             <TextBlock Text="Main Output Device" Width="180" />
             <ComboBox Width="300" Items="{Binding PlaybackDeviceOptions}" SelectedItem="{Binding SelectedMainOutputDevice, Mode=TwoWay}">
               <ComboBox.ItemTemplate>
