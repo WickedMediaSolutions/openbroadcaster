@@ -20,11 +20,6 @@
           </StackPanel>
 
           <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-            <TextBlock Text="Theme" Width="180" />
-            <ComboBox Width="260" Items="{Binding ThemeOptions}" SelectedItem="{Binding SelectedTheme, Mode=TwoWay}" />
-          </StackPanel>
-
-          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
             <TextBlock Text="Main Output Device" Width="180" />
             <ComboBox Width="300" Items="{Binding PlaybackDeviceOptions}" SelectedItem="{Binding SelectedMainOutputDevice, Mode=TwoWay}">
               <ComboBox.ItemTemplate>
@@ -245,9 +240,16 @@
               <StackPanel>
                 <TextBlock Text="Top of Hour" FontWeight="SemiBold" Margin="0,0,0,8" />
 
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
-                  <TextBlock Text="Enable TOH injection" Width="200" />
-                  <CheckBox IsChecked="{Binding Settings.Automation.TopOfHour.Enabled, Mode=TwoWay}" />
+                <StackPanel Orientation="Vertical" Spacing="6">
+                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                    <TextBlock Text="Enable Top-of-Hour injection" Width="250" />
+                    <CheckBox IsChecked="{Binding Settings.Automation.TopOfHour.Enabled, Mode=TwoWay}" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                    <TextBlock Text="Enable Bottom-of-Hour injection" Width="250" />
+                    <CheckBox IsChecked="{Binding Settings.Automation.TopOfHour.BohEnabled, Mode=TwoWay}" />
+                  </StackPanel>
+                  <TextBlock Text="Configure detailed settings in the Top of Hour and Bottom of Hour tabs." Foreground="{DynamicResource ObBrushMutedText}" FontSize="11" Margin="0,4,0,0" />
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8" Margin="0,6,0,0">
