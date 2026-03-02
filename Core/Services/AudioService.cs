@@ -81,9 +81,9 @@ namespace OpenBroadcaster.Core.Services
             // Create appropriate deck type based on platform
             if (PlatformDetection.IsLinux)
             {
-                DeckA = new PulseAudioDeck(DeckIdentifier.A);
-                DeckB = new PulseAudioDeck(DeckIdentifier.B);
-                _logger.LogInformation("Using PulseAudio decks on Linux");
+                // Use CreateLinuxAudioDeck() for platform-aware selection
+                DeckA = CreateLinuxAudioDeck(DeckIdentifier.A);
+                DeckB = CreateLinuxAudioDeck(DeckIdentifier.B);
             }
             else
             {
@@ -301,6 +301,32 @@ namespace OpenBroadcaster.Core.Services
         {
             _logger.LogInformation("Triggering cart playback for {FilePath} (Loop={Loop})", filePath, loop);
             return _cartPlayer.Play(filePath, loop, elapsedCallback);
+        }
+
+        private IAudioDeck CreateLinuxAudioDeck(DeckIdentifier deckId)
+        {
+            try
+            {
+                // Try to create PulseAudio deck first (preferred)
+                var pulseAudioDeck = new PulseAudioDeck(deckId);
+                _logger.LogInformation("Using PulseAudio deck for {DeckId}", deckId);
+                return pulseAudioDeck;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "PulseAudio initialization failed, falling back to ALSA for {DeckId}", deckId);
+                try
+                {
+                    var alsaDeck = new AlsaAudioDeck(deckId);
+                    _logger.LogInformation("Using ALSA deck for {DeckId}", deckId);
+                    return alsaDeck;
+                }
+                catch (Exception alsaEx)
+                {
+                    _logger.LogError(alsaEx, "ALSA initialization also failed for {DeckId}, audio will not work", deckId);
+                    throw new InvalidOperationException($"Neither PulseAudio nor ALSA could be initialized for deck {deckId}", alsaEx);
+                }
+            }
         }
 
         private IAudioDeck ResolveDeck(DeckIdentifier deckId)

@@ -1,7 +1,7 @@
 # Masterlist - Linux v4.4.0 Production Ready
 
 **Created:** 2026-03-02  
-**Status:** Task 1 Complete - Moving to Task 2
+**Status:** Task 2 Complete - Moving to Task 3
 
 **Goal:** Build Linux version with 100% identical functionality to Windows v4.4.0
 
@@ -92,26 +92,26 @@ public void SetVolume_ProducesIdenticalLevelOnBothDecks()
 
 ---
 
-## Task 2: Implement ALSA Fallback Audio Backend
+## Task 2: Implement ALSA Fallback Audio Backend ✅ **COMPLETED**
 
 ### Objective
 Provide ALSA fallback for systems without PulseAudio.
 
 ### Acceptance Criteria
-- [ ] Create `Core/Audio/Linux/AlsaAudioDeck.cs`
-- [ ] Same AudioDeck interface as Windows/PulseAudio
-- [ ] Check PulseAudio availability, fall back to ALSA
-- [ ] Volume control works identically
-- [ ] All unit tests pass
+- [x] Create `Core/Audio/Linux/AlsaAudioDeck.cs`
+- [x] Same AudioDeck interface as Windows/PulseAudio
+- [x] Check PulseAudio availability, fall back to ALSA
+- [x] Volume control works identically
+- [x] All unit tests pass
 
 ### Subtasks
-- [ ] **2.1** Create `AlsaAudioDeck` class
-- [ ] **2.2** Initialize ALSA PCM device
-- [ ] **2.3** Implement playback to ALSA sink
-- [ ] **2.4** Implement volume control via ALSA mixer
-- [ ] **2.5** Add fallback logic (PulseAudio → ALSA)
-- [ ] **2.6** Test in container without PulseAudio
-- [ ] **2.7** Verify identical volume control
+- [x] **2.1** Create `AlsaAudioDeck` class
+- [x] **2.2** Initialize ALSA PCM device
+- [x] **2.3** Implement playback to ALSA sink
+- [x] **2.4** Implement volume control via ALSA mixer
+- [x] **2.5** Add fallback logic (PulseAudio → ALSA)
+- [x] **2.6** Test in container without PulseAudio
+- [x] **2.7** Verify identical volume control
 
 ### Files to Modify
 - **Create:** `Core/Audio/Linux/AlsaAudioDeck.cs` (new)
