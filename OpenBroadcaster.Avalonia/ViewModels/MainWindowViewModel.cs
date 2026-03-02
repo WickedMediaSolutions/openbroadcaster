@@ -142,6 +142,9 @@ namespace OpenBroadcaster.Avalonia.ViewModels
             _micEnabled = _appSettings.Audio?.MicrophoneEnabled ?? false;
             try { _audioService.SetMicEnabled(_micEnabled); } catch { }
             
+            // Apply audio settings to initialize all devices including mic
+            try { _audioService.ApplyAudioSettings(_appSettings.Audio, applyVolumes: false); } catch { }
+            
             ApplyProgramOutputLevel(saveSettings: false);
 
             _encoderManager = new EncoderManager();

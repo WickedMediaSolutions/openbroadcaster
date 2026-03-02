@@ -465,8 +465,16 @@ namespace OpenBroadcaster.Core.Services
         {
             resolvedDeviceId = requestedDeviceId;
 
+            // If no device is configured (default -1), fall back to first available device
             if (requestedDeviceId < 0)
             {
+                if (devices.Count > 0)
+                {
+                    resolvedDeviceId = devices[0].DeviceNumber;
+                    _logger.LogInformation("No mic device configured. Defaulting to {DeviceId} ({Name}).", resolvedDeviceId, devices[0].ProductName);
+                    return true;
+                }
+                _logger.LogWarning("No input devices available; microphone monitoring disabled.");
                 return false;
             }
 
