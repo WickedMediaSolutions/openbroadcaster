@@ -27,6 +27,8 @@ namespace OpenBroadcaster.Core.Services
         private int _lastFiredHalfHour = -1;
         private bool _isAutoDjRunning;
         private bool _disposed;
+        private bool _shouldFireToh;
+        private bool _shouldFireBoh;
 
         /// <summary>
         /// Raised when TOH fires and inserts tracks.
@@ -170,8 +172,14 @@ namespace OpenBroadcaster.Core.Services
 
         private void CheckAndFireToh()
         {
+            bool shouldExecuteToh = false;
+            bool shouldExecuteBoh = false;
+
             lock (_lock)
             {
+                _shouldFireToh = false;
+                _shouldFireBoh = false;
+
                 var now = DateTime.Now;
                 var currentHour = now.Hour;
                 var currentMinute = now.Minute;
@@ -191,8 +199,9 @@ namespace OpenBroadcaster.Core.Services
                             (_isAutoDjRunning || _settings.AllowDuringLiveAssist))
                         {
                             _lastFiredHour = currentHour;
+                            _shouldFireToh = true;
+                            shouldExecuteToh = true;
                             _logger.LogInformation("TOH condition met at {Time}", now);
-                            // Fire TOH after releasing lock
                         }
                         else
                         {
@@ -217,8 +226,9 @@ namespace OpenBroadcaster.Core.Services
                             (_isAutoDjRunning || _settings.BohAllowDuringLiveAssist))
                         {
                             _lastFiredHalfHour = halfHourId;
+                            _shouldFireBoh = true;
+                            shouldExecuteBoh = true;
                             _logger.LogInformation("BOH condition met at {Time}", now);
-                            // Fire BOH after releasing lock
                         }
                         else
                         {
@@ -229,33 +239,46 @@ namespace OpenBroadcaster.Core.Services
             }
 
             // Execute outside lock to avoid deadlocks
-            ExecuteTohInjection(force: false);
+            if (shouldExecuteToh || shouldExecuteBoh)
+            {
+                ExecuteTohInjection(force: false);
+            }
         }
 
         private int ExecuteTohInjection(bool force)
         {
             List<TohSlot> tohSlots;
             List<TohSlot> bohSlots;
+            bool fireToh;
+            bool fireBoh;
+
             lock (_lock)
             {
+                fireToh = force || _shouldFireToh;
+                fireBoh = force || _shouldFireBoh;
+
+                // Reset flags
+                _shouldFireToh = false;
+                _shouldFireBoh = false;
+
                 // TOH injection
-                if (!force && !_settings.Enabled)
-                {
-                    tohSlots = new List<TohSlot>();
-                }
-                else
+                if (fireToh && _settings.Enabled)
                 {
                     tohSlots = _settings.Slots?.OrderBy(s => s.SlotOrder).ToList() ?? new List<TohSlot>();
                 }
+                else
+                {
+                    tohSlots = new List<TohSlot>();
+                }
 
                 // BOH injection
-                if (!force && !_settings.BohEnabled)
+                if (fireBoh && _settings.BohEnabled)
                 {
-                    bohSlots = new List<TohSlot>();
+                    bohSlots = _settings.BohSlots?.OrderBy(s => s.SlotOrder).ToList() ?? new List<TohSlot>();
                 }
                 else
                 {
-                    bohSlots = _settings.BohSlots?.OrderBy(s => s.SlotOrder).ToList() ?? new List<TohSlot>();
+                    bohSlots = new List<TohSlot>();
                 }
             }
 
