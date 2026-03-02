@@ -153,9 +153,19 @@ namespace OpenBroadcaster.Core.Models
         public bool Enabled { get; set; }
 
         /// <summary>
+        /// Enable/disable for BOH (Bottom of Hour) injection at :30.
+        /// </summary>
+        public bool BohEnabled { get; set; } = false;
+
+        /// <summary>
         /// Offset in seconds from the top of the hour to fire (0 = exactly at :00:00).
         /// </summary>
         public int FireSecondOffset { get; set; }
+
+        /// <summary>
+        /// Offset in seconds from the bottom of the hour to fire (0 = exactly at :30:00).
+        /// </summary>
+        public int BohFireSecondOffset { get; set; } = 0;
 
         /// <summary>
         /// Allow TOH to fire when AutoDJ is running.
@@ -163,9 +173,19 @@ namespace OpenBroadcaster.Core.Models
         public bool AllowDuringAutoDj { get; set; } = true;
 
         /// <summary>
+        /// Allow BOH to fire when AutoDJ is running.
+        /// </summary>
+        public bool BohAllowDuringAutoDj { get; set; } = true;
+
+        /// <summary>
         /// Allow TOH to fire during Live Assist (manual) mode.
         /// </summary>
         public bool AllowDuringLiveAssist { get; set; } = true;
+
+        /// <summary>
+        /// Allow BOH to fire during Live Assist (manual) mode.
+        /// </summary>
+        public bool BohAllowDuringLiveAssist { get; set; } = true;
 
         /// <summary>
         /// Ordered sequence of TOH slots.
@@ -173,9 +193,19 @@ namespace OpenBroadcaster.Core.Models
         public ObservableCollection<TohSlot> Slots { get; set; } = new();
 
         /// <summary>
+        /// Ordered sequence of BOH (Bottom of Hour) slots.
+        /// </summary>
+        public ObservableCollection<TohSlot> BohSlots { get; set; } = new();
+
+        /// <summary>
         /// Tracks the last hour TOH was fired to prevent double-fires.
         /// </summary>
         public int LastFiredHour { get; set; } = -1;
+
+        /// <summary>
+        /// Tracks the last 30-minute period BOH was fired to prevent double-fires.
+        /// </summary>
+        public int LastFiredHalfHour { get; set; } = -1;
 
         /// <summary>
         /// Sequential index tracker per category for Sequential selection mode.
@@ -188,11 +218,17 @@ namespace OpenBroadcaster.Core.Models
             return new TohSettings
             {
                 Enabled = Enabled,
+                BohEnabled = BohEnabled,
                 FireSecondOffset = FireSecondOffset,
+                BohFireSecondOffset = BohFireSecondOffset,
                 AllowDuringAutoDj = AllowDuringAutoDj,
+                BohAllowDuringAutoDj = BohAllowDuringAutoDj,
                 AllowDuringLiveAssist = AllowDuringLiveAssist,
+                BohAllowDuringLiveAssist = BohAllowDuringLiveAssist,
                 Slots = new ObservableCollection<TohSlot>((Slots ?? new()).Select(s => s?.Clone() ?? new TohSlot())),
+                BohSlots = new ObservableCollection<TohSlot>((BohSlots ?? new()).Select(s => s?.Clone() ?? new TohSlot())),
                 LastFiredHour = LastFiredHour,
+                LastFiredHalfHour = LastFiredHalfHour,
                 SequentialIndices = new ObservableCollection<TohSequentialIndex>((SequentialIndices ?? new()).Select(i => i?.Clone() ?? new TohSequentialIndex()))
             };
         }

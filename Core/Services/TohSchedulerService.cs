@@ -24,6 +24,7 @@ namespace OpenBroadcaster.Core.Services
         private System.Threading.Timer? _timer;
         private TohSettings _settings = new();
         private int _lastFiredHour = -1;
+        private int _lastFiredHalfHour = -1;
         private bool _isAutoDjRunning;
         private bool _disposed;
 
@@ -112,6 +113,7 @@ namespace OpenBroadcaster.Core.Services
             {
                 _settings = settings?.Clone() ?? new TohSettings();
                 _lastFiredHour = _settings.LastFiredHour;
+                _lastFiredHalfHour = _settings.LastFiredHalfHour;
 
                 // Restore sequential indices
                 _sequentialIndices.Clear();
@@ -126,8 +128,8 @@ namespace OpenBroadcaster.Core.Services
                     }
                 }
 
-                _logger.LogInformation("TOH settings updated: Enabled={Enabled}, Slots={SlotCount}, Offset={Offset}s",
-                    _settings.Enabled, _settings.Slots?.Count ?? 0, _settings.FireSecondOffset);
+                _logger.LogInformation("TOH settings updated: Enabled={Enabled}, Slots={SlotCount}, Offset={Offset}s, BOH={BohEnabled}",
+                    _settings.Enabled, _settings.Slots?.Count ?? 0, _settings.FireSecondOffset, _settings.BohEnabled);
             }
         }
 
@@ -170,69 +172,115 @@ namespace OpenBroadcaster.Core.Services
         {
             lock (_lock)
             {
-                if (!_settings.Enabled || _settings.Slots == null || _settings.Slots.Count == 0)
-                {
-                    return;
-                }
-
                 var now = DateTime.Now;
                 var currentHour = now.Hour;
                 var currentMinute = now.Minute;
                 var currentSecond = now.Second;
 
-                // Check if we're at the top of the hour (with offset)
-                var targetSecond = _settings.FireSecondOffset;
-                if (targetSecond < 0) targetSecond = 0;
-                if (targetSecond > 59) targetSecond = 59;
-
-                // Fire at minute 0, second = targetSecond
-                if (currentMinute != 0 || currentSecond != targetSecond)
+                // Check Top-of-Hour (at minute 0)
+                if (_settings.Enabled && _settings.Slots?.Count > 0)
                 {
-                    return;
+                    var targetSecond = _settings.FireSecondOffset;
+                    if (targetSecond < 0) targetSecond = 0;
+                    if (targetSecond > 59) targetSecond = 59;
+
+                    if (currentMinute == 0 && currentSecond == targetSecond && _lastFiredHour != currentHour)
+                    {
+                        // Check mode restrictions for TOH
+                        if ((!_isAutoDjRunning || _settings.AllowDuringAutoDj) &&
+                            (_isAutoDjRunning || _settings.AllowDuringLiveAssist))
+                        {
+                            _lastFiredHour = currentHour;
+                            _logger.LogInformation("TOH condition met at {Time}", now);
+                            // Fire TOH after releasing lock
+                        }
+                        else
+                        {
+                            _logger.LogDebug("TOH skipped due to mode restrictions at {Time}", now);
+                        }
+                    }
                 }
 
-                // Check if we already fired this hour
-                if (_lastFiredHour == currentHour)
+                // Check Bottom-of-Hour (at minute 30)
+                if (_settings.BohEnabled && _settings.BohSlots?.Count > 0)
                 {
-                    return;
-                }
+                    var targetSecond = _settings.BohFireSecondOffset;
+                    if (targetSecond < 0) targetSecond = 0;
+                    if (targetSecond > 59) targetSecond = 59;
 
-                // Check mode restrictions
-                if (_isAutoDjRunning && !_settings.AllowDuringAutoDj)
-                {
-                    _logger.LogDebug("TOH skipped: AutoDJ running and AllowDuringAutoDj=false");
-                    return;
-                }
+                    var halfHourId = currentHour * 2 + (currentMinute >= 30 ? 1 : 0);
 
-                if (!_isAutoDjRunning && !_settings.AllowDuringLiveAssist)
-                {
-                    _logger.LogDebug("TOH skipped: Live assist mode and AllowDuringLiveAssist=false");
-                    return;
+                    if (currentMinute == 30 && currentSecond == targetSecond && _lastFiredHalfHour != halfHourId)
+                    {
+                        // Check mode restrictions for BOH
+                        if ((!_isAutoDjRunning || _settings.BohAllowDuringAutoDj) &&
+                            (_isAutoDjRunning || _settings.BohAllowDuringLiveAssist))
+                        {
+                            _lastFiredHalfHour = halfHourId;
+                            _logger.LogInformation("BOH condition met at {Time}", now);
+                            // Fire BOH after releasing lock
+                        }
+                        else
+                        {
+                            _logger.LogDebug("BOH skipped due to mode restrictions at {Time}", now);
+                        }
+                    }
                 }
-
-                // Fire TOH
-                _lastFiredHour = currentHour;
             }
 
+            // Execute outside lock to avoid deadlocks
             ExecuteTohInjection(force: false);
         }
 
         private int ExecuteTohInjection(bool force)
         {
-            List<TohSlot> slots;
+            List<TohSlot> tohSlots;
+            List<TohSlot> bohSlots;
             lock (_lock)
             {
+                // TOH injection
                 if (!force && !_settings.Enabled)
                 {
-                    return 0;
+                    tohSlots = new List<TohSlot>();
+                }
+                else
+                {
+                    tohSlots = _settings.Slots?.OrderBy(s => s.SlotOrder).ToList() ?? new List<TohSlot>();
                 }
 
-                slots = _settings.Slots?.OrderBy(s => s.SlotOrder).ToList() ?? new List<TohSlot>();
+                // BOH injection
+                if (!force && !_settings.BohEnabled)
+                {
+                    bohSlots = new List<TohSlot>();
+                }
+                else
+                {
+                    bohSlots = _settings.BohSlots?.OrderBy(s => s.SlotOrder).ToList() ?? new List<TohSlot>();
+                }
             }
 
+            int insertedCount = 0;
+
+            // Execute TOH injection
+            if (tohSlots.Count > 0)
+            {
+                insertedCount += ExecuteInjection(tohSlots, "Top of Hour", QueueSource.TopOfHour);
+            }
+
+            // Execute BOH injection
+            if (bohSlots.Count > 0)
+            {
+                insertedCount += ExecuteInjection(bohSlots, "Bottom of Hour", QueueSource.TopOfHour); // BOH uses TopOfHour source for now
+            }
+
+            return insertedCount;
+        }
+
+        private int ExecuteInjection(List<TohSlot> slots, string injectionType, QueueSource source)
+        {
             if (slots.Count == 0)
             {
-                _logger.LogWarning("TOH triggered but no slots configured");
+                _logger.LogWarning("{Type} triggered but no slots configured", injectionType);
                 return 0;
             }
 
@@ -247,8 +295,8 @@ namespace OpenBroadcaster.Core.Services
 
             if (tracksToInsert.Count == 0)
             {
-                _logger.LogWarning("TOH triggered but no tracks selected from any slot");
-                StatusChanged?.Invoke(this, "TOH: No tracks available");
+                _logger.LogWarning("{Type} triggered but no tracks selected from any slot", injectionType);
+                StatusChanged?.Invoke(this, $"{injectionType}: No tracks available");
                 return 0;
             }
 
@@ -257,23 +305,23 @@ namespace OpenBroadcaster.Core.Services
             for (int i = tracksToInsert.Count - 1; i >= 0; i--)
             {
                 var track = tracksToInsert[i];
-                var queueItem = new QueueItem(track, QueueSource.TopOfHour, "Top of Hour", string.Empty);
+                var queueItem = new QueueItem(track, source, injectionType, string.Empty);
                 _queueService.EnqueueFront(queueItem);
                 insertedCount++;
-                _logger.LogInformation("TOH inserted: {Title} by {Artist}", track.Title, track.Artist);
+                _logger.LogInformation("{Type} inserted: {Title} by {Artist}", injectionType, track.Title, track.Artist);
             }
 
             // Log warnings
             foreach (var warning in warnings)
             {
-                _logger.LogWarning("TOH: {Warning}", warning);
+                _logger.LogWarning("{Type}: {Warning}", injectionType, warning);
             }
 
-            var message = $"TOH: Inserted {insertedCount} track(s)";
+            var message = $"{injectionType}: Inserted {insertedCount} track(s)";
             StatusChanged?.Invoke(this, message);
             TohFired?.Invoke(this, new TohFiredEventArgs(insertedCount, tracksToInsert.Select(t => t.Title).ToList()));
 
-            _logger.LogInformation("TOH fired successfully: {Count} tracks inserted", insertedCount);
+            _logger.LogInformation("{Type} fired successfully: {Count} tracks inserted", injectionType, insertedCount);
             return insertedCount;
         }
 

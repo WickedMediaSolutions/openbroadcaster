@@ -433,6 +433,14 @@ namespace OpenBroadcaster.ViewModels
                 {
                     // This assumes a method exists on the audio service to control the mic.
                     _audioService.SetMicEnabled(value);
+                    
+                    // Persist to settings
+                    if (_appSettings?.Audio != null)
+                    {
+                        _appSettings.Audio.MicrophoneEnabled = value;
+                        _appSettingsStore.Save(_appSettings);
+                    }
+                    
                     UpdateMicDuckingState();
                 }
             }
@@ -700,6 +708,13 @@ namespace OpenBroadcaster.ViewModels
             }
 
             _micDuckingEnabled = _appSettings.Audio?.MicDuckingEnabled ?? false;
+            
+            // Load microphone enabled state from settings
+            _micEnabled = _appSettings.Audio?.MicrophoneEnabled ?? false;
+            if (_micEnabled)
+            {
+                _audioService.SetMicEnabled(true);
+            }
 
             _suppressDeckVolumePersistence = true;
             DeckA = new DeckViewModel(

@@ -78,6 +78,7 @@ namespace OpenBroadcaster.Core.Models
         public int CartWallVolumePercent { get; set; } = 100;
         public int MicVolumePercent { get; set; } = 100;
         public bool MicDuckingEnabled { get; set; } = false;
+        public bool MicrophoneEnabled { get; set; } = false;
         public int EncoderDeviceId { get; set; } = -1;
         public int MicInputDeviceId { get; set; } = -1;
     }
