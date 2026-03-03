@@ -593,21 +593,12 @@
                   </Border>
                 </StackPanel>
 
-                <!-- Encoder Console -->
-                <StackPanel Grid.Row="4" Orientation="Vertical" Margin="0,4,0,0">
-                  <TextBlock Text="Encoder Console" Foreground="{DynamicResource ObBrushSecondaryText}" FontSize="11" />
-                  <Border Background="{DynamicResource ObBrushSurface}" CornerRadius="4" Padding="4" Margin="0,4,0,0">
-                    <ScrollViewer Height="64">
-                      <ListBox Items="{Binding EncoderLog}">
-                        <ListBox.ItemTemplate>
-                          <DataTemplate>
-                            <TextBlock Text="{Binding}" Foreground="{DynamicResource ObBrushPrimaryText}" FontSize="12" />
-                          </DataTemplate>
-                        </ListBox.ItemTemplate>
-                      </ListBox>
-                    </ScrollViewer>
-                  </Border>
-                </StackPanel>
+                <!-- Digital Clock -->
+                <TextBlock Grid.Row="4" Name="DigitalClock" Text="00:00:00" 
+                           Foreground="{DynamicResource ObBrushAccent}" 
+                           FontSize="28" FontFamily="Courier New" FontWeight="Bold" 
+                           TextAlignment="Center" HorizontalAlignment="Center" 
+                           VerticalAlignment="Center" Margin="0,8,0,8" />
               </Grid>
             </StackPanel>
           </StackPanel>

@@ -59,7 +59,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
         private string _autoDjStatusMessage = string.Empty;
         // AutoDJ crossfade state
         private readonly SemaphoreSlim _autoDjCrossfadeSemaphore = new(1, 1);
-        private readonly System.TimeSpan _autoDjCrossfadeDuration = System.TimeSpan.FromSeconds(7);
+        private readonly System.TimeSpan _autoDjCrossfadeDuration = System.TimeSpan.FromSeconds(2);
         private readonly System.TimeSpan _autoDjPreloadLeadTime = System.TimeSpan.FromSeconds(12);
         private bool _autoDjCrossfadeInProgress;
         private bool _isManualSkipping;
@@ -653,10 +653,9 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                     
                     // Initialize Top of Hour scheduler
                     _tohSchedulerService = new OpenBroadcaster.Core.Services.TohSchedulerService(_queueService, _libraryService);
-                    if (_appSettings?.Automation?.TopOfHour?.Enabled ?? false)
-                    {
-                        _tohSchedulerService.UpdateSettings(_appSettings.Automation.TopOfHour);
-                    }
+                    var tohSettings = _appSettings?.Automation?.TopOfHour ?? new OpenBroadcaster.Core.Models.TohSettings();
+                    _tohSchedulerService.UpdateSettings(tohSettings);
+                    _tohSchedulerService.Start();
                 }
                 catch { }
             }
@@ -1598,6 +1597,28 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                     }
                 }
 
+                // Skip crossfade for TOH/BOH tracks (Station IDs, Jingles, Commercials are too short for fade)
+                if (toDeckService.CurrentQueueItem?.SourceType == OpenBroadcaster.Core.Models.QueueSource.TopOfHour)
+                {
+                    // Do immediate cut instead of crossfade
+                    _transportService.Play(toDeck);
+                    _audioService.SetDeckVolume(toDeck, GetProgramOutputLevel());
+                    
+                    // Stop source deck
+                    _transportService.IsSkipping = true;
+                    try
+                    {
+                        _transportService.Stop(fromDeck);
+                        _transportService.Unload(fromDeck);
+                        EnsureCrossfadedDeckCleared(fromDeck, fromTrackId);
+                    }
+                    finally
+                    {
+                        _transportService.IsSkipping = false;
+                    }
+                    return;
+                }
+
                 // Crossfade around the slider-owned program output target.
                 var programOutputLevel = GetProgramOutputLevel();
                 var fromStartVolume = programOutputLevel;
@@ -1610,7 +1631,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                 _audioService.SetDeckVolume(toDeck, 0.0);
                 _transportService.Play(toDeck);
 
-                const int steps = AutoDjCrossfadeSteps;
+                const int steps = 40;  // 2 second fade with 50ms per step
                 var stepDelay = System.TimeSpan.FromMilliseconds(_autoDjCrossfadeDuration.TotalMilliseconds / steps);
 
                 for (int i = 1; i <= steps; i++)
@@ -1621,12 +1642,14 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                     }
 
                     var t = i / (double)steps;
-                    // Smooth DJ-style constant-power crossfade with extended overlap
-                    // Using raised cosine/sine curves for ultra-smooth transition
-                    var fadeOutGain = System.Math.Pow(System.Math.Cos(t * System.Math.PI * 0.5), 0.7);
-                    var fadeInGain = System.Math.Pow(System.Math.Sin(t * System.Math.PI * 0.5), 0.7);
-                    _audioService.SetDeckVolume(fromDeck, fromStartVolume * fadeOutGain);
-                    _audioService.SetDeckVolume(toDeck, toTargetVolume * fadeInGain);
+                    // Simple linear crossfade: both decks maintain the target output level
+                    // One fades out while the other fades in, creating a mix from one to the other
+                    // This preserves constant total output level throughout the transition
+                    var fromDeckVolume = fromStartVolume * (1.0 - t);
+                    var toDeckVolume = toTargetVolume * t;
+                    
+                    _audioService.SetDeckVolume(fromDeck, fromDeckVolume);
+                    _audioService.SetDeckVolume(toDeck, toDeckVolume);
 
                     await System.Threading.Tasks.Task.Delay(stepDelay).ConfigureAwait(false);
                 }
@@ -1647,6 +1670,7 @@ namespace OpenBroadcaster.Avalonia.ViewModels
                 }
 
                 _audioService.SetDeckVolume(toDeck, toTargetVolume);
+                _audioService.SetDeckVolume(fromDeck, 0.0);
                 ApplyProgramOutputLevel(saveSettings: false);
                 _autoDjPreloadedDeck = null;
                 _autoDjAnnounceReadyDeck = toDeck;

@@ -26,6 +26,7 @@ namespace OpenBroadcaster.Avalonia.Views
         private INotifyCollectionChanged? _chatMessages;
         private Point _dragStartPoint;
         private bool _isDragStarted;
+        private System.Threading.Timer? _clockTimer;
 
         public MainWindow()
         {
@@ -39,10 +40,14 @@ namespace OpenBroadcaster.Avalonia.Views
             Closed += OnClosed;
             
             SetupDragDrop();
+            StartClock();
         }
 
         private void OnClosed(object? sender, EventArgs e)
         {
+            // Dispose clock timer
+            _clockTimer?.Dispose();
+
             // Remove event subscriptions to prevent memory leaks
             if (_libraryList != null)
             {
@@ -345,6 +350,24 @@ namespace OpenBroadcaster.Avalonia.Views
             {
                 vm.ClearPadCommand?.Execute(pad);
             }
+        }
+
+        private void StartClock()
+        {
+            var clockTextBlock = this.FindControl<TextBlock>("DigitalClock");
+            if (clockTextBlock != null)
+            {
+                UpdateClockTime(clockTextBlock);
+                _clockTimer = new System.Threading.Timer(_ => 
+                {
+                    Dispatcher.UIThread.Post(() => UpdateClockTime(clockTextBlock));
+                }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            }
+        }
+
+        private void UpdateClockTime(TextBlock clockTextBlock)
+        {
+            clockTextBlock.Text = DateTime.Now.ToString("HH:mm:ss");
         }
     }
 }

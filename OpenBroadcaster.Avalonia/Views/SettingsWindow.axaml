@@ -299,6 +299,63 @@
               </StackPanel>
             </Border>
 
+            <Border Margin="0,8,0,0" BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" Padding="8">
+              <StackPanel>
+                <TextBlock Text="Bottom of Hour" FontWeight="SemiBold" Margin="0,0,0,8" />
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8" Margin="0,6,0,0">
+                  <TextBlock Text="Fire offset (seconds)" Width="200" />
+                  <NumericUpDown Value="{Binding Settings.Automation.TopOfHour.BohFireSecondOffset, Mode=TwoWay}" Minimum="0" Maximum="60" Width="90" />
+                  <TextBlock Text="(0 = :30:00)" Foreground="{DynamicResource ObBrushMutedText}" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="12" Margin="0,6,0,0">
+                  <CheckBox IsChecked="{Binding Settings.Automation.TopOfHour.BohAllowDuringAutoDj, Mode=TwoWay}" Content="Allow during AutoDJ" />
+                  <CheckBox IsChecked="{Binding Settings.Automation.TopOfHour.BohAllowDuringLiveAssist, Mode=TwoWay}" Content="Allow during Live Assist" />
+                </StackPanel>
+
+                <TextBlock Text="BOH Sequence" FontWeight="SemiBold" Margin="0,10,0,6" />
+                <ListBox Items="{Binding Settings.Automation.TopOfHour.BohSlots}" SelectedItem="{Binding SelectedBohSlot, Mode=TwoWay}" Height="200">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <Border BorderBrush="{DynamicResource ObBrushBorder}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,2">
+                        <Grid ColumnDefinitions="30,*,90,120,110">
+                          <TextBlock Grid.Column="0" Text="{Binding SlotOrder}" FontWeight="Bold" VerticalAlignment="Center" />
+                          <ComboBox Grid.Column="1"
+                                    SelectedIndex="{Binding CategoryIndex, Mode=TwoWay}"
+                                    Margin="4,0" MinWidth="140">
+                            <ComboBoxItem Content="Station IDs" />
+                            <ComboBoxItem Content="Commercials" />
+                            <ComboBoxItem Content="Jingles" />
+                          </ComboBox>
+                          <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4">
+                            <TextBlock Text="×" VerticalAlignment="Center" />
+                            <NumericUpDown Value="{Binding TrackCount, Mode=TwoWay}" Minimum="1" Maximum="25" Width="55" />
+                          </StackPanel>
+                          <ComboBox Grid.Column="3"
+                                    SelectedIndex="{Binding SelectionMode, Mode=TwoWay, Converter={StaticResource EnumToIndexConverter}}"
+                                    Margin="4,0">
+                            <ComboBoxItem Content="Sequential" />
+                            <ComboBoxItem Content="Random" />
+                          </ComboBox>
+                          <CheckBox Grid.Column="4" Content="No Repeat" IsChecked="{Binding PreventRepeat, Mode=TwoWay}" VerticalAlignment="Center" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                  <Button Content="▲" Width="40" Command="{Binding MoveBohSlotUpCommand}" ToolTip.Tip="Move Up" />
+                  <Button Content="▼" Width="40" Command="{Binding MoveBohSlotDownCommand}" ToolTip.Tip="Move Down" />
+                  <Button Content="Add Slot" Width="100" Command="{Binding AddBohSlotCommand}" Margin="12,0,0,0" />
+                  <Button Content="Remove" Width="100" Command="{Binding RemoveBohSlotCommand}" />
+                </StackPanel>
+
+                <TextBlock Text="Configure slots to play at the bottom of each hour (30-minute mark) using built-in BOH categories. Choose track count, selection mode, and whether repeats are allowed." Margin="0,8,0,0" Foreground="{DynamicResource ObBrushMutedText}" />
+              </StackPanel>
+            </Border>
+
             <TextBlock Text="Use the editor to set rotation names and category slots, then schedule them by day and time." Margin="0,12,0,0" Foreground="{DynamicResource ObBrushMutedText}" />
           </StackPanel>
         </ScrollViewer>

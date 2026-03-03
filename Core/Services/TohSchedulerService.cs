@@ -85,6 +85,10 @@ namespace OpenBroadcaster.Core.Services
                     return;
                 }
 
+                // Reset fire tracking so first occurrence fires (ignore persisted values from previous app session)
+                _lastFiredHour = -1;
+                _lastFiredHalfHour = -1;
+
                 // Check every second for the top of the hour
                 _timer = new System.Threading.Timer(OnTimerTick, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
                 _logger.LogInformation("TOH scheduler started");
@@ -155,7 +159,7 @@ namespace OpenBroadcaster.Core.Services
         /// </summary>
         public int ManualTrigger()
         {
-            return ExecuteTohInjection(force: true);
+            return ExecuteTohInjection(force: true, forceAllowDisabled: true);
         }
 
         private void OnTimerTick(object? state)
@@ -184,6 +188,13 @@ namespace OpenBroadcaster.Core.Services
                 var currentHour = now.Hour;
                 var currentMinute = now.Minute;
                 var currentSecond = now.Second;
+
+                // Log state every minute at :00 seconds for debugging
+                if (currentSecond == 0 && (currentMinute == 0 || currentMinute == 30))
+                {
+                    _logger.LogInformation("TOH Check at {Time}: Enabled={Enabled}, BohEnabled={BohEnabled}, Slots={SlotCount}, BohSlots={BohSlotCount}, AutoDjRunning={AutoDj}",
+                        now, _settings.Enabled, _settings.BohEnabled, _settings.Slots?.Count ?? 0, _settings.BohSlots?.Count ?? 0, _isAutoDjRunning);
+                }
 
                 // Check Top-of-Hour (at minute 0)
                 if (_settings.Enabled && _settings.Slots?.Count > 0)
@@ -219,6 +230,13 @@ namespace OpenBroadcaster.Core.Services
 
                     var halfHourId = currentHour * 2 + (currentMinute >= 30 ? 1 : 0);
 
+                    // Log at minute 30 for debugging
+                    if (currentMinute == 30 && currentSecond == 0)
+                    {
+                        _logger.LogInformation("BOH Check at :30 - halfHourId={HalfHourId}, lastFiredHalfHour={LastFiredHalfHour}, targetSecond={TargetSecond}, currentSecond={CurrentSecond}",
+                            halfHourId, _lastFiredHalfHour, targetSecond, currentSecond);
+                    }
+
                     if (currentMinute == 30 && currentSecond == targetSecond && _lastFiredHalfHour != halfHourId)
                     {
                         // Check mode restrictions for BOH
@@ -228,11 +246,12 @@ namespace OpenBroadcaster.Core.Services
                             _lastFiredHalfHour = halfHourId;
                             _shouldFireBoh = true;
                             shouldExecuteBoh = true;
-                            _logger.LogInformation("BOH condition met at {Time}", now);
+                            _logger.LogInformation("BOH condition met at {Time} - halfHourId={HalfHourId}", now, halfHourId);
                         }
                         else
                         {
-                            _logger.LogDebug("BOH skipped due to mode restrictions at {Time}", now);
+                            _logger.LogInformation("BOH skipped due to mode restrictions at {Time} - AutoDj={AutoDj}, AllowAutoDj={AllowAutoDj}, AllowLiveAssist={AllowLiveAssist}", 
+                                now, _isAutoDjRunning, _settings.BohAllowDuringAutoDj, _settings.BohAllowDuringLiveAssist);
                         }
                     }
                 }
@@ -245,7 +264,7 @@ namespace OpenBroadcaster.Core.Services
             }
         }
 
-        private int ExecuteTohInjection(bool force)
+        private int ExecuteTohInjection(bool force, bool forceAllowDisabled = false)
         {
             List<TohSlot> tohSlots;
             List<TohSlot> bohSlots;
@@ -257,24 +276,32 @@ namespace OpenBroadcaster.Core.Services
                 fireToh = force || _shouldFireToh;
                 fireBoh = force || _shouldFireBoh;
 
+                _logger.LogInformation("ExecuteTohInjection called: force={Force}, fireToh={FireToh}, fireBoh={FireBoh}, _shouldFireToh={ShouldFire1}, _shouldFireBoh={ShouldFire2}",
+                    force, fireToh, fireBoh, _shouldFireToh, _shouldFireBoh);
+
                 // Reset flags
                 _shouldFireToh = false;
                 _shouldFireBoh = false;
 
                 // TOH injection
-                if (fireToh && _settings.Enabled)
+                // When force=true with forceAllowDisabled=true, inject even if disabled
+                if (fireToh && (forceAllowDisabled || _settings.Enabled))
                 {
                     tohSlots = _settings.Slots?.OrderBy(s => s.SlotOrder).ToList() ?? new List<TohSlot>();
+                    _logger.LogInformation("TOH will attempt injection: Enabled={Enabled}, SlotCount={SlotCount}", _settings.Enabled, tohSlots.Count);
                 }
                 else
                 {
                     tohSlots = new List<TohSlot>();
+                    _logger.LogInformation("TOH skipped: fireToh={FireToh}, _settings.Enabled={Enabled}, forceAllowDisabled={Force}", fireToh, _settings.Enabled, forceAllowDisabled);
                 }
 
                 // BOH injection
-                if (fireBoh && _settings.BohEnabled)
+                // When force=true with forceAllowDisabled=true, inject even if disabled
+                if (fireBoh && (forceAllowDisabled || _settings.BohEnabled))
                 {
                     bohSlots = _settings.BohSlots?.OrderBy(s => s.SlotOrder).ToList() ?? new List<TohSlot>();
+                    _logger.LogInformation("BOH will attempt injection: BohEnabled={BohEnabled}, BohSlotCount={SlotCount}", _settings.BohEnabled, bohSlots.Count);
                 }
                 else
                 {
@@ -287,12 +314,14 @@ namespace OpenBroadcaster.Core.Services
             // Execute TOH injection
             if (tohSlots.Count > 0)
             {
+                _logger.LogInformation("Executing TOH injection with {SlotCount} slots", tohSlots.Count);
                 insertedCount += ExecuteInjection(tohSlots, "Top of Hour", QueueSource.TopOfHour);
             }
 
             // Execute BOH injection
             if (bohSlots.Count > 0)
             {
+                _logger.LogInformation("Executing BOH injection with {SlotCount} slots", bohSlots.Count);
                 insertedCount += ExecuteInjection(bohSlots, "Bottom of Hour", QueueSource.TopOfHour); // BOH uses TopOfHour source for now
             }
 

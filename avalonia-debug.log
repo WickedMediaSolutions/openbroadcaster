@@ -8781,3 +8781,95 @@ Object name: 'Avalonia.Win32.WinRT.Impl.__MicroComICompositionSurfaceBrushProxy'
 [Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #20490669)
 [Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #50198296)
 [Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #49131481)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #47015983)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #20490669)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #47015983)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #20490669)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #47015983)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #20490669)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #47015983)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #20490669)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #47015983)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #20490669)
+[Visual]Exception when rendering: 'System.ObjectDisposedException: Cannot access a disposed object.
+Object name: 'Avalonia.Win32.WinRT.Impl.__MicroComICompositionSurfaceBrushProxy'.
+   at Avalonia.Win32.WinRT.Composition.WinUiCompositedWindowRenderTarget.BeginDraw() in /_/src/Windows/Avalonia.Win32/WinRT/Composition/WinUiCompositedWindowSurface.cs:line 121
+   at Avalonia.Win32.OpenGl.Angle.AngleD3DTextureFeature.RenderTargetWrapper.BeginDrawCore() in /_/src/Windows/Avalonia.Win32/OpenGl/Angle/AngleD3DTextureFeature.cs:line 40
+   at Avalonia.Skia.GlRenderTarget.BeginRenderingSession() in /_/src/Skia/Avalonia.Skia/Gpu/OpenGl/GlRenderTarget.cs:line 64
+   at Avalonia.Skia.SkiaGpuRenderTarget.CreateDrawingContext() in /_/src/Skia/Avalonia.Skia/Gpu/SkiaGpuRenderTarget.cs:line 27
+   at Avalonia.Rendering.Composition.Server.ServerCompositionTarget.Render() in /_/src/Avalonia.Base/Rendering/Composition/Server/ServerCompositionTarget.cs:line 116
+   at Avalonia.Rendering.Composition.Server.ServerCompositor.RenderCore() in /_/src/Avalonia.Base/Rendering/Composition/Server/ServerCompositor.cs:line 168'(ServerCompositor #12679815)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #47015983)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #20490669)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #38398082)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #23236933)
+[Binding]Error in binding to 'Avalonia.Controls.NumericUpDown'.'Value': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(NumericUpDown #3143429)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #53291177)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #21618074)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #6233535)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #35154304)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #28926407)
+[Binding]Error in binding to 'Avalonia.Controls.NumericUpDown'.'Value': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(NumericUpDown #61337593)
+[Binding]Error in binding to 'Avalonia.Controls.CheckBox'.'IsChecked': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(CheckBox #2289152)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #47015983)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #20490669)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #5223998)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #47015983)
+[Visual]Exception when rendering: 'System.ObjectDisposedException: Cannot access a disposed object.
+Object name: 'Avalonia.Win32.WinRT.Impl.__MicroComICompositionSurfaceBrushProxy'.
+   at Avalonia.Win32.WinRT.Composition.WinUiCompositedWindowRenderTarget.BeginDraw() in /_/src/Windows/Avalonia.Win32/WinRT/Composition/WinUiCompositedWindowSurface.cs:line 121
+   at Avalonia.Win32.OpenGl.Angle.AngleD3DTextureFeature.RenderTargetWrapper.BeginDrawCore() in /_/src/Windows/Avalonia.Win32/OpenGl/Angle/AngleD3DTextureFeature.cs:line 40
+   at Avalonia.Skia.GlRenderTarget.BeginRenderingSession() in /_/src/Skia/Avalonia.Skia/Gpu/OpenGl/GlRenderTarget.cs:line 64
+   at Avalonia.Skia.SkiaGpuRenderTarget.CreateDrawingContext() in /_/src/Skia/Avalonia.Skia/Gpu/SkiaGpuRenderTarget.cs:line 27
+   at Avalonia.Rendering.Composition.Server.ServerCompositionTarget.Render() in /_/src/Avalonia.Base/Rendering/Composition/Server/ServerCompositionTarget.cs:line 116
+   at Avalonia.Rendering.Composition.Server.ServerCompositor.RenderCore() in /_/src/Avalonia.Base/Rendering/Composition/Server/ServerCompositor.cs:line 168'(ServerCompositor #22987038)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #5223998)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #47015983)
+[Visual]Exception when rendering: 'System.ObjectDisposedException: Cannot access a disposed object.
+Object name: 'Avalonia.Win32.WinRT.Impl.__MicroComIVisualProxy'.
+   at MicroCom.Runtime.MicroComProxyBase.get_NativePointer()
+   at MicroCom.Runtime.MicroComProxyBase.get_PPV()
+   at Avalonia.Win32.WinRT.Impl.__MicroComIVisualProxy.SetSize(Vector2 value) in /_/src/Windows/Avalonia.Win32/WinRT/WinRT.Generated.cs:line 7633
+   at Avalonia.Win32.WinRT.Composition.WinUiCompositedWindow.ResizeIfNeeded(PixelSize size) in /_/src/Windows/Avalonia.Win32/WinRT/Composition/WinUiCompositedWindow.cs:line 103
+   at Avalonia.Win32.WinRT.Composition.WinUiCompositedWindowRenderTarget.BeginDraw() in /_/src/Windows/Avalonia.Win32/WinRT/Composition/WinUiCompositedWindowSurface.cs:line 120
+   at Avalonia.Win32.OpenGl.Angle.AngleD3DTextureFeature.RenderTargetWrapper.BeginDrawCore() in /_/src/Windows/Avalonia.Win32/OpenGl/Angle/AngleD3DTextureFeature.cs:line 40
+   at Avalonia.Skia.GlRenderTarget.BeginRenderingSession() in /_/src/Skia/Avalonia.Skia/Gpu/OpenGl/GlRenderTarget.cs:line 64
+   at Avalonia.Skia.SkiaGpuRenderTarget.CreateDrawingContext() in /_/src/Skia/Avalonia.Skia/Gpu/SkiaGpuRenderTarget.cs:line 27
+   at Avalonia.Rendering.Composition.Server.ServerCompositionTarget.Render() in /_/src/Avalonia.Base/Rendering/Composition/Server/ServerCompositionTarget.cs:line 116
+   at Avalonia.Rendering.Composition.Server.ServerCompositor.RenderCore() in /_/src/Avalonia.Base/Rendering/Composition/Server/ServerCompositor.cs:line 168'(ServerCompositor #12965754)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #5223998)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #47015983)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #35006119)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #16923420)
+[Binding]Error in binding to 'Avalonia.Controls.NumericUpDown'.'Value': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(NumericUpDown #28619802)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #36502600)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #3920590)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #49132373)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #20299268)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #33628036)
+[Binding]Error in binding to 'Avalonia.Controls.NumericUpDown'.'Value': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(NumericUpDown #39516413)
+[Binding]Error in binding to 'Avalonia.Controls.CheckBox'.'IsChecked': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(CheckBox #46712854)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #27492955)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #12336887)
+[Binding]Error in binding to 'Avalonia.Controls.NumericUpDown'.'Value': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(NumericUpDown #59763787)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #9028608)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #60228670)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #46684076)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #23313778)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #9367865)
+[Binding]Error in binding to 'Avalonia.Controls.NumericUpDown'.'Value': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(NumericUpDown #20599592)
+[Binding]Error in binding to 'Avalonia.Controls.CheckBox'.'IsChecked': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(CheckBox #57954280)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #5223998)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #47015983)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #5223998)
+[Binding]Error in binding to 'Avalonia.Controls.TextBlock'.'Text': 'Null value in expression '{empty}' at 'SelectedLibraryItem'.'(TextBlock #47015983)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #52733512)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #43556055)
+[Binding]Error in binding to 'Avalonia.Controls.NumericUpDown'.'Value': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(NumericUpDown #38379555)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #21736211)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #15802639)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #4945408)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #65033806)
+[Binding]Error in binding to 'Avalonia.Controls.TextBox'.'Text': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(TextBox #33246944)
+[Binding]Error in binding to 'Avalonia.Controls.NumericUpDown'.'Value': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(NumericUpDown #8647967)
+[Binding]Error in binding to 'Avalonia.Controls.CheckBox'.'IsChecked': 'Null value in expression '{empty}' at 'SelectedEncoder'.'(CheckBox #29396722)
